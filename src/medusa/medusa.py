@@ -136,7 +136,7 @@ def start_streams(streams, open_streams=False, normalize=False):
     cmedusa.start_streams(stream_p_array, c_int(num_streams))
 
 
-class PaDevice:
+class Device:
     input_device = None
     output_device = None
 
@@ -144,13 +144,13 @@ class PaDevice:
         self.input_device = in_device_index
         self.output_device = out_device_index
 
-    def tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
+    def create_tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
         s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
         s.open()
         return s
 
-    def array_stream(self, arr, samp_freq, scale=1.0, loop=False, sample_format=paFloat32):
+    def open_array(self, arr, samp_freq, scale=1.0, loop=False, sample_format=paFloat32):
         s = ArrayStream(self, np.ascontiguousarray(arr), samp_freq, scale, loop, sample_format)
         s.open()
         return s
