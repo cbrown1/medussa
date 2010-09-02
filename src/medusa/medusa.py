@@ -10,6 +10,11 @@ else:
 
 cmedusa = ctypes.CDLL(libname)
 
+def init():
+    err = pa.Pa_Initialize()
+    if err < 0:
+        raise RuntimeError("Error initializing PortAudio")
+
 
 # struct ContigArrayHandle [in `medusa.h`]
 class ContigArrayHandle (ctypes.Structure):
