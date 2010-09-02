@@ -156,6 +156,22 @@ class Device:
         return s
 
 
+def open_device(out_device_index=None, in_device_index=None):
+    if out_device_index == None:
+        out_device_index = pa.Pa_GetDefaultOutputDevice()
+
+    d = Device(in_device_index, out_device_index)
+    return d
+
+
+def open_default_device():
+    out_di = pa.Pa_GetDefaultOutputDevice()
+    in_di = pa.Pa_GetDefaultInputDevice()
+
+    d = Device(in_di, out_di)
+    return d
+
+
 class ArrayStream:
     # device : PaDevice
     device = None
