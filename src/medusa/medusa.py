@@ -144,9 +144,7 @@ class PaDevice:
         self.input_device = in_device_index
         self.output_device = out_device_index
 
-    def tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=0, sample_format=paFloat32):
-        #tone_freq = c_double(tone_freq)
-        #samp_freq = c_double(samp_freq)
+    def tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
         return ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
 
     def array_stream(self, arr, samp_freq, scale=1.0, sample_format=paFloat32):
@@ -205,6 +203,7 @@ class ToneStream:
     sample_format = None
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
+        chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
         self.td = ToneData(0, channels, chan_out, tone_freq, samp_freq, scale)
         self.stream_p = c_void_p()
         self.device = device
