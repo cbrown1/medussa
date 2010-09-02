@@ -11,6 +11,7 @@ typedef struct ContigArrayHandle {
     int samp_i;       // Iterates along dimension 1, must be < PyArray_DIM(x, 1)
     double samp_freq; // Sampling frequency in Hertz
     double scale;     // Scaling factor for each sample, should be in the interval [0, 1]
+    int loop;         // Boolean to determine whether or not to loop array playback
 } ContigArrayHandle;
 
 

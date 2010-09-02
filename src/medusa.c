@@ -64,9 +64,16 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         chan_i = 0;
     }
 
-    carrh->chan_i = chan_i;
-    carrh->samp_i = samp_i;
-    return paComplete;
+    // Reset cursors for future playback
+    carrh->chan_i = 0;
+    carrh->samp_i = 0;
+
+    if (carrh->loop) {
+        return paContinue;
+    }
+    else {
+        return paComplete;
+    }
 }
 
 int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
