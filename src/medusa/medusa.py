@@ -30,7 +30,8 @@ class ContigArrayHandle (ctypes.Structure):
                 ("chan_i",    c_int),
                 ("samp_i",    c_int),
                 ("samp_freq", c_double),
-                ("scale",     c_double))
+                ("scale",     c_double),
+                ("loop",      c_int))
 
 
 # struct ToneData [in 'medusa.h']
@@ -167,11 +168,16 @@ class ArrayStream:
     paused = False
     sample_format = None
 
-    def __init__(self, device, arr, samp_freq, scale, sample_format=paFloat32):
+    def __init__(self, device, arr, samp_freq, scale, loop=False, sample_format=paFloat32):
+        if loop:
+            loop = c_int(1)
+        else:
+            loop = c_int(0)
+
         self.device = device
         self.stream_p = c_void_p()
         self.arr = arr
-        self.cah = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale)
+        self.cah = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale, loop)
         self.sample_format = sample_format
 
     def open(self):
