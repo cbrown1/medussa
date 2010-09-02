@@ -9,7 +9,7 @@ else:
     libname = find_library("medusa")
 
 if libname == None:
-    raise RuntimeError("Unable to locate `libmedusa`")
+    raise RuntimeError("Unable to locate library `medusa`")
 
 cmedusa = ctypes.CDLL(libname)
 

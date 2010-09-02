@@ -11,6 +11,10 @@ if platform.system() == "Windows":
 else:
     libname = find_library("portaudio")
 
+# Doesn't work given current pseudo-hardcoded Win32 path
+if libname == None:
+    raise RuntimeError("Unable to locate library `portaudio`.")
+
 # Load the shared library
 pa = ctypes.CDLL(libname)
 
