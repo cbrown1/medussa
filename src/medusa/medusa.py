@@ -8,6 +8,9 @@ if platform.system() == "Windows":
 else:
     libname = find_library("medusa")
 
+if libname == None:
+    raise RuntimeError("Unable to locate `libmedusa`")
+
 cmedusa = ctypes.CDLL(libname)
 
 def init():
