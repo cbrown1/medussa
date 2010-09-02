@@ -145,10 +145,15 @@ class PaDevice:
         self.output_device = out_device_index
 
     def tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
-        return ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
+        # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
+        s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
+        s.open()
+        return s
 
-    def array_stream(self, arr, samp_freq, scale=1.0, sample_format=paFloat32):
-        return ArrayStream(self, np.ascontiguousarray(arr), samp_freq, scale, sample_format)
+    def array_stream(self, arr, samp_freq, scale=1.0, loop=False, sample_format=paFloat32):
+        s = ArrayStream(self, np.ascontiguousarray(arr), samp_freq, scale, loop, sample_format)
+        s.open()
+        return s
 
 
 class ArrayStream:
@@ -167,6 +172,7 @@ class ArrayStream:
     sample_format = None
 
     def __init__(self, device, arr, samp_freq, scale, loop=False, sample_format=paFloat32):
+        # Manually convert Python boolean to C-friendly "true" or "false" ints
         if loop:
             loop = c_int(1)
         else:
@@ -182,6 +188,12 @@ class ArrayStream:
         self.stream_p = cmedusa.open_ndarray_stream(self.stream_p, byref(self.cah), self.device.output_device, self.sample_format)
 
     def start(self):
+        pa.Pa_StartStream(self.stream_p)
+
+    def stop(self):
+        pa.Pa_StopStream(self.stream_p)
+
+    def play(self):
         if self.paused:
             self.paused = False
         else:
@@ -189,7 +201,7 @@ class ArrayStream:
             self.cah.samp_i = c_int(0)
         pa.Pa_StartStream(self.stream_p)
 
-    def stop(self):
+    def pause(self):
         pa.Pa_StopStream(self.stream_p)
         self.paused = True
 
@@ -218,3 +230,8 @@ class ToneStream:
     def stop(self):
         pa.Pa_StopStream(self.stream_p)
 
+    def play(self):
+        self.start()
+
+    def pause(self):
+        self.stop()
