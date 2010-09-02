@@ -195,10 +195,12 @@ class ArrayStream:
 
     def play(self):
         if self.paused:
+            # Assumes the stream is already open
             self.paused = False
         else:
             self.cah.chan_i = c_int(0)
             self.cah.samp_i = c_int(0)
+            self.open()  # Reopen stream, just in case
         pa.Pa_StartStream(self.stream_p)
 
     def pause(self):
@@ -231,6 +233,7 @@ class ToneStream:
         pa.Pa_StopStream(self.stream_p)
 
     def play(self):
+        self.open()
         self.start()
 
     def pause(self):
