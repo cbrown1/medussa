@@ -204,7 +204,14 @@ class ArrayStream:
 
         self.device = device
         self.stream_p = c_void_p()
-        self.arr = arr
+
+        # `callback_ndarray` currently requires arrays with two dimensions
+        if len(arr.shape) == 1:
+            n = arr.shape[0]
+            arr = arr.reshape((n,1))
+
+        self.arr = np.ascontiguousarray(arr)
+
         self.cah = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale, loop)
         self.sample_format = sample_format
 
