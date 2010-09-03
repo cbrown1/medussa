@@ -234,6 +234,11 @@ class ArrayStream:
     def time(self):
         return pa.Pa_GetStreamTime(self.stream_p)
 
+    def is_paused(self):
+        is_stopped = pa.Pa_IsStreamStopped(self.stream_p)
+        return bool(is_stopped)
+
+
 
 class ToneStream:
     # device : PaDevice
@@ -268,3 +273,7 @@ class ToneStream:
 
     def time(self):
         return pa.Pa_GetStreamTime(self.stream_p)
+
+    def is_paused(self):
+        is_stopped = pa.Pa_IsStreamStopped(self.stream_p)
+        return bool(is_stopped)
