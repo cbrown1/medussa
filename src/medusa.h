@@ -26,6 +26,13 @@ typedef struct ToneData {
 } ToneData;
 
 
+// Data for pink noise
+typedef struct PinkData {
+    double samp_freq;
+    double scale;
+} PinkData;
+
+
 int callback_ndarray (const void *,
                       void *,
                       unsigned long,
@@ -34,6 +41,13 @@ int callback_ndarray (const void *,
                       void *);
 
 int callback_tone (const void *,
+                   void *,
+                   unsigned long,
+                   const PaStreamCallbackTimeInfo *,
+                   PaStreamCallbackFlags,
+                   void *);
+
+int callback_pink (const void *,
                    void *,
                    unsigned long,
                    const PaStreamCallbackTimeInfo *,

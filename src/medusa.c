@@ -120,14 +120,58 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     return paContinue;
 }
 
+int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
+                    unsigned long frames,
+                    const PaStreamCallbackTimeInfo *time_info,
+                    PaStreamCallbackFlags status_flags,
+                    void *user_data)
+{
+    unsigned int t;
+    ToneData *td;
+    unsigned int i, j; // frame_iter, chan_iter, respectively
+    float *buf_out;
+
+    unsigned int channels;
+    unsigned int chan_out;
+    
+    float tone_freq;
+    float samp_freq;
+    float scale;
+
+    buf_out = (float *) pa_buf_out;
+
+    td = (ToneData *) user_data;
+    if (td == NULL) {
+        return paComplete;
+    }
+
+    t = td->t;
+    channels = td->channels;
+    chan_out = td->chan_out;
+    tone_freq = td->tone_freq;
+    samp_freq = td->samp_freq;
+    scale = td->scale;
+
+    for (i = 0; i < frames; i++) {
+        for (j = 0; j < channels; j++) {
+            buf_out[i*channels + j] = 0.0;
+        }
+        buf_out[i*channels + chan_out] = scale * sin(TWOPI * t / samp_freq * tone_freq);
+        t++;
+    }
+    td->t = t;
+
+    return paContinue;
+}
+
 
 PaStream *open_default_ndarray_stream (PaStream *stream, ContigArrayHandle *cah)
 {
     PaError err;
     int channels;
 
-    //channels = PyArray_DIM(cah->x, 1);
-    channels = 2;
+    channels = PyArray_DIM(cah->x, 1);
+    //channels = 2;
 
     err = Pa_OpenDefaultStream(&stream, 0, channels, paFloat32, cah->samp_freq,
                                paFramesPerBufferUnspecified,
