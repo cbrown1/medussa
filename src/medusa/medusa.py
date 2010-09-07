@@ -159,7 +159,7 @@ class Device:
         return s
 
     def open_array(self, arr, samp_freq, scale=1.0, loop=False, sample_format=paFloat32):
-        s = ArrayStream(self, np.ascontiguousarray(arr), samp_freq, scale, loop, sample_format)
+        s = ArrayStream(self, arr, samp_freq, scale, loop, sample_format)
         s.open()
         return s
 
