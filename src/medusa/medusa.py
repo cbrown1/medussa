@@ -17,6 +17,9 @@ cmedusa = ctypes.CDLL(libname)
 
 
 def init():
+    """
+    Attempts to initialize Portaudio.
+    """
     err = pa.Pa_Initialize()
     if err < 0:
         raise RuntimeError("Error initializing PortAudio")
