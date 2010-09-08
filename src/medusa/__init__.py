@@ -2,4 +2,7 @@ from medusa import cmedusa, Device, ContigArrayHandle, ArrayStream, ToneData, To
 from portaudio import pa, ERROR_CHECK
 
 err = pa.Pa_Initialize()
-ERROR_CHECK(err)
+try:
+    ERROR_CHECK(err)
+except RuntimeError as e:
+    raise ImportError(e.message)
