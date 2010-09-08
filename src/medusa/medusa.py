@@ -126,24 +126,6 @@ def printAvailableDevices(host_api=None, verbose=False):
             print ""
 
 
-def start_streams(streams, open_streams=False, normalize=False):
-    if open_streams:
-        [s.open() for s in streams]
-
-    if normalize:
-        scale_factor = 1./(len(streams))
-        for i,x in enumerate(streams):
-            if isinstance(x, ArrayStream):
-                streams[i].cah.scale = scale_factor
-            elif isinstance(x, ToneStream):
-                streams[i].td.scale = scale_factor
-
-    num_streams = len(streams)
-    STREAM_P_ARRAY_TYPE = c_void_p * num_streams  # custom-length type
-    stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_p for s in streams])
-    cmedusa.start_streams(stream_p_array, c_int(num_streams))
-
-
 class Device:
     input_device = None
     output_device = None
@@ -164,36 +146,54 @@ class Device:
         return s
 
 
-def open_device(out_device_index=None, in_device_index=None):
-    if out_device_index == None:
-        out_device_index = pa.Pa_GetDefaultOutputDevice()
-
-    d = Device(in_device_index, out_device_index)
-    return d
-
-
-def open_default_device():
-    out_di = pa.Pa_GetDefaultOutputDevice()
-    in_di = pa.Pa_GetDefaultInputDevice()
-
-    d = Device(in_di, out_di)
-    return d
-
-
-class ArrayStream:
+class Stream:
     # device : PaDevice
     device = None
 
     # Our handle on the stream
     stream_p = None
 
+    # `ctypes.Structure` to be pointed to in `void *userData` arg of the Portaudio callback
+    user_data = None
+
+    # sample_format : ctypes.c_ulong
+    sample_format = None
+
+    # samp_freq : ctypes.c_double
+    samp_freq = None
+
+    def open(self):
+        raise RuntimeError("This instance method requires subclass implementation")
+
+    def start(self):
+        err = pa.Pa_StartStream(self.stream_p)
+        if err < 0:
+            raise RuntimeError("%s" % (pa.Pa_GetErrorText(c_int(err))))
+        return err
+
+    def stop(self):
+        err = pa.Pa_StopStream(self.stream_p)
+
+    def time(self):
+        return pa.Pa_GetStreamTime(self.stream_p)
+
+    def play(self):
+        raise RuntimeError("This instance method requires subclass implementation")
+
+    def pause(self):
+        err = self.stop()
+
+    def is_paused(self):
+        err = pa.Pa_IsStreamStopped(self.stream_p)
+        if err < 0:
+            raise RuntimeError("%s" % (pa.Pa_GetErrorText(c_int(err))))
+        return bool(is_stopped)
+
+
+class ArrayStream(Stream):
     # Callback-specific attributes
     arr = None
     cah = None
-
-    # Stream-specific state attributes
-    paused = False
-    sample_format = None
 
     def __init__(self, device, arr, samp_freq, scale, loop=False, sample_format=paFloat32):
         # Manually convert Python boolean to C-friendly "true" or "false" ints
@@ -218,42 +218,16 @@ class ArrayStream:
     def open(self):
         self.stream_p = cmedusa.open_ndarray_stream(self.stream_p, byref(self.cah), self.device.output_device, self.sample_format)
 
-    def start(self):
-        pa.Pa_StartStream(self.stream_p)
-
-    def stop(self):
-        pa.Pa_StopStream(self.stream_p)
-
     def play(self):
-        if self.paused:
-            # Assumes the stream is already open
-            self.paused = False
-        else:
+        if not self.is_paused():
             self.cah.chan_i = c_int(0)
             self.cah.samp_i = c_int(0)
             self.open()  # Reopen stream, just in case
-        pa.Pa_StartStream(self.stream_p)
-
-    def pause(self):
-        pa.Pa_StopStream(self.stream_p)
-        self.paused = True
-
-    def time(self):
-        return pa.Pa_GetStreamTime(self.stream_p)
-
-    def is_paused(self):
-        is_stopped = pa.Pa_IsStreamStopped(self.stream_p)
-        return bool(is_stopped)
+        self.start()
 
 
-
-class ToneStream:
-    # device : PaDevice
-    device = None
-
+class ToneStream (Stream):
     td = None
-    stream_p = None
-    sample_format = None
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
@@ -265,22 +239,40 @@ class ToneStream:
     def open(self):
         self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.td), self.device.output_device, self.sample_format)
 
-    def start(self):
-        pa.Pa_StartStream(self.stream_p)
-
-    def stop(self):
-        pa.Pa_StopStream(self.stream_p)
-
     def play(self):
         self.open()
         self.start()
 
-    def pause(self):
-        self.stop()
 
-    def time(self):
-        return pa.Pa_GetStreamTime(self.stream_p)
+def open_device(out_device_index=None, in_device_index=None):
+    if out_device_index == None:
+        out_device_index = pa.Pa_GetDefaultOutputDevice()
 
-    def is_paused(self):
-        is_stopped = pa.Pa_IsStreamStopped(self.stream_p)
-        return bool(is_stopped)
+    d = Device(in_device_index, out_device_index)
+    return d
+
+
+def open_default_device():
+    out_di = pa.Pa_GetDefaultOutputDevice()
+    in_di = pa.Pa_GetDefaultInputDevice()
+
+    d = Device(in_di, out_di)
+    return d
+
+
+def start_streams(streams, open_streams=False, normalize=False):
+    if open_streams:
+        [s.open() for s in streams]
+
+    if normalize:
+        scale_factor = 1./(len(streams))
+        for i,x in enumerate(streams):
+            if isinstance(x, ArrayStream):
+                streams[i].cah.scale = scale_factor
+            elif isinstance(x, ToneStream):
+                streams[i].td.scale = scale_factor
+
+    num_streams = len(streams)
+    STREAM_P_ARRAY_TYPE = c_void_p * num_streams  # custom-length type
+    stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_p for s in streams])
+    cmedusa.start_streams(stream_p_array, c_int(num_streams))
