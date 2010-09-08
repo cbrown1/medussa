@@ -199,6 +199,12 @@ def generateHostApiInfo():
 def generateDeviceInfo():
     DeviceInfoPointer = POINTER(PaDeviceInfo)
     device_count = pa.Pa_GetDeviceCount()
+
+    ERROR_CHECK(device_count)
+
+    if device_count == 0:
+        raise RuntimeError("No devices found")
+
     for i in xrange(device_count):
         p = ctypes.cast(pa.Pa_GetDeviceInfo(i), DeviceInfoPointer)
         di = p[0]
