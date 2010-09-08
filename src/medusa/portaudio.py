@@ -275,3 +275,8 @@ class PaStreamInfo (ctypes.Structure):
                 ("inputLatency",  c_double), # PaTime
                 ("outputLatency", c_double), # PaTime
                 ("sampleRate",    c_double))
+
+
+def ERROR_CHECK(err):
+    if err < 0:
+        raise RuntimeError("PaError(%d): %s" % (err, pa.Pa_GetErrorText(c_int(err))))
