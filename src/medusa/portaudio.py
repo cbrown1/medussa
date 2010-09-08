@@ -279,7 +279,7 @@ class PaStreamInfo (ctypes.Structure):
 
 def ERROR_CHECK(err):
     """
-    If `err` is an actual Portaudio error (< 0), raises a RuntimeError whose associated value is the Portaudio error text.
+    If `err` is an actual Portaudio error (< 0), raises a RuntimeError whose message is the Portaudio error text.
     """
     if err < 0:
         raise RuntimeError("PaError(%d): %s" % (err, pa.Pa_GetErrorText(c_int(err))))
