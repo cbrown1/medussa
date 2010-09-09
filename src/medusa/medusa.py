@@ -139,7 +139,6 @@ class Stream:
 class ArrayStream(Stream):
     # Callback-specific attributes
     arr = None
-    cah = None
 
     def __init__(self, device, arr, samp_freq, scale, loop=False, sample_format=paFloat32):
         # Manually convert Python boolean to C-friendly "true" or "false" ints
@@ -158,32 +157,31 @@ class ArrayStream(Stream):
 
         self.arr = np.ascontiguousarray(arr)
 
-        self.cah = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale, loop)
+        self.user_data = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale, loop)
         self.sample_format = sample_format
 
     def open(self):
-        self.stream_p = cmedusa.open_ndarray_stream(self.stream_p, byref(self.cah), self.device.output_device, self.sample_format)
+        self.stream_p = cmedusa.open_ndarray_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
 
     def play(self):
         if not self.is_paused():
-            self.cah.chan_i = c_int(0)
-            self.cah.samp_i = c_int(0)
+            self.user_data.chan_i = c_int(0)
+            self.user_data.samp_i = c_int(0)
             self.open()  # Reopen stream, just in case
         self.start()
 
 
 class ToneStream (Stream):
-    td = None
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
-        self.td = ToneData(0, channels, chan_out, tone_freq, samp_freq, scale)
+        self.user_data = ToneData(0, channels, chan_out, tone_freq, samp_freq, scale)
         self.stream_p = c_void_p()
         self.device = device
         self.sample_format = sample_format
 
     def open(self):
-        self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.td), self.device.output_device, self.sample_format)
+        self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
 
     def play(self):
         self.open()
