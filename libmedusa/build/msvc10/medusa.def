@@ -1,0 +1,9 @@
+LIBRARY medusa
+EXPORTS
+	callback_ndarray
+	callback_tone
+	open_default_ndarray_stream
+	open_default_tone_stream
+	open_ndarray_stream
+	open_tone_stream
+	start_streams
