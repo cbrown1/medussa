@@ -53,8 +53,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\include;C:\Python26\Lib\site-packages\numpy\core\include;C:\Python26\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\..\lib;C:\Python26\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\dev\work\medusa\libmedusa\include;C:\Python26\Lib\site-packages\numpy\core\include;C:\Python26\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\dev\work\medusa\libmedusa\lib;C:\Python26\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

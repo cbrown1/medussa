@@ -59,4 +59,12 @@ PaStream * open_default_ndarray_stream (PaStream *, ContigArrayHandle *);
 PaStream * open_default_tone_stream    (PaStream *, ToneData *);
 PaStream * open_ndarray_stream         (PaStream *, ContigArrayHandle *, int, PaSampleFormat);
 PaStream * open_tone_stream            (PaStream *, ToneData *, int, PaSampleFormat);
-void       start_streams               (PaStream **, int);
+
+PaStream * open_stream (PaStream *,
+                        PaStreamParameters *,
+                        PaStreamParameters *,
+                        PyObject *,
+                        void *,
+                        PaStreamCallback *);
+
+void start_streams (PaStream **, int);

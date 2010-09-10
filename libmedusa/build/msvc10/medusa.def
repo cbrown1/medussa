@@ -6,4 +6,5 @@ EXPORTS
 	open_default_tone_stream
 	open_ndarray_stream
 	open_tone_stream
+	open_stream
 	start_streams

@@ -201,7 +201,7 @@ PaStream *open_ndarray_stream (PaStream *stream, ContigArrayHandle *cah, int out
     PaStreamParameters outparam;
 
     outparam.device = output_device_index;
-    outparam.channelCount = 2;
+    outparam.channelCount = PyArray_DIM(cah->x, 1);
     outparam.sampleFormat = sample_format;
     outparam.hostApiSpecificStreamInfo = NULL;
     outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
@@ -250,4 +250,51 @@ void start_streams (PaStream *stream_array[], int num_streams)
     for (i = 0; i < num_streams; i++) {
         Pa_StartStream(stream_array[i]);
     }
+}
+
+PaStream * open_stream (PaStream *stream,
+                        PaStreamParameters *in_param,
+                        PaStreamParameters *out_param,
+                        PyObject *self,
+                        void *user_data,
+                        PaStreamCallback *callback)
+{
+    PaError err;
+
+    PyObject *attr;
+    double samp_freq;
+
+
+    // int PyObject_HasAttrString(PyObject *o, const char *attr_name)¶
+    // PyObject* PyObject_GetAttrString(PyObject *o, const char *attr_name)¶
+
+    if (PyObject_HasAttrString(self, "samp_freq")) {
+        attr = PyObject_GetAttrString(self, "samp_freq");
+        Py_INCREF(attr);
+        samp_freq = PyFloat_AsDouble(attr);
+        Py_DECREF(attr);
+    }
+    else {
+        return NULL; // Error
+    }
+
+    /*
+    outparam.device = output_device_index;
+    outparam.channelCount = PyArray_DIM(cah->x, 1);
+    outparam.sampleFormat = sample_format;
+    outparam.hostApiSpecificStreamInfo = NULL;
+    outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
+    */
+
+    err = Pa_OpenStream(&stream,
+                        in_param,
+                        out_param,
+                        samp_freq,
+                        paFramesPerBufferUnspecified,
+                        paNoFlag,
+                        *callback,
+                        user_data);
+    ERROR_CHECK;
+
+    return stream;
 }
