@@ -65,6 +65,6 @@ PaStream * open_stream (PaStream *,
                         PaStreamParameters *,
                         PyObject *,
                         void *,
-                        PaStreamCallback *);
+                        int);
 
 void start_streams (PaStream **, int);

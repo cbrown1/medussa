@@ -108,6 +108,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     samp_freq = td->samp_freq;
     scale = td->scale;
 
+    printf("in tone callback at t = %d\n", t);
+
     for (i = 0; i < frames; i++) {
         for (j = 0; j < channels; j++) {
             buf_out[i*channels + j] = 0.0;
@@ -257,15 +259,25 @@ PaStream * open_stream (PaStream *stream,
                         PaStreamParameters *out_param,
                         PyObject *self,
                         void *user_data,
-                        PaStreamCallback *callback)
+                        int callback)
 {
     PaError err;
+    PaStreamCallback *callback_func;
 
     PyObject *attr;
     double samp_freq;
 
     // int PyObject_HasAttrString(PyObject *o, const char *attr_name)¶
     // PyObject* PyObject_GetAttrString(PyObject *o, const char *attr_name)¶
+
+    switch (callback) {
+    case 0:
+        callback_func = callback_ndarray;
+        break;
+    case 1:
+        callback_func = callback_tone;
+        break;
+    }
 
     printf("in `open_stream`\n");
 
@@ -301,7 +313,7 @@ PaStream * open_stream (PaStream *stream,
                         samp_freq,
                         paFramesPerBufferUnspecified,
                         paNoFlag,
-                        *callback,
+                        callback_func,
                         user_data);
     ERROR_CHECK;
 

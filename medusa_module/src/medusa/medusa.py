@@ -112,6 +112,10 @@ class Stream:
     in_param = None
     out_param = None
 
+    # False: Should be a `PaStreamCallback` function in `libmedusa` via `cmedusa`
+    # True: Should be a `c_int` that corresponds to an enum in `medusa.h`
+    callback = None
+
     def open(self):
         #raise RuntimeError("This instance method requires subclass implementation")
         if self.in_param == None:
@@ -124,7 +128,10 @@ class Stream:
         else:
             out_param = byref(self.out_param)
 
-        self.stream_p = cmedusa.open_stream(self.stream_p, in_param, out_param, py_object(self), byref(self.user_data))
+        if self.callback == None:
+            raise RuntimeError("No PaStreamCallback defined (self.callback == None)")
+
+        self.stream_p = cmedusa.open_stream(self.stream_p, in_param, out_param, py_object(self), byref(self.user_data), c_int(self.callback))
 
     def start(self):
         err = pa.Pa_StartStream(self.stream_p)
@@ -188,7 +195,7 @@ class ArrayStream(Stream):
 
 
 class ToneStream (Stream):
-    callback = cmedusa.callback_tone
+    callback = 1
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
@@ -198,7 +205,7 @@ class ToneStream (Stream):
         self.sample_format = sample_format
         self.samp_freq = samp_freq
         # Include a fix to have what is currently `0.0` be the default low latency value of the stream we've indexed
-        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 0.0, None)
+        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 1.0, None)
 
     #def open(self):
         #self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
