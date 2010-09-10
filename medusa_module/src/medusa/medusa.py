@@ -114,7 +114,17 @@ class Stream:
 
     def open(self):
         #raise RuntimeError("This instance method requires subclass implementation")
-        self.stream_p = cmedusa.open_stream(self.stream_p, byref(self.in_param), byref(self.out_param), py_object(self), byref(self.user_data))
+        if self.in_param == None:
+            in_param = None
+        else:
+            in_param = byref(self.in_param)
+
+        if self.out_param == None:
+            out_param = None
+        else:
+            out_param = byref(self.out_param)
+
+        self.stream_p = cmedusa.open_stream(self.stream_p, in_param, out_param, py_object(self), byref(self.user_data))
 
     def start(self):
         err = pa.Pa_StartStream(self.stream_p)
