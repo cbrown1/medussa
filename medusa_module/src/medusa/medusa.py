@@ -76,9 +76,9 @@ class Device:
     input_device_index = None
     output_device_index = None
 
-    def __init__(self, in_device_index, out_device_index):
-        self.input_device_index = in_device_index
-        self.output_device_index = out_device_index
+    def __init__(self, in_index, out_index):
+        self.input_device_index = in_index
+        self.output_device_index = out_index
 
     def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
@@ -187,7 +187,7 @@ class ToneStream (Stream):
         self.device = device
         self.sample_format = sample_format
         # Include a fix to have what is currently `0.0` be the default low latency value of the stream we've indexed
-        self.out_param = PaStreamParameters(c_int(device), c_int(channels), sample_format, 0.0, None)
+        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 0.0, None)
 
     #def open(self):
         #self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
