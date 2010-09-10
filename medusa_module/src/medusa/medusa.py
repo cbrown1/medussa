@@ -196,6 +196,7 @@ class ToneStream (Stream):
         self.stream_p = c_void_p()
         self.device = device
         self.sample_format = sample_format
+        self.samp_freq = samp_freq
         # Include a fix to have what is currently `0.0` be the default low latency value of the stream we've indexed
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 0.0, None)
 
