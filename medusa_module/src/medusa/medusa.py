@@ -178,7 +178,7 @@ class ArrayStream(Stream):
 
 
 class ToneStream (Stream):
-    self.callback = cmedusa.callback_tone
+    callback = cmedusa.callback_tone
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
