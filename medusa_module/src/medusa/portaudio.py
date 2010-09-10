@@ -244,7 +244,7 @@ class PaStreamParameters (ctypes.Structure):
     """
     _fields_ = (("device",                    c_int), # PaDeviceIndex
                 ("channelCount",              c_int),
-                ("sampleFormat",              c_int),    # PaSampleFormat
+                ("sampleFormat",              c_ulong),  # PaSampleFormat
                 ("suggestedLatency",          c_double), # PaTime
                 ("hostApiSpecificStreamInfo", c_void_p))
 
