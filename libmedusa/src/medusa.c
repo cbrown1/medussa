@@ -9,7 +9,7 @@
 { \
 if (err < 0) { \
     PyErr_SetString(PyExc_RuntimeError, Pa_GetErrorText(err)); \
-    return 0; \
+    return NULL; \
 } \
 }
 

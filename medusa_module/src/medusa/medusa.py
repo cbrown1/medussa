@@ -73,20 +73,20 @@ class ToneData (ctypes.Structure):
 
 
 class Device:
-    input_device = None
-    output_device = None
+    input_device_index = None
+    output_device_index = None
 
     def __init__(self, in_device_index, out_device_index):
-        self.input_device = in_device_index
-        self.output_device = out_device_index
+        self.input_device_index = in_device_index
+        self.output_device_index = out_device_index
 
-    def create_tone(self, tone_freq, samp_freq, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
+    def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
         s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
         s.open()
         return s
 
-    def open_array(self, arr, samp_freq, scale=1.0, loop=False, sample_format=paFloat32):
+    def open_array(self, arr, samp_freq=44100.0, scale=1.0, loop=False, sample_format=paFloat32):
         s = ArrayStream(self, arr, samp_freq, scale, loop, sample_format)
         s.open()
         return s
@@ -108,8 +108,13 @@ class Stream:
     # samp_freq : ctypes.c_double
     samp_freq = None
 
+    # : `PaStreamParameters(ctypes.Structure)`
+    in_param = None
+    out_param = None
+
     def open(self):
-        raise RuntimeError("This instance method requires subclass implementation")
+        #raise RuntimeError("This instance method requires subclass implementation")
+        self.stream_p = cmedusa.open_stream(self.stream_p, byref(in_param), byref(out_param), py_object(self), byref(self.user_data))
 
     def start(self):
         err = pa.Pa_StartStream(self.stream_p)
@@ -124,7 +129,8 @@ class Stream:
         return pa.Pa_GetStreamTime(self.stream_p)
 
     def play(self):
-        raise RuntimeError("This instance method requires subclass implementation")
+        self.open()
+        self.start()
 
     def pause(self):
         err = self.stop()
@@ -172,6 +178,7 @@ class ArrayStream(Stream):
 
 
 class ToneStream (Stream):
+    self.callback = cmedusa.callback_tone
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
@@ -179,13 +186,10 @@ class ToneStream (Stream):
         self.stream_p = c_void_p()
         self.device = device
         self.sample_format = sample_format
+        self.out_param = PaStreamParameters(c_int(device), c_int(channels), sample_format, pa.x, None)
 
-    def open(self):
-        self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
-
-    def play(self):
-        self.open()
-        self.start()
+    #def open(self):
+        #self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
 
 
 def generateHostApiInfo():
