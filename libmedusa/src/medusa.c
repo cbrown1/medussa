@@ -191,9 +191,6 @@ PaStream *open_stream (PaStream *stream,
     PyObject *attr;
     double samp_freq;
 
-    // int PyObject_HasAttrString(PyObject *o, const char *attr_name)¶
-    // PyObject* PyObject_GetAttrString(PyObject *o, const char *attr_name)¶
-
     switch (callback) {
     case 0:
         callback_func = callback_ndarray;
