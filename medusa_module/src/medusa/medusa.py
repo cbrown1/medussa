@@ -136,7 +136,7 @@ class Stream:
     def time(self):
         t = pa.Pa_GetStreamTime(self.stream_p)
         if t:
-            return pa.Pa_GetStreamTime(self.stream_p)
+            return t
         else:
             raise RuntimeError("An Portaudio error occurred in `self.time()`: return value of `Pa_GetStreamTime` == 0")
 
