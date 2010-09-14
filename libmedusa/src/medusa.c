@@ -130,6 +130,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     return paContinue;
 }
 
+
 int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
                     unsigned long frames,
                     const PaStreamCallbackTimeInfo *time_info,
@@ -175,84 +176,6 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
 }
 
 
-PaStream *open_default_ndarray_stream (PaStream *stream, ContigArrayHandle *cah)
-{
-    PaError err;
-    int channels;
-
-    channels = PyArray_DIM(cah->x, 1);
-    //channels = 2;
-
-    err = Pa_OpenDefaultStream(&stream, 0, channels, paFloat32, cah->samp_freq,
-                               paFramesPerBufferUnspecified,
-                               callback_ndarray,
-                               cah);
-    ERROR_CHECK;
-
-    return stream;
-}
-
-PaStream *open_default_tone_stream (PaStream *stream, ToneData *td)
-{
-    PaError err;
-
-    err = Pa_OpenDefaultStream(&stream, 0, td->channels, paFloat32, td->samp_freq,
-                               paFramesPerBufferUnspecified,
-                               callback_tone,
-                               td);
-    ERROR_CHECK;
-
-    return stream;
-}
-
-PaStream *open_ndarray_stream (PaStream *stream, ContigArrayHandle *cah, int output_device_index, PaSampleFormat sample_format)
-{
-    PaError err;
-    PaStreamParameters outparam;
-
-    outparam.device = output_device_index;
-    outparam.channelCount = PyArray_DIM(cah->x, 1);
-    outparam.sampleFormat = sample_format;
-    outparam.hostApiSpecificStreamInfo = NULL;
-    outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
-
-    err = Pa_OpenStream(&stream,
-                        NULL,
-                        &outparam,
-                        cah->samp_freq,
-                        paFramesPerBufferUnspecified,
-                        paNoFlag,
-                        callback_ndarray,
-                        cah);
-    ERROR_CHECK;
-
-    return stream;
-}
-
-PaStream *open_tone_stream (PaStream *stream, ToneData *td, int output_device_index, PaSampleFormat sample_format)
-{
-    PaError err;
-    PaStreamParameters outparam;
-
-    outparam.device = output_device_index;
-    outparam.channelCount = 1;
-    outparam.sampleFormat = sample_format;
-    outparam.hostApiSpecificStreamInfo = NULL;
-    outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
-
-    err = Pa_OpenStream(&stream,
-                        NULL,
-                        &outparam,
-                        td->samp_freq,
-                        paFramesPerBufferUnspecified,
-                        paNoFlag,
-                        callback_tone,
-                        td);
-    ERROR_CHECK;
-
-    return stream;
-}
-
 void start_streams (PaStream *stream_array[], int num_streams)
 {
     int i;
@@ -261,6 +184,7 @@ void start_streams (PaStream *stream_array[], int num_streams)
         Pa_StartStream(stream_array[i]);
     }
 }
+
 
 PaStream *open_stream (PaStream *stream,
                        PaStreamParameters *in_param,

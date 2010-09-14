@@ -162,7 +162,6 @@ class ArrayStream(Stream):
         else:
             loop = c_int(0)
 
-
         # `callback_ndarray` currently requires arrays with two dimensions
         if len(arr.shape) == 1:
             n = arr.shape[0]
@@ -207,9 +206,6 @@ class ToneStream (Stream):
 
         # Include a fix to have what is currently `1.0` be the default low latency value of the stream we've indexed
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 1.0, None)
-
-    #def open(self):
-        #self.stream_p = cmedusa.open_tone_stream(self.stream_p, byref(self.user_data), self.device.output_device, self.sample_format)
 
 
 def generateHostApiInfo():
