@@ -108,7 +108,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     samp_freq = td->samp_freq;
     scale = td->scale;
 
-    printf("in tone callback at t = %d\n", t);
+    //printf("in tone callback at t = %d\n", t);
 
     for (i = 0; i < frames; i++) {
         for (j = 0; j < channels; j++) {

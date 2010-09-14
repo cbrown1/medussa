@@ -16,17 +16,6 @@ if libname == None:
 cmedusa = ctypes.CDLL(libname)
 
 
-def init():
-    """
-    Attempts to initialize Portaudio.
-    """
-    err = pa.Pa_Initialize()
-    if err < 0:
-        raise RuntimeError("Error initializing PortAudio")
-    else:
-        return True
-
-
 # struct ContigArrayHandle [in `medusa.h`]
 class ContigArrayHandle (ctypes.Structure):
     """
@@ -150,8 +139,7 @@ class Stream:
         self.start()
 
     def pause(self):
-        err = self.stop()
-        ERROR_CHECK(err)
+        self.stop()
 
     def is_paused(self):
         err = pa.Pa_IsStreamStopped(self.stream_p)
@@ -198,13 +186,18 @@ class ToneStream (Stream):
     callback = 1
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
+        # Ensure that our desired output channels is in the 1-indexed range of available channels
+        assert chan_out <= channels
+
         chan_out -= 1  # Since actual channel indices are 0-based, not 1-based
+
         self.user_data = ToneData(0, channels, chan_out, tone_freq, samp_freq, scale)
         self.stream_p = c_void_p()
         self.device = device
         self.sample_format = sample_format
         self.samp_freq = samp_freq
-        # Include a fix to have what is currently `0.0` be the default low latency value of the stream we've indexed
+
+        # Include a fix to have what is currently `1.0` be the default low latency value of the stream we've indexed
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 1.0, None)
 
     #def open(self):
@@ -311,3 +304,21 @@ def start_streams(streams, open_streams=False, normalize=False):
     STREAM_P_ARRAY_TYPE = c_void_p * num_streams  # custom-length type
     stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_p for s in streams])
     cmedusa.start_streams(stream_p_array, c_int(num_streams))
+
+
+def init():
+    """
+    Attempts to initialize Portaudio.
+    """
+    err = pa.Pa_Initialize()
+    ERROR_CHECK(err)
+    return True
+
+
+def terminate():
+    """
+    Attempts to terminate Portaudio.
+    """
+    err = pa.Pa_Terminate()
+    ERROR_CHECK(err)
+    return True
