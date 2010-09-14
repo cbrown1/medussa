@@ -200,20 +200,20 @@ PaStream *open_stream (PaStream *stream,
         break;
     }
 
-    printf("in `open_stream`\n");
+    //printf("in `open_stream`\n");
 
     if (PyObject_HasAttrString(self, "samp_freq")) {
-        printf("getting samp_freq...\n");
+        //printf("getting samp_freq...\n");
         attr = PyObject_GetAttrString(self, "samp_freq");
         if (attr == NULL) {
             // error, so abort
-            printf("couldn't get `samp_freq` attr\n");
+            //printf("couldn't get `samp_freq` attr\n");
             return NULL;
         }
         Py_INCREF(attr);
         samp_freq = PyFloat_AsDouble(attr);
         Py_DECREF(attr);
-        printf("got samp_freq: %f\n", samp_freq);
+        //printf("got samp_freq: %f\n", samp_freq);
     }
     else {
         return NULL; // Error
@@ -227,7 +227,7 @@ PaStream *open_stream (PaStream *stream,
     outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
     */
 
-    printf("opening stream...\n");
+    //printf("opening stream...\n");
     err = Pa_OpenStream(&stream,
                         in_param,
                         out_param,
@@ -238,7 +238,7 @@ PaStream *open_stream (PaStream *stream,
                         user_data);
     ERROR_CHECK;
 
-    printf("opened stream\n");
+    //printf("opened stream\n");
 
     return stream;
 }
