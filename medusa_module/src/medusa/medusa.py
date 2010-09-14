@@ -148,9 +148,8 @@ class Stream:
         self.stop()
 
     def is_playing(self):
-        err = pa.Pa_IsStreamStopped(self.stream_p)
+        err = pa.Pa_IsStreamActive(self.stream_p)
         ERROR_CHECK(err)
-        print err
         return bool(err)
 
 
@@ -184,12 +183,22 @@ class ArrayStream(Stream):
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), samp_format, 1.0, None)
 
     def play(self):
-        if not self.is_paused():
-            print "was paused"
+        if pa.Pa_IsStreamActive(self.stream_p):
+            # Stream already active and playing, so stop and restart it
+            self.stop()
             self.user_data.chan_i = c_int(0)
             self.user_data.samp_i = c_int(0)
-            self.open()  # Reopen stream, just in case
-        self.start()
+            self.open()
+            self.start()
+        elif pa.Pa_IsStreamStopped(self.stream_p):
+            # Stream is inactive, but has been paused, so just unpause it
+            self.start()
+        else:
+            # Stream has not ever been started
+            self.user_data.chan_i = c_int(0)
+            self.user_data.samp_i = c_int(0)
+            self.open()
+            self.start()
 
 
 class ToneStream (Stream):
