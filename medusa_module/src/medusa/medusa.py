@@ -180,6 +180,7 @@ class ArrayStream(Stream):
 
         channels = arr.shape[1]
 
+        # Latency is set to device index's `defaultLow[Input,Output]Latency` in the C funcall
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), samp_format, 1.0, None)
 
     def play(self):
@@ -216,7 +217,7 @@ class ToneStream (Stream):
         self.samp_format = samp_format
         self.samp_freq = samp_freq
 
-        # Include a fix to have what is currently `1.0` be the default low latency value of the stream we've indexed
+        # Latency is set to device index's `defaultLow[Input,Output]Latency` in the C funcall
         self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), samp_format, 1.0, None)
 
 

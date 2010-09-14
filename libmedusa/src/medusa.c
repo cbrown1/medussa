@@ -219,13 +219,12 @@ PaStream *open_stream (PaStream *stream,
         return NULL; // Error
     }
 
-    /*
-    outparam.device = output_device_index;
-    outparam.channelCount = PyArray_DIM(cah->x, 1);
-    outparam.sampleFormat = sample_format;
-    outparam.hostApiSpecificStreamInfo = NULL;
-    outparam.suggestedLatency = Pa_GetDeviceInfo(output_device_index)->defaultLowInputLatency;
-    */
+    if (in_param != NULL) {
+        in_param->suggestedLatency = Pa_GetDeviceInfo(out_param->device)->defaultLowInputLatency;
+    }
+    if (out_param != NULL) {
+        out_param->suggestedLatency = Pa_GetDeviceInfo(out_param->device)->defaultLowOutputLatency;
+    }
 
     //printf("opening stream...\n");
     err = Pa_OpenStream(&stream,
