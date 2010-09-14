@@ -140,9 +140,11 @@ class Stream:
         ERROR_CHECK(err)
 
     def pa_time(self):
-        t = c_double(0.0) #pa.Pa_GetStreamTime(self.stream_p))
-        cmedusa.get_stream_time(self.stream_p, byref(t))
-        return t.value
+        t = pa.Pa_GetStreamTime(self.stream_p))
+        if t:
+            return t.value
+        else:
+            raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     def play(self):
         self.open()

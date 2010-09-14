@@ -10,5 +10,3 @@ d = medusa.open_default_device()
 s = d.open_array(x,fs)
 sy = d.open_array(y,fs)
 #s = d.create_tone(440.0)
-
-medusa.ERROR_CHECK(-9998)
