@@ -4,3 +4,4 @@ EXPORTS
 	callback_tone
 	open_stream
 	start_streams
+	get_stream_time

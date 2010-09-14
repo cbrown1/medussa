@@ -125,7 +125,7 @@ class Stream:
         self.stream_p = cmedusa.open_stream(self.stream_p, in_param, out_param, py_object(self), byref(self.user_data), c_int(self.callback))
 
     def start(self):
-        err = pa.Pa_StartStream(self.stream_p)
+        err = pa.Pa_StartStream(c_void_p(self.stream_p))
         ERROR_CHECK(err)
         return err
 
@@ -134,11 +134,9 @@ class Stream:
         ERROR_CHECK(err)
 
     def time(self):
-        t = pa.Pa_GetStreamTime(self.stream_p)
-        if t:
-            return t
-        else:
-            raise RuntimeError("An Portaudio error occurred in `self.time()`: return value of `Pa_GetStreamTime` == 0")
+        t = c_double(0.0) #pa.Pa_GetStreamTime(self.stream_p))
+        cmedusa.get_stream_time(self.stream_p, byref(t))
+        return t.value
 
     def play(self):
         self.open()
