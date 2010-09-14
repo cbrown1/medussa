@@ -32,8 +32,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     int chan_size;
     int samp_size;
 
-    printf("in array callback\n");
-
     buf_out = (float *) pa_buf_out;
     carrh = (ContigArrayHandle *) user_data;
 
@@ -44,16 +42,12 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     chan_size = PyArray_DIM(x, 1);
     samp_size = PyArray_DIM(x, 0);
 
-    printf("debug 1\n");
-
     buf_out_samples = chan_size * ((int) frames);
 
     for (i = 0; i < buf_out_samples; i++) {
         buf_out[i] = 0.0;
     }
     i = 0;
-
-    printf("debug 2\n");
 
     for (samp_i; samp_i < samp_size; samp_i++) {
         for (chan_i; chan_i < chan_size; chan_i++) {
@@ -69,8 +63,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         }
         chan_i = 0;
     }
-
-    printf("debug 3\n");
 
     // Reset cursors for future playback
     carrh->chan_i = 0;
