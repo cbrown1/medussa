@@ -70,15 +70,15 @@ class Device:
         self.output_device_index = out_index
 
 
-    def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, sample_format=paFloat32):
+    def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, samp_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
-        s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, sample_format)
+        s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, samp_format)
         s.open()
         return s
 
 
-    def open_array(self, arr, samp_freq=44100.0, scale=1.0, loop=False, sample_format=paFloat32):
-        s = ArrayStream(self, arr, samp_freq, scale, loop, sample_format)
+    def open_array(self, arr, samp_freq=44100.0, scale=1.0, loop=False, samp_format=paFloat32):
+        s = ArrayStream(self, arr, samp_freq, scale, loop, samp_format)
         s.open()
         return s
 
@@ -93,8 +93,8 @@ class Stream:
     # `ctypes.Structure` to be pointed to in `void *userData` arg of the Portaudio callback
     user_data = None
 
-    # sample_format : ctypes.c_ulong
-    sample_format = None
+    # samp_format : ctypes.c_ulong
+    samp_format = None
 
     # samp_freq : ctypes.c_double
     samp_freq = None
@@ -143,7 +143,7 @@ class Stream:
     def pause(self):
         self.stop()
 
-    def is_paused(self):
+    def is_playing(self):
         err = pa.Pa_IsStreamStopped(self.stream_p)
         ERROR_CHECK(err)
         print err
@@ -155,7 +155,7 @@ class ArrayStream(Stream):
     callback = 0
     arr = None
 
-    def __init__(self, device, arr, samp_freq, scale, loop=False, sample_format=paFloat32):
+    def __init__(self, device, arr, samp_freq, scale, loop=False, samp_format=paFloat32):
         # Manually convert Python boolean to C-friendly "true" or "false" ints
         if loop:
             loop = c_int(1)
@@ -172,13 +172,12 @@ class ArrayStream(Stream):
         self.user_data = ContigArrayHandle(py_object(self.arr), 0, 0, samp_freq, scale, loop)
         self.stream_p = c_void_p()
         self.device = device
-        self.sample_format = sample_format
+        self.samp_format = samp_format
         self.samp_freq = samp_freq
 
         channels = arr.shape[1]
 
-        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 1.0, None)
-
+        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), samp_format, 1.0, None)
 
     def play(self):
         if not self.is_paused():
@@ -192,7 +191,7 @@ class ArrayStream(Stream):
 class ToneStream (Stream):
     callback = 1
 
-    def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, sample_format=paFloat32):
+    def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, samp_format=paFloat32):
         # Ensure that our desired output channels is in the 1-indexed range of available channels
         assert chan_out <= channels
 
@@ -201,11 +200,11 @@ class ToneStream (Stream):
         self.user_data = ToneData(0, channels, chan_out, tone_freq, samp_freq, scale)
         self.stream_p = c_void_p()
         self.device = device
-        self.sample_format = sample_format
+        self.samp_format = samp_format
         self.samp_freq = samp_freq
 
         # Include a fix to have what is currently `1.0` be the default low latency value of the stream we've indexed
-        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), sample_format, 1.0, None)
+        self.out_param = PaStreamParameters(c_int(device.output_device_index), c_int(channels), samp_format, 1.0, None)
 
 
 def generateHostApiInfo():
