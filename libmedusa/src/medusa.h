@@ -62,5 +62,5 @@ PaStream * open_stream (PaStream *,
                         void *,
                         int);
 
-void start_streams (PaStream **, int);
-void get_stream_time (PaStream *, double *);
+void start_streams   (PaStream **, int);
+void get_stream_time (PaStream *,  double *);

@@ -15,6 +15,7 @@ if libname == None:
 # Instantiate FFI reference to libmedusa
 cmedusa = ctypes.CDLL(libname)
 
+pa.Pa_GetStreamTime.restype = c_double
 
 # struct ContigArrayHandle [in `medusa.h`]
 class ContigArrayHandle (ctypes.Structure):
@@ -69,13 +70,11 @@ class Device:
         self.input_device_index = in_index
         self.output_device_index = out_index
 
-
     def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, samp_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
         s = ToneStream(self, channels, chan_out, tone_freq, samp_freq, scale, samp_format)
         s.open()
         return s
-
 
     def open_array(self, arr, samp_freq=44100.0, scale=1.0, loop=False, samp_format=paFloat32):
         s = ArrayStream(self, arr, samp_freq, scale, loop, samp_format)
@@ -107,6 +106,13 @@ class Stream:
     # True: Should be a `c_int` that corresponds to an enum in `medusa.h`
     callback = None
 
+    # Portaudio timestamp used to compute time differentials
+    timestamp_last_played = 0.0
+
+    # Timestamp-based differentials that reset (`_played`) or do not reset (`_looped`) on looping
+    timedelta_played = 0.0
+    timedelta_looped = 0.0
+
     def open(self):
         #raise RuntimeError("This instance method requires subclass implementation")
         if self.in_param == None:
@@ -133,7 +139,7 @@ class Stream:
         err = pa.Pa_StopStream(self.stream_p)
         ERROR_CHECK(err)
 
-    def time(self):
+    def pa_time(self):
         t = c_double(0.0) #pa.Pa_GetStreamTime(self.stream_p))
         cmedusa.get_stream_time(self.stream_p, byref(t))
         return t.value

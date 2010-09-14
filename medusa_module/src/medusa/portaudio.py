@@ -19,6 +19,11 @@ if libname == None:
 pa = ctypes.CDLL(libname)
 
 
+# set `restype` return type values for some functions
+pa.Pa_GetStreamTime.restype = c_double # c_double ~ PaTime
+pa.Pa_GetErrorText.restype  = c_char_p
+
+
 # Alias `typedef int PaError`
 PaError = c_int
 
