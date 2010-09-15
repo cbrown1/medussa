@@ -76,6 +76,17 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     }
 }
 
+
+int callback_sndfile (const void *pa_buf_in, void *pa_buf_out,
+                      unsigned long frames,
+                      const PaStreamCallbackTimeInfo *time_info,
+                      PaStreamCallbackFlags status_flags,
+                      void *user_data)
+{
+    float *buf_out;           // Points to `pa_buf_out`
+}
+
+
 int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
                     unsigned long frames,
                     const PaStreamCallbackTimeInfo *time_info,
