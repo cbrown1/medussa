@@ -2,6 +2,7 @@
 #include <numpy/arrayobject.h>
 
 #include <portaudio.h>
+#include <sndfile.h>
 
 
 // Pointer and metadata for an ndarray object containing floating point samples
