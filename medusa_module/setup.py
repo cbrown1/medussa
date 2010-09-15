@@ -14,6 +14,6 @@ setup(name='medusa',
       author_email='jranweil@asu.edu',
       url='',
       packages=['medusa'],
-      package_dir={'medusa': 'src/medusa'},
+      package_dir={'medusa': 'lib'},
       package_data={'medusa': medusa_package_data}
      )

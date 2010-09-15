@@ -241,8 +241,3 @@ PaStream *open_stream (PaStream *stream,
 
     return stream;
 }
-
-void get_stream_time (PaStream *stream, double *t)
-{
-    *t = Pa_GetStreamTime(stream);
-}
