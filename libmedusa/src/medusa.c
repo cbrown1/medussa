@@ -13,6 +13,7 @@ if (err < 0) { \
 } \
 }
 
+
 int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       unsigned long frames,
                       const PaStreamCallbackTimeInfo *time_info,
@@ -203,10 +204,13 @@ PaStream *open_stream (PaStream *stream,
     double samp_freq;
 
     switch (callback) {
-    case 0:
+    case NDARRAY_STREAM:
         callback_func = callback_ndarray;
         break;
-    case 1:
+    case SNDFILE_STREAM:
+        callback_func = callback_sndfile;
+        break;
+    case TONE_STREAM:
         callback_func = callback_tone;
         break;
     }

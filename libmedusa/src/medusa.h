@@ -5,6 +5,11 @@
 #include <sndfile.h>
 
 
+#define NDARRAY_STREAM 0
+#define SNDFILE_STREAM 1
+#define TONE_STREAM 2
+
+
 // Pointer and metadata for an ndarray object containing floating point samples
 typedef struct ContigArrayHandle {
     PyObject *x;      // Refers to the (assumed-contiguous) ndarray

@@ -209,7 +209,7 @@ class ArrayStream(Stream):
 
 
 class ToneStream (Stream):
-    callback = 1
+    callback = 2
 
     def __init__(self, device, channels, chan_out, tone_freq, samp_freq, scale, samp_format=paFloat32):
         # Ensure that our desired output channels is in the 1-indexed range of available channels
