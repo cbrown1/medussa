@@ -99,8 +99,15 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         return paContinue;
     }
     else {
-        // We've reached EOF, so clean up
-        return paComplete;
+        // We've reached EOF
+        if (sfd->loop) {
+            sf_seek(fin, 0, SEEK_SET); // Reset cursor to start of sound file
+            return paContinue;
+        }
+        else {
+            // We're really all done
+            return paComplete;
+        }
     }
 }
 
