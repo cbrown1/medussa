@@ -351,11 +351,9 @@ def wavplay(arr, fs, channel=1):
     """
     Plays an array on the default device with blocking, Matlab-style.
     """
-    out_di = pa.Pa_GetDefaultOutputDevice()
-    in_di = pa.Pa_GetDefaultInputDevice()
+    d = open_default_device()
+    s = d.open_array(arr, fs)
 
-    d = Device(in_di, out_di)
-    s = d.open_array(arr,fs)
     s.play()
     while s.is_playing():
         sleep(.01)

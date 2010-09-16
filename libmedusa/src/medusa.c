@@ -78,13 +78,27 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 }
 
 
-int callback_sndfile (const void *pa_buf_in, void *pa_buf_out,
-                      unsigned long frames,
-                      const PaStreamCallbackTimeInfo *time_info,
-                      PaStreamCallbackFlags status_flags,
-                      void *user_data)
+int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
+                          unsigned long frames,
+                          const PaStreamCallbackTimeInfo *time_info,
+                          PaStreamCallbackFlags status_flags,
+                          void *user_data)
 {
-    float *buf_out;           // Points to `pa_buf_out`
+    float *buf_out; // Points to `pa_buf_out`
+
+    SNDFILE *fin;
+    const char *fin_name;
+    int frame_size;
+
+    frame_size = sf_readf_float (fin, buf_out, frames);
+    if (frame_size == frames) {
+        // Frames returned equals frames requested, so we didn't reach EOF
+        return paContinue;
+    }
+    else {
+        // We've reached EOF
+        return paComplete;
+    }
 }
 
 
