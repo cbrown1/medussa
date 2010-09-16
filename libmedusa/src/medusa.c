@@ -84,19 +84,22 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
                           PaStreamCallbackFlags status_flags,
                           void *user_data)
 {
-    float *buf_out; // Points to `pa_buf_out`
+    float *buf_out;   // Points to `pa_buf_out`
+    SndfileData *sfd; // Points to `user_data`
 
     SNDFILE *fin;
-    const char *fin_name;
-    int frame_size;
+    int frames_read;
 
-    frame_size = sf_readf_float (fin, buf_out, frames);
-    if (frame_size == frames) {
+    sfd = (SndfileData *) user_data;
+    fin = (SNDFILE *) sfd->fin;
+
+    frames_read = sf_readf_float (fin, buf_out, frames);
+    if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
         return paContinue;
     }
     else {
-        // We've reached EOF
+        // We've reached EOF, so clean up
         return paComplete;
     }
 }
