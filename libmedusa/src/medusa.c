@@ -88,12 +88,24 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     SndfileData *sfd; // Points to `user_data`
 
     SNDFILE *fin;
+    SF_INFO *fin_info;
     int frames_read;
+    double scale;
+
+    int i;
 
     sfd = (SndfileData *) user_data;
     fin = (SNDFILE *) sfd->fin;
+    fin_info = (SF_INFO *) sfd->fin_info;
 
     frames_read = sf_readf_float (fin, buf_out, frames);
+
+    // Scale the output data buffer now that it's been copied
+    scale = sfd->scale; // Using local var to avoid derefencing pointer in loop
+    for (i = 0; i < (frames_read * fin_info->channels); i++) {
+        buf_out[i] = buf_out[i] * scale;
+    }
+
     if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
         return paContinue;
