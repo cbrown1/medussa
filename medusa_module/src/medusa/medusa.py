@@ -1,6 +1,6 @@
 from portaudio import *
 import numpy as np
-
+from time import sleep
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
@@ -345,3 +345,17 @@ def terminate():
     err = pa.Pa_Terminate()
     ERROR_CHECK(err)
     return True
+
+
+def wavplay(arr, fs, channel=1):
+    """
+    Plays an array on the default device with blocking, Matlab-style.
+    """
+    out_di = pa.Pa_GetDefaultOutputDevice()
+    in_di = pa.Pa_GetDefaultInputDevice()
+
+    d = Device(in_di, out_di)
+    s = d.open_array(arr,fs)
+    s.play()
+    while s.is_playing():
+        sleep(.01)
