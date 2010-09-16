@@ -244,7 +244,7 @@ PaStream *open_stream (PaStream *stream,
         callback_func = callback_ndarray;
         break;
     case SNDFILE_STREAM:
-        callback_func = callback_sndfile;
+        callback_func = callback_sndfile_read;
         break;
     case TONE_STREAM:
         callback_func = callback_tone;

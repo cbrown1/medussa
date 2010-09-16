@@ -2,12 +2,12 @@ from ctypes import *
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medusa\\sndfile.dll"
+    libname = get_python_lib() + "\\medusa\\libsndfile-1.dll"
 else:
-    libname = find_library("sndfile")
+    libname = find_library("sndfile") # untested
 
 if libname == None:
-    raise RuntimeError("Unable to locate library `sndfile`")
+    raise RuntimeError("Unable to locate library `libsndfile`")
 
 csndfile = CDLL(libname)
 
