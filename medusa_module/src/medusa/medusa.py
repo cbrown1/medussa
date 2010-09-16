@@ -40,7 +40,27 @@ class ContigArrayHandle (ctypes.Structure):
                 ("loop",      c_int))
 
 
-# struct ToneData [in 'medusa.h']
+# struct SndfileData [in `medusa.h`]
+class SndfileData (ctypes.Structure):
+    """
+    typedef struct SndfileData {
+        void *fin;       // Will be cast as (SNDFILE *) to an input file
+        void *fout;      // Will be cast as (SNDFILE *) to an output file
+        void *fin_info;  // Will be cast as (SF_INFO *) for input file's info struct
+        void *fout_info; // Will be cast as (SF_INFO *) for output file's info struct
+        double scale;    // Scaling factor for each sample, should be in the interval [0, 1]
+        int loop;        // Boolean to determine whether or not to loop array playback
+    } SndfileData;
+    """
+    _fields_ = ((fin,       c_void_p),
+                (fout,      c_void_p),
+                (fin_info,  c_void_p),
+                (fout_info, c_void_p),
+                (scale,     c_double),
+                (loop,      c_int))
+
+
+# struct ToneData [in `medusa.h`]
 class ToneData (ctypes.Structure):
     """
     Used in the `void *userData` field of the `callback_play_tone` function in `libmedusa`.
@@ -212,9 +232,15 @@ class SndfileStream (Stream):
     callback = 1
 
     def __init__(self, device, file_path, scale=1.0, loop=False, samp_format=paFloat32):
-        # open the file
+        # Usual Stream class inits
+        self.stream_p = c_void_p()
+        self.device = device
+        self.samp_format = samp_format
 
-        self.user_data = None
+        # Sndfile-specific
+        self.user_data = sndfile.SF_INFO(0, 0, 0, 0, 0, 0)
+
+
         self.stream_p = c_void_p()
         self.device = device
         self.samp_format = samp_format

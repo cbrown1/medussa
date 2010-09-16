@@ -21,6 +21,16 @@ typedef struct ContigArrayHandle {
 } ContigArrayHandle;
 
 
+typedef struct SndfileData {
+    void *fin;       // Will be cast as (SNDFILE *) to an input file
+    void *fout;      // Will be cast as (SNDFILE *) to an output file
+    void *fin_info;  // Will be cast as (SF_INFO *) for input file's info struct
+    void *fout_info; // Will be cast as (SF_INFO *) for output file's info struct
+    double scale;    // Scaling factor for each sample, should be in the interval [0, 1]
+    int loop;        // Boolean to determine whether or not to loop array playback
+} SndfileData;
+
+
 // Data for pure sinusoidal tone, in frames of width `channels`, with a channel orientation
 typedef struct ToneData {
     unsigned int t;   // Global `time` variable
