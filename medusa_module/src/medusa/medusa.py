@@ -235,15 +235,13 @@ class SndfileStream (Stream):
         # Usual Stream class inits
         self.stream_p = c_void_p()
         self.device = device
-        self.samp_format = samp_format
+        self.samp_format = samp_format  # Portaudio sampleFormat, not the input file's
 
         # Sndfile-specific
-        self.user_data = sndfile.SF_INFO(0, 0, 0, 0, 0, 0)
+        finout_info = sndfile.SF_INFO(0, 0, 0, 0, 0, 0)
+        fin = sndfile.csndfile.sf_open(file_path, sndfile.SFM_READ, byref(finout_info))
 
-
-        self.stream_p = c_void_p()
-        self.device = device
-        self.samp_format = samp_format
+        self.user_data = SndfileData(fin, None, byref(finout_info), None, c_double(scale), loop)
 
 
 class ToneStream (Stream):
