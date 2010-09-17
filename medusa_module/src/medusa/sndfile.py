@@ -7,7 +7,7 @@ from ctypes import *
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medusa\\libsndfile-1.dll"
+    libname = get_python_lib() + "\\libsndfile-1.dll"
 else:
     libname = find_library("sndfile") # untested
 

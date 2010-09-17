@@ -7,7 +7,7 @@ from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medusa\\portaudio_x86.dll"
+    libname = get_python_lib() + "\\portaudio_x86.dll"
 else:
     libname = find_library("portaudio")
 
