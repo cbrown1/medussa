@@ -108,6 +108,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         buf_out[i] = buf_out[i] * scale;
     }
 
+    sfd->time += frames;
+
     if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
         return paContinue;

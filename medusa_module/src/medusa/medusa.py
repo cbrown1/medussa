@@ -57,7 +57,8 @@ class SndfileData (ctypes.Structure):
                 ("fin_info",  POINTER(sndfile.SF_INFO)),
                 ("fout_info", POINTER(sndfile.SF_INFO)),
                 ("scale",     c_double),
-                ("loop",      c_int))
+                ("loop",      c_int),
+                ("time",      c_uint))
 
 
 # struct ToneData [in `medusa.h`]
@@ -125,13 +126,6 @@ class Stream:
     # False: Should be a `PaStreamCallback` function in `libmedusa` via `cmedusa`
     # True: Should be a `c_int` that corresponds to an enum in `medusa.h`
     callback = None
-
-    # Portaudio timestamp used to compute time differentials
-    timestamp_last_played = 0.0
-
-    # Timestamp-based differentials that reset (`_played`) or do not reset (`_looped`) on looping
-    timedelta_played = 0.0
-    timedelta_looped = 0.0
 
     def open(self):
         #raise RuntimeError("This instance method requires subclass implementation")
@@ -243,7 +237,7 @@ class SndfileStream (Stream):
 
         self.samp_freq = fin_info.samplerate
 
-        self.user_data = SndfileData(fin, None, ctypes.pointer(fin_info), None, c_double(scale), loop)
+        self.user_data = SndfileData(fin, None, ctypes.pointer(fin_info), None, c_double(scale), loop, 0)
 
         self.out_param = PaStreamParameters(c_int(device.output_device_index), fin_info.channels, samp_format, 1.0, None)
 
