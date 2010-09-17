@@ -94,6 +94,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
     int i;
 
+    buf_out = (float *) pa_buf_out;
+
     sfd = (SndfileData *) user_data;
     fin = (SNDFILE *) sfd->fin;
     fin_info = (SF_INFO *) sfd->fin_info;
@@ -112,8 +114,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     }
     else {
         // We've reached EOF
+        sf_seek(fin, 0, SEEK_SET); // Reset cursor to start of sound file
         if (sfd->loop) {
-            sf_seek(fin, 0, SEEK_SET); // Reset cursor to start of sound file
             return paContinue;
         }
         else {
@@ -238,6 +240,8 @@ PaStream *open_stream (PaStream *stream,
 
     PyObject *attr;
     double samp_freq;
+
+    //printf("callback %d\n", callback);
 
     switch (callback) {
     case NDARRAY_STREAM:

@@ -52,12 +52,12 @@ class SndfileData (ctypes.Structure):
         int loop;        // Boolean to determine whether or not to loop array playback
     } SndfileData;
     """
-    _fields_ = ((fin,       c_void_p),
-                (fout,      c_void_p),
-                (fin_info,  c_void_p),
-                (fout_info, c_void_p),
-                (scale,     c_double),
-                (loop,      c_int))
+    _fields_ = (("fin",       c_void_p),
+                ("fout",      c_void_p),
+                ("fin_info",  POINTER(sndfile.SF_INFO)),
+                ("fout_info", POINTER(sndfile.SF_INFO)),
+                ("scale",     c_double),
+                ("loop",      c_int))
 
 
 # struct ToneData [in `medusa.h`]
@@ -160,7 +160,7 @@ class Stream:
         ERROR_CHECK(err)
 
     def pa_time(self):
-        t = pa.Pa_GetStreamTime(self.stream_p))
+        t = pa.Pa_GetStreamTime(self.stream_p)
         if t:
             return t.value
         else:
@@ -238,10 +238,14 @@ class SndfileStream (Stream):
         self.samp_format = samp_format  # Portaudio sampleFormat, not the input file's
 
         # Sndfile-specific
-        finout_info = sndfile.SF_INFO(0, 0, 0, 0, 0, 0)
-        fin = sndfile.csndfile.sf_open(file_path, sndfile.SFM_READ, byref(finout_info))
+        fin_info = sndfile.SF_INFO(0, 0, 0, 0, 0, 0)
+        fin = sndfile.csndfile.sf_open(c_char_p(file_path), sndfile.SFM_READ, byref(fin_info))
 
-        self.user_data = SndfileData(fin, None, byref(finout_info), None, c_double(scale), loop)
+        self.samp_freq = fin_info.samplerate
+
+        self.user_data = SndfileData(fin, None, ctypes.pointer(fin_info), None, c_double(scale), loop)
+
+        self.out_param = PaStreamParameters(c_int(device.output_device_index), fin_info.channels, samp_format, 1.0, None)
 
 
 class ToneStream (Stream):

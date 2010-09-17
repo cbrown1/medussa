@@ -24,8 +24,8 @@ typedef struct ContigArrayHandle {
 typedef struct SndfileData {
     void *fin;       // Will be cast as (SNDFILE *) to an input file
     void *fout;      // Will be cast as (SNDFILE *) to an output file
-    void *fin_info;  // Will be cast as (SF_INFO *) for input file's info struct
-    void *fout_info; // Will be cast as (SF_INFO *) for output file's info struct
+    SF_INFO *fin_info;  // Input file's info struct
+    SF_INFO *fout_info; // Output file's info struct
     double scale;    // Scaling factor for each sample, should be in the interval [0, 1]
     int loop;        // Boolean to determine whether or not to loop array playback
 } SndfileData;
