@@ -1,7 +1,0 @@
-LIBRARY medusa
-EXPORTS
-	callback_ndarray
-	callback_sndfile_read
-	callback_tone
-	open_stream
-	start_streams
