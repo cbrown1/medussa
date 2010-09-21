@@ -162,6 +162,10 @@ class Stream:
             raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     def play(self):
+        if self.is_playing():
+            self.pause()
+            err = pa.Pa_CloseStream(self.stream_p)
+            ERROR_CHECK(err)
         self.open()
         self.start()
 
