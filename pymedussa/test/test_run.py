@@ -11,4 +11,4 @@ d = medussa.open_default_device()
 #sy = d.open_array(y,fs)
 #s = d.create_tone(440.0)
 
-s = medussa.SndfileStream(d, "clean.wav")
+s = medussa.SndfileStream(d, "speech-noise-tone.wav")

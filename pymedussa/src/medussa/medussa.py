@@ -162,12 +162,18 @@ class Stream:
             raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     def play(self):
-        if self.is_playing():
+        if (self.stream_p == None):
+            self.open()
+            self.start()
+        elif self.is_playing():
             self.pause()
             err = pa.Pa_CloseStream(self.stream_p)
             ERROR_CHECK(err)
-        self.open()
-        self.start()
+            self.open()
+            self.start()
+        else:
+            self.open()
+            self.start()
 
     def pause(self):
         self.stop()
@@ -232,7 +238,7 @@ class SndfileStream (Stream):
 
     def __init__(self, device, file_path, scale=1.0, loop=False, samp_format=paFloat32):
         # Usual Stream class inits
-        self.stream_p = c_void_p()
+        self.stream_p = None
         self.device = device
         self.samp_format = samp_format  # Portaudio sampleFormat, not the input file's
 
