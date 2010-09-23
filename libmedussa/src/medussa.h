@@ -88,3 +88,5 @@ PaStream * open_stream (PaStream *,
                         int);
 
 void start_streams   (PaStream **, int);
+
+void test_msg ();

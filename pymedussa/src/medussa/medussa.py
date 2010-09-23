@@ -7,6 +7,8 @@ from time import sleep
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
     libname = get_python_lib() + "\\medussa.dll"
+elif platform.system() == "Linux":
+    libname = "/usr/local/lib/libmedussa.so"
 else:
     libname = find_library("medussa")
 

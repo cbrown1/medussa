@@ -10,7 +10,7 @@ if platform.system() == "Windows":
     medussa_package_data.append('../../lib/portaudio_x86.dll')
     medussa_package_data.append('../../lib/libsndfile-1.dll')
 else:
-	medussa_package_data.append('../../lib/medussa.so')
+	medussa_package_data.append('../../lib/libmedussa.so')
 	medussa_requires.append('portaudio (>=19.0)')
 	medussa_requires.append('libsndfile (>=1.0)')
 
