@@ -29,6 +29,7 @@ typedef struct SndfileData {
     double scale;       // Scaling factor for each sample, should be in the interval [0, 1]
     int loop;           // Boolean to determine whether or not to loop array playback
     unsigned int time;  // Where we are pointing in the file in units of frames
+    int channel_count;  // How many stream output channels are being used
 } SndfileData;
 
 

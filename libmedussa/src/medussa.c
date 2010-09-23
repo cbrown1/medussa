@@ -90,9 +90,13 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     SNDFILE *fin;
     SF_INFO *fin_info;
     int frames_read;
-    double scale;
+    float scale;
 
     int i;
+    int alpha;
+    int beta;
+    float *tmp_arr;
+
 
     printf("DEBUG 0\n");
 
@@ -104,14 +108,25 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
     printf("DEBUG 1\n");
 
-    frames_read = sf_readf_float (fin, buf_out, frames);
+    tmp_arr = (float *) malloc(sizeof(float) * frames * fin_info->channels);
+
+    printf("DEBUG 1.5\n");
+
+    frames_read = sf_readf_float (fin, tmp_arr, frames);
 
     printf("DEBUG 2\n");
 
     // Scale the output data buffer now that it's been copied
     scale = sfd->scale; // Using local var to avoid derefencing pointer in loop
     for (i = 0; i < (frames_read * fin_info->channels); i++) {
-        buf_out[i] = buf_out[i] * scale;
+        tmp_arr[i] = tmp_arr[i] * scale;
+    }
+
+    // Now copy portions of each frame into the true output buffer
+    alpha = fin_info->channels;
+    beta = sfd->channel_count;
+    for (i = 0; i < frames_read; i++) {
+        memcpy(buf_out + i*beta, tmp_arr + i*alpha, sizeof(float)*alpha);
     }
 
     printf("DEBUG 3\n");
@@ -262,6 +277,8 @@ PaStream *open_stream (PaStream *stream,
         break;
     case SNDFILE_STREAM:
         callback_func = callback_sndfile_read;
+        ((SndfileData *) user_data)->channel_count = Pa_GetDeviceInfo(out_param->device)->maxOutputChannels;
+        out_param->channelCount = Pa_GetDeviceInfo(out_param->device)->maxOutputChannels;
         break;
     case TONE_STREAM:
         callback_func = callback_tone;

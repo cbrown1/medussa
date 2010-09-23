@@ -53,13 +53,14 @@ class SndfileData (ctypes.Structure):
         int loop;        // Boolean to determine whether or not to loop array playback
     } SndfileData;
     """
-    _fields_ = (("fin",       c_void_p),
-                ("fout",      c_void_p),
-                ("fin_info",  POINTER(sndfile.SF_INFO)),
-                ("fout_info", POINTER(sndfile.SF_INFO)),
-                ("scale",     c_double),
-                ("loop",      c_int),
-                ("time",      c_uint))
+    _fields_ = (("fin",           c_void_p),
+                ("fout",          c_void_p),
+                ("fin_info",      POINTER(sndfile.SF_INFO)),
+                ("fout_info",     POINTER(sndfile.SF_INFO)),
+                ("scale",         c_double),
+                ("loop",          c_int),
+                ("time",          c_uint),
+                ("channel_count", c_int))
 
 
 # struct ToneData [in `medussa.h`]
@@ -248,9 +249,11 @@ class SndfileStream (Stream):
 
         self.samp_freq = fin_info.samplerate
 
-        self.user_data = SndfileData(fin, None, ctypes.pointer(fin_info), None, c_double(scale), loop, 0)
-
         self.out_param = PaStreamParameters(c_int(device.output_device_index), fin_info.channels, samp_format, 1.0, None)
+
+        self.user_data = SndfileData(fin, None, ctypes.pointer(fin_info), None, c_double(scale), loop, 0, self.out_param.channelCount)
+
+
 
     def time(self, ms=None):
         if ms == None:
