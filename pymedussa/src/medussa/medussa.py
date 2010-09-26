@@ -106,6 +106,11 @@ class Device:
         s.open()
         return s
 
+    def open_file(self, filename, scale=1.0, loop=False, samp_format=paFloat32):
+        s = SndfileStream(self, filename, scale, loop, samp_format)
+        s.open()
+        return s
+
 
 class Stream:
     # device : PaDevice
@@ -406,13 +411,27 @@ def terminate():
     return True
 
 
-def wavplay(arr, fs, channel=1):
+def playarr(arr, fs, channel=1):
     """
     Plays an array on the default device with blocking, Matlab-style.
     """
     d = open_default_device()
-    s = d.open_array(arr, fs)
+    s = ArrayStream(d, arr, fs)
+    s.open()
+    s.play()
+    while s.is_playing():
+        sleep(.01)
 
+def playfile(filename, channel=1):
+    """
+    Plays a soundfile on the default device with blocking, Matlab-style.
+    
+    Use with care! Long soundfiles will cause the interpreter to lock for a 
+    correspondingly long time!
+    """
+    d = open_default_device()
+    s = SndfileStream(d, filename)
+    s.open()
     s.play()
     while s.is_playing():
         sleep(.01)
