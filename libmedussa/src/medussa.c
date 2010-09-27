@@ -304,3 +304,8 @@ PaStream *open_stream (PaStream *stream,
 
     return stream;
 }
+
+void test_msg ()
+{
+    printf("hello, world.\n");
+}
