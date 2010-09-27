@@ -19,6 +19,8 @@ if libname == None:
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
 
+# Type used for getting `DeviceInfo` structs
+DeviceInfoPointer = POINTER(PaDeviceInfo)
 
 # struct ContigArrayHandle [in `medussa.h`]
 class ContigArrayHandle (ctypes.Structure):
@@ -91,9 +93,31 @@ class Device:
     input_device_index = None
     output_device_index = None
 
+    input_name = None
+    input_hostapi = None
+
+    output_name = None
+    output_hostapi = None
+
     def __init__(self, in_index, out_index):
-        self.input_device_index = in_index
-        self.output_device_index = out_index
+        self.set_input_index(in_index)
+        self.set_output_index(out_index)
+
+    def set_input_index(self, i):
+        self.input_device_index = i
+        p = ctypes.cast(pa.Pa_GetDeviceInfo(i), DeviceInfoPointer)
+        di = p[0] # dereference pointer
+
+        self.input_name = di.name
+        self.input_hostapi = PaHostApiTypeId.from_int[di.hostApi]
+
+    def set_output_index(self, i):
+        self.output_device_index = i
+        p = ctypes.cast(pa.Pa_GetDeviceInfo(i), DeviceInfoPointer)
+        di = p[0] # dereference pointer
+
+        self.output_name = di.name
+        self.output_hostapi = PaHostApiTypeId.from_int[di.hostApi]
 
     def create_tone(self, tone_freq, samp_freq=44100.0, scale=1.0, channels=1, chan_out=1, samp_format=paFloat32):
         # Index of `chan_out` is 1-based as passed, but translated to a 0-based index in the `ToneStream` constructor
@@ -425,8 +449,8 @@ def playarr(arr, fs, channel=1):
 def playfile(filename, channel=1):
     """
     Plays a soundfile on the default device with blocking, Matlab-style.
-    
-    Use with care! Long soundfiles will cause the interpreter to lock for a 
+
+    Use with care! Long soundfiles will cause the interpreter to lock for a
     correspondingly long time!
     """
     d = open_default_device()
