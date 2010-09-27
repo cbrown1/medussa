@@ -97,24 +97,15 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     int beta;
     float *tmp_arr;
 
-
-    printf("DEBUG 0\n");
-
     buf_out = (float *) pa_buf_out;
 
     sfd = (SndfileData *) user_data;
     fin = (SNDFILE *) sfd->fin;
     fin_info = (SF_INFO *) sfd->fin_info;
 
-    printf("DEBUG 1\n");
-
     tmp_arr = (float *) malloc(sizeof(float) * frames * fin_info->channels);
 
-    printf("DEBUG 1.5\n");
-
     frames_read = sf_readf_float (fin, tmp_arr, frames);
-
-    printf("DEBUG 2\n");
 
     // Scale the output data buffer now that it's been copied
     scale = sfd->scale; // Using local var to avoid derefencing pointer in loop
@@ -129,12 +120,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         memcpy(buf_out + i*beta, tmp_arr + i*alpha, sizeof(float)*alpha);
     }
 
-    printf("DEBUG 3\n");
-
     // Increment time counter by playback delta
     sfd->time += frames;
-
-    printf("DEBUG 4\n");
 
     if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
@@ -269,8 +256,6 @@ PaStream *open_stream (PaStream *stream,
     PyObject *attr;
     double samp_freq;
 
-    printf("callback %d\n", callback);
-
     switch (callback) {
     case NDARRAY_STREAM:
         callback_func = callback_ndarray;
@@ -285,42 +270,28 @@ PaStream *open_stream (PaStream *stream,
         break;
     }
 
-    printf("in `open_stream`\n");
-
     if (PyObject_HasAttrString(self, "samp_freq")) {
-        printf("getting samp_freq...\n");
         attr = PyObject_GetAttrString(self, "samp_freq");
         if (attr == NULL) {
             // error, so abort
-            printf("couldn't get `samp_freq` attr\n");
             return NULL;
         }
         Py_INCREF(attr);
         samp_freq = PyFloat_AsDouble(attr);
         Py_DECREF(attr);
-        printf("got samp_freq: %f\n", samp_freq);
     }
     else {
         return NULL; // Error
     }
 
-    printf("getting in_param...\n");
-
     if (in_param != NULL) {
         in_param->suggestedLatency = Pa_GetDeviceInfo(out_param->device)->defaultLowInputLatency;
     }
 
-    printf("...got in_param\n");
-    printf("getting out_param...\n");
-
     if (out_param != NULL) {
         out_param->suggestedLatency = Pa_GetDeviceInfo(out_param->device)->defaultLowOutputLatency;
     }
-    printf("...got out_param\n");
 
-    printf("channel_count: %d\n", out_param->channelCount);
-
-    printf("opening stream...\n");
     err = Pa_OpenStream(&stream,
                         in_param,
                         out_param,
@@ -330,8 +301,6 @@ PaStream *open_stream (PaStream *stream,
                         callback_func,
                         user_data);
     ERROR_CHECK;
-
-    printf("opened stream\n");
 
     return stream;
 }
