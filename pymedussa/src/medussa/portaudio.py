@@ -235,7 +235,8 @@ class PaDeviceInfo (ctypes.Structure):
                 ("defaultHighInputLatency",  c_double), # PaTime
                 ("defaultHighOutputLatency", c_double), # PaTime
                 ("defaultSampleRate",        c_double))
-
+# Type used for getting `DeviceInfo` structs
+DeviceInfoPointer = POINTER(PaDeviceInfo)
 
 # struct PaStreamParameters
 class PaStreamParameters (ctypes.Structure):

@@ -11,10 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\medussa_matrix.c" />
+    <ClCompile Include="..\..\src\medussa_callbacks.c" />
     <ClCompile Include="..\..\src\medussa.c" />
+    <ClCompile Include="..\..\src\medussa_types.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\medussa_matrix.h" />
+    <ClInclude Include="..\..\src\medussa_callbacks.h" />
     <ClInclude Include="..\..\src\medussa.h" />
+    <ClInclude Include="..\..\src\medussa_types.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="medussa.def" />
