@@ -101,6 +101,7 @@ class Stream:
 
     # Mixing matrix for computing output
     mix_mat = None
+    pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
 
     def __setattr__(self, name, val):
         if name == "fs":
@@ -164,6 +165,10 @@ class ToneStream(Stream):
     def __init__(self, tone_freq, mix_mat):
         self.tone_freq = tone_freq
         self.mix_mat = mix_mat
+
+        # Find a smart way to determine this value,
+        # which has to be hardcoded into the callback
+        self.pa_fpb = 1000
 
 
 

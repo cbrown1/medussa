@@ -12,6 +12,7 @@ PaStream *open_stream (PyObject *self)
     PaStreamParameters *spin;
     PaStreamParameters *spout;
     double fs;
+    unsigned long fpb;
     PaStreamCallback *callback_ptr;
 
 
@@ -75,6 +76,20 @@ PaStream *open_stream (PyObject *self)
         return NULL;
     }
 
+    // `unsigned long fpb` from `Stream.pa_fpb`
+    if (PyObject_HasAttrString(self, "pa_fpb")) {
+        attr = PyObject_GetAttrString(self, "pa_fpb");
+        if (attr == NULL) {
+            return NULL;
+        }
+        Py_INCREF(attr);
+        fpb = PyInt_AsUnsignedLongMask(attr); // Only func in C API returning `unsigned long`
+        Py_DECREF(attr);
+    }
+    else {
+        return NULL;
+    }
+
     // `PaStreamCallback *callback_ptr` from `Stream.callback`
     if (PyObject_HasAttrString(self, "callback")) {
         attr = PyObject_GetAttrString(self, "callback");
@@ -98,7 +113,7 @@ PaStream *open_stream (PyObject *self)
                         spin,
                         spout,
                         fs,
-                        paFramesPerBufferUnspecified,
+                        fpb,
                         paNoFlag,
                         callback_ptr,
                         self);
