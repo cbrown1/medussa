@@ -3,26 +3,24 @@ import numpy as np
 from pal import signal
 from time import sleep
 
-#x,fs = signal.wavread("clean.wav")
+x,fs = signal.wavread("clean.wav")
 
 #y = np.ascontiguousarray(np.vstack((x, x*0)).swapaxes(0,1))
 
-d = medussa.open_default_device()
-#s = d.open_array(x,fs)
+d = medussa.open_device()
+s = d.open_array(x,fs)
 #sy = d.open_array(y,fs)
 #s = d.create_tone(440.0, 44100.0)
 
-s1 = d.create_tone(440.0, 44100.0)
-s2 = d.create_tone(880.0, 44100.0)
-fade = np.linspace(0.0, 1.0, 500)
 
-s1.play(), s2.play()
-for i in xrange(500):
-    s1.mix_mat = np.array([1.0-fade[i], fade[i]])
-    s2.mix_mat = np.array([fade[i], 1.0-fade[i]])
-    sleep(0.001)
-
-
+#s1 = d.create_tone(440.0, 44100.0)
+#s2 = d.create_tone(880.0, 44100.0)
+#fade = np.linspace(0.0, 1.0, 500)
+#s1.play(), s2.play()
+#for i in xrange(500):
+#    s1.mix_mat = np.array([1.0-fade[i], fade[i]])
+#    s2.mix_mat = np.array([fade[i], 1.0-fade[i]])
+#    sleep(0.001)
 
 #s = medussa.SndfileStream(d, "speech-noise-tone.wav")
 

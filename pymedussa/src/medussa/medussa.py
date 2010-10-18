@@ -88,7 +88,12 @@ class Device:
             self.__dict__[name] = val
 
     def create_tone(self, tone_freq, fs):
-        s = ToneStream(self, fs, np.array([1.0, 0.0]), tone_freq)
+        s = ToneStream(self, fs, np.array([1.0, 1.0]), tone_freq)
+        return s
+
+    def open_array(self, array, fs):
+        mix_mat = np.eye(array.size[1])
+        s = ArrayStream(self, device, fs, mix_mat, array)
         return s
 
 class Stream:
@@ -210,7 +215,7 @@ class ArrayStream(FiniteStream):
     arr = None
     cursor = 0
 
-    def __init__(self, device, fs, mix_mat, arr, loop):
+    def __init__(self, device, fs, mix_mat, arr, loop=False):
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_ndarray
         self.device = device
@@ -309,6 +314,10 @@ def open_device(out_device_index=None, in_device_index=None):
 
 
 def open_default_device():
+    """
+    This differs from `open_device()` (i.e. with no arguments) only in
+    that a default output device is also opened.
+    """
     out_di = pa.Pa_GetDefaultOutputDevice()
     in_di = pa.Pa_GetDefaultInputDevice()
 
