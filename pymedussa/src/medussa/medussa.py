@@ -88,7 +88,7 @@ class Device:
             self.__dict__[name] = val
 
     def create_tone(self, tone_freq, fs):
-        s = ToneStream(self, fs, tone_freq, np.array([1.0, 0.0]))
+        s = ToneStream(self, fs, np.array([1.0, 0.0]), tone_freq)
         return s
 
 class Stream:
@@ -128,7 +128,6 @@ class Stream:
 
         if self.out_param != None:
             spout_ptr = StreamParametersPointer(self.out_param)
-            print spout_ptr, ctypes.addressof(self.out_param), spout_ptr.contents
             self.spout_ptr = ctypes.addressof(self.out_param)
 
         self.stream_ptr = cmedussa.open_stream(py_object(self), spin_ptr, spout_ptr, self.callback_ptr)
@@ -176,17 +175,17 @@ class ToneStream(Stream):
     tone_freq = None
     t = None
 
-    def __init__(self, device, fs, tone_freq, mix_mat):
-        print "in ToneStream `init`"
-        self.callback_ptr = cmedussa.callback_tone
+    def __init__(self, device, fs, mix_mat, tone_freq):
+        # Initialize `Stream` attributes
+        self.callback = ctypes.cast(ctypes.pointer(cmedussa.callback_tone), c_void_p)
         self.device = device
-        self.tone_freq = tone_freq
         self.mix_mat = mix_mat
-        self.t = 0
         self.stream_p = 0
         self.fs = fs
 
-        self.callback = ctypes.cast(ctypes.pointer(cmedussa.callback_tone), c_void_p)
+        # Initialize this class' attributes
+        self.tone_freq = tone_freq
+        self.t = 0
 
         # Find a smart way to determine this value,
         # which has to be hardcoded into the callback
@@ -198,6 +197,29 @@ class ToneStream(Stream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
+
+
+class FiniteStream(Stream):
+    loop = None
+
+class ArrayStream(FiniteStream):
+    arr = None
+
+    def __init__(self, device, fs, mix_mat, arr, loop):
+        # Initialize `Stream` attributes
+        self.callback_ptr = cmedussa.callback_ndarray
+        self.device = device
+        self.mix_mat = mix_mat
+        self.stream_p = 0
+        self.fs = fs
+
+        # Initialize `FiniteStream` attributes
+        self.loop = loop
+
+        # Initialize this class' attributes
+        self.arr = arr
+
+
 
 
 

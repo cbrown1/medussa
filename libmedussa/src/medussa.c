@@ -15,8 +15,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     unsigned long fpb;
     //PaStreamCallback *callback_ptr;
 
-    printf("DEBUG 1\n");
-
     //
     // Start pulling values from calling object...
     //
@@ -83,8 +81,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
 
     printf("DEBUG: channel count: %d\n", spout->channelCount);
 
-    printf("DEBUG 1-3\n");
-
     // `double fs` from `Stream.fs`
     if (PyObject_HasAttrString(self, "fs")) {
         attr = PyObject_GetAttrString(self, "fs");
@@ -113,27 +109,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     else {
         return NULL;
     }
-
-    printf("DEBUG 1-5\n");
-
-    /*
-    // `PaStreamCallback *callback_ptr` from `Stream.callback`
-    if (PyObject_HasAttrString(self, "callback")) {
-        attr = PyObject_GetAttrString(self, "callback");
-        if (attr == NULL) {
-            return NULL;
-        }
-        Py_INCREF(attr);
-        callback_ptr = (PaStreamCallback *) PyInt_AsLong(attr);
-        Py_DECREF(attr);
-    }
-    else {
-        return NULL;
-    }
-    */
-
-    printf("DEBUG 2\n");
-
     //
     // ...end pulling values from calling object.
     //
@@ -146,10 +121,8 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
                         fpb,
                         paNoFlag,
                         callback_ptr,
-                        self);
+                        self);  
     ERROR_CHECK;
-
-    printf("DEBUG 3\n");
 
     // Return the new integer value of the mutated `PaStream *` back to Python
     return stream;

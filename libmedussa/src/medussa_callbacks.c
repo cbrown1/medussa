@@ -9,56 +9,13 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
-    float *buf_out;           // Points to `pa_buf_out`
-    ContigArrayHandle *carrh; // Points to `user_data`
+    int loop;        // Boolean
+    float *buf_out;  // Points to `pa_buf_out`
 
-    PyArrayObject *x;
-    int chan_i;
-    int samp_i;
+    PyArrayObject *arr;
 
-    int i;
-    int buf_out_samples;
 
-    int chan_size;
-    int samp_size;
-
-    buf_out = (float *) pa_buf_out;
-    carrh = (ContigArrayHandle *) user_data;
-
-    x = (PyArrayObject *) carrh->x;
-    chan_i = carrh->chan_i;
-    samp_i = carrh->samp_i;
-    
-    chan_size = PyArray_DIM(x, 1);
-    samp_size = PyArray_DIM(x, 0);
-
-    buf_out_samples = chan_size * ((int) frames);
-
-    for (i = 0; i < buf_out_samples; i++) {
-        buf_out[i] = 0.0;
-    }
-    i = 0;
-
-    for (samp_i; samp_i < samp_size; samp_i++) {
-        for (chan_i; chan_i < chan_size; chan_i++) {
-            if (i < buf_out_samples) {
-                buf_out[i] = (float) *((double *) PyArray_GETPTR2(x, samp_i, chan_i));
-                i++;
-            }
-            else {
-                carrh->chan_i = chan_i;
-                carrh->samp_i = samp_i;
-                return paContinue;
-            }
-        }
-        chan_i = 0;
-    }
-
-    // Reset cursors for future playback
-    carrh->chan_i = 0;
-    carrh->samp_i = 0;
-
-    if (carrh->loop) {
+    if (loop) {
         return paContinue;
     }
     else {
