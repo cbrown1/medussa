@@ -9,11 +9,48 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
+    int i, j;
+
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
+    double *mix_mat_arr;
+    double *arr_frames;
 
+    PyObject *self, *attr;
     PyArrayObject *arr;
+    PyArrayObject *mix_mat;
 
+    // Point `self` to calling instance
+    self = (PyObject *) user_data;
+    Py_INCREF(self);
+
+    // `PyArrayObject *mix_mat` from `self.mix_mat`
+    if (PyObject_HasAttrString(self, "mix_mat")) {
+        attr = PyObject_GetAttrString(self, "mix_mat");
+        if (attr == NULL) {
+            return -1;
+        }
+        Py_INCREF(attr);
+        mix_mat = (PyArrayObject *) attr;
+        Py_INCREF(mix_mat);
+        Py_DECREF(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // Point `mix_mat_arr` to data buffer of `mix_mat`
+    mix_mat_arr = (double *) PyArray_DATA(mix_mat);
+
+    // Point `arr_frames` to C array of `arr`
+    arr_frames = (double *) PyArray_DATA(arr);
+
+    // Copy each frame from of `arr` to the output buffer, multiplying by
+    // the mixing matrix each time.
+    
+
+    Py_DECREF(self);
+    Py_DECREF(mix_mat);
 
     if (loop) {
         return paContinue;
@@ -115,7 +152,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
     Py_INCREF(self);
-    
+
     // `float fs` from `self.fs`
     if (PyObject_HasAttrString(self, "fs")) {
         attr = PyObject_GetAttrString(self, "fs");
@@ -158,7 +195,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    // `PyArrayObject *arr` from `self.mix_mat`
+    // `PyArrayObject *mix_mat` from `self.mix_mat`
     if (PyObject_HasAttrString(self, "mix_mat")) {
         attr = PyObject_GetAttrString(self, "mix_mat");
         if (attr == NULL) {

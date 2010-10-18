@@ -26,12 +26,10 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
             return NULL;
         }
         else if (attr == Py_None) {
-            printf("DEBUG: stream_p is none\n");
+            printf("DEBUG: stream_ptr is none\n");
         }
         else {
             Py_INCREF(attr);
-            printf("DEBUG 1-0-2-0: %d\n", PyInt_Check(attr));
-            printf("DEBUG 1-0-2-1: %d\n", attr == Py_None);
             err = PyInt_AsUnsignedLongMask(attr);
             stream = (PaStream *) PyInt_AsUnsignedLongMask(attr);
             Py_DECREF(attr);
@@ -87,7 +85,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         if (attr == NULL) {
             return NULL;
         }
-        printf("DEBUG: fs is PyFloat: %d\n", PyFloat_Check(attr));
         Py_INCREF(attr);
         fs = PyFloat_AsDouble(attr);
         Py_DECREF(attr);
