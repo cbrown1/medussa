@@ -253,6 +253,7 @@ class PaStreamParameters (ctypes.Structure):
                 ("sampleFormat",              c_ulong),  # PaSampleFormat
                 ("suggestedLatency",          c_double), # PaTime
                 ("hostApiSpecificStreamInfo", c_void_p))
+StreamParametersPointer = POINTER(PaStreamParameters)
 
 
 # struct PaStreamCallbackTimeInfo

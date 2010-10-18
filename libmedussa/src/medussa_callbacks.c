@@ -145,14 +145,15 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs, tone_freq;
 
-    float *mix_mat_arr;
+    double *mix_mat_arr;
     int err;
+
+    PyGILState_STATE gstate;
 
     PaStreamParameters *spout;
 
     PyObject *self, *attr;
     PyArrayObject *mix_mat;
-
 
     // Point `self` to calling instance
     self = (PyObject *) user_data;
@@ -216,8 +217,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     }
 
     // `PaStreamParameters *spout` from `Stream.out_param`
-    if (PyObject_HasAttrString(self, "out_param")) {
-        attr = PyObject_GetAttrString(self, "out_param");
+    if (PyObject_HasAttrString(self, "spout_ptr")) {
+        attr = PyObject_GetAttrString(self, "spout_ptr");
         if (attr == NULL) {
             return -1;
         }
@@ -232,7 +233,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     frame_size = spout->channelCount;
 
     // Point to data array of `mix_mat`
-    mix_mat_arr = (float *) PyArray_DATA(mix_mat);
+    mix_mat_arr = (double *) PyArray_DATA(mix_mat);
 
     // Point to actual output buffer
     buf_out = (float *) pa_buf_out;
@@ -241,22 +242,27 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            buf_out[i*frame_size + j] = (float) (sin(TWOPI * t / fs * tone_freq) * mix_mat_arr[j]);
+            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat_arr[j]));
+            // printf("%f\n", (float) (sin(TWOPI * t / fs * tone_freq) * mix_mat_arr[j]));
         }
         t++;
     }
 
     // Set `self.t` to the current time value
     if (PyObject_HasAttrString(self, "t")) {
-        err = PyObject_SetAttrString(self, "t", PyLong_FromUnsignedLong(t));
+        attr = PyInt_FromLong(t);
+        Py_INCREF(attr);
+        gstate = PyGILState_Ensure();
+        err = PyObject_SetAttrString(self, "t", PyInt_FromLong(t));
+        PyGILState_Release(gstate);
         if (err == -1) {
             return -1;
         }
     }
     else {
+        printf("ERROR: no `t` attribute\n");
         return -1;
     }
-
 
     Py_DECREF(mix_mat);
     Py_DECREF(self);

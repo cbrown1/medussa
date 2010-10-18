@@ -20,7 +20,10 @@ if (err < 0) { \
 #define SNDFILE_STREAM 1
 #define TONE_STREAM 2
 
-PaStream *open_stream (PyObject *);
+PaStream *open_stream (PyObject *,
+                       PaStreamParameters *,
+                       PaStreamParameters *,
+                       PaStreamCallback *);
 
 void start_streams (PaStream **, int);
 

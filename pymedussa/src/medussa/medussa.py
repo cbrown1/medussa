@@ -65,7 +65,7 @@ class Device:
             self.in_hostapi = PaHostApiTypeId.from_int[di.hostApi] # user-friendly hostapi
 
             # Do actual requested attribute assignment.
-            self.__dict__[name] = value
+            self.__dict__[name] = val
         elif name == "out_index":
             # Argument validation
             if not isinstance(val, int):
@@ -87,6 +87,9 @@ class Device:
             # Any other attribute assignment is business as usual, for now.
             self.__dict__[name] = val
 
+    def create_tone(self, tone_freq, fs):
+        s = ToneStream(self, fs, tone_freq, np.array([1.0, 0.0]))
+        return s
 
 class Stream:
     # device : PaDevice
@@ -117,7 +120,18 @@ class Stream:
         if self.callback == None:
             raise RuntimeError("No PaStreamCallback defined (self.callback == None)")
 
-        self.stream_p = cmedussa.open_stream(py_object(self))
+        spin_ptr = None
+        spout_ptr = None
+
+        if self.in_param != None:
+            spin_ptr = StreamParametersPointer(self.in_param)
+
+        if self.out_param != None:
+            spout_ptr = StreamParametersPointer(self.out_param)
+            print spout_ptr, ctypes.addressof(self.out_param), spout_ptr.contents
+            self.spout_ptr = ctypes.addressof(self.out_param)
+
+        self.stream_ptr = cmedussa.open_stream(py_object(self), spin_ptr, spout_ptr, self.callback_ptr)
 
     def start(self):
         err = pa.Pa_StartStream(self.stream_ptr)
@@ -162,13 +176,28 @@ class ToneStream(Stream):
     tone_freq = None
     t = None
 
-    def __init__(self, tone_freq, mix_mat):
+    def __init__(self, device, fs, tone_freq, mix_mat):
+        print "in ToneStream `init`"
+        self.callback_ptr = cmedussa.callback_tone
+        self.device = device
         self.tone_freq = tone_freq
         self.mix_mat = mix_mat
+        self.t = 0
+        self.stream_p = 0
+        self.fs = fs
+
+        self.callback = ctypes.cast(ctypes.pointer(cmedussa.callback_tone), c_void_p)
 
         # Find a smart way to determine this value,
         # which has to be hardcoded into the callback
         self.pa_fpb = 1000
+
+        #self.out_param = PaStreamParameters(devindex, channel_count, sample_format, sugg_lat, hostapispecstrminfo)
+        self.out_param = PaStreamParameters(self.device.out_index,
+                                            self.mix_mat.shape[0], # number of rows is output dimension
+                                            paFloat32,
+                                            self.device.out_device_info.defaultLowInputLatency,
+                                            None)
 
 
 
