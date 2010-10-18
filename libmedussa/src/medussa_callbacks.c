@@ -9,7 +9,9 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
-    int i, j;
+    PyGILState_STATE gstate;
+
+    unsigned int i, j, err, frame_size, cursor;
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
@@ -23,6 +25,21 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
     Py_INCREF(self);
+
+    // `PyArrayObject *arr` from `self.arr`
+    if (PyObject_HasAttrString(self, "arr")) {
+        attr = PyObject_GetAttrString(self, "arr");
+        if (attr == NULL) {
+            return -1;
+        }
+        Py_INCREF(attr);
+        arr = (PyArrayObject *) attr;
+        Py_INCREF(arr);
+        Py_DECREF(attr);
+    }
+    else {
+        return -1;
+    }
 
     // `PyArrayObject *mix_mat` from `self.mix_mat`
     if (PyObject_HasAttrString(self, "mix_mat")) {
@@ -39,18 +56,75 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
+    // `int loop` from `self.loop`
+    if (PyObject_HasAttrString(self, "loop")) {
+        attr = PyObject_GetAttrString(self, "loop");
+        if (attr == NULL) {
+            return -1;
+        }
+        Py_INCREF(attr);
+        loop = (int) PyInt_AsLong(attr);
+        Py_DECREF(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `unsigned int cursor` from `self.cursor`
+    if (PyObject_HasAttrString(self, "cursor")) {
+        attr = PyObject_GetAttrString(self, "cursor");
+        if (attr == NULL) {
+            return -1;
+        }
+        Py_INCREF(attr);
+        cursor = (unsigned int) PyInt_AsLong(attr);
+        Py_DECREF(attr);
+    }
+    else {
+        return -1;
+    }
+
     // Point `mix_mat_arr` to data buffer of `mix_mat`
     mix_mat_arr = (double *) PyArray_DATA(mix_mat);
 
     // Point `arr_frames` to C array of `arr`
     arr_frames = (double *) PyArray_DATA(arr);
 
+    // Determine `frame_size`, the number of channels, from `arr`
+    frame_size = (unsigned int) PyArray_DIM(arr, 1);
+
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
+    for (i = 0; i < frames; i++) {
+        for (j = 0; j < frame_size; j++) {
+            buf_out[i*frame_size + j] = (float) arr_frames[i*frame_size + j]; 
+        }
+    }
+    cursor += frames;
     
+    // Move `self.cursor`
+    if (PyObject_HasAttrString(self, "cursor")) {
+        attr = PyInt_FromLong(cursor);
+        Py_INCREF(attr);
+        gstate = PyGILState_Ensure();
+        err = PyObject_SetAttrString(self, "cursor", attr);
+        PyGILState_Release(gstate);
+        if (err == -1) {
+            return -1;
+        }
+    }
+    else {
+        printf("ERROR: no `cursor` attribute\n");
+        return -1;
+    }
 
     Py_DECREF(self);
+    Py_DECREF(arr);
     Py_DECREF(mix_mat);
+
+    if (cursor < PyArray_DIM(arr, 1)) {
+        return paContinue;
+    }
 
     if (loop) {
         return paContinue;
@@ -247,7 +321,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         attr = PyInt_FromLong(t);
         Py_INCREF(attr);
         gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "t", PyInt_FromLong(t));
+        err = PyObject_SetAttrString(self, "t", attr);
         PyGILState_Release(gstate);
         if (err == -1) {
             return -1;

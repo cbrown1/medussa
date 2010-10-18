@@ -208,6 +208,7 @@ class FiniteStream(Stream):
 
 class ArrayStream(FiniteStream):
     arr = None
+    cursor = 0
 
     def __init__(self, device, fs, mix_mat, arr, loop):
         # Initialize `Stream` attributes
