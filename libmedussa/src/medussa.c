@@ -26,7 +26,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
             return NULL;
         }
         else if (attr == Py_None) {
-            printf("DEBUG: stream_ptr is none\n");
+            //printf("DEBUG: stream_ptr is none\n");
         }
         else {
             Py_INCREF(attr);
@@ -77,7 +77,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     }
     */
 
-    printf("DEBUG: channel count: %d\n", spout->channelCount);
+    //printf("DEBUG: channel count: %d\n", spout->channelCount);
 
     // `double fs` from `Stream.fs`
     if (PyObject_HasAttrString(self, "fs")) {
@@ -109,6 +109,8 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     //
     // ...end pulling values from calling object.
     //
+
+    //printf("channel count: %d\n", spout->channelCount);
 
     // Attempt to open the stream
     err = Pa_OpenStream(&stream,

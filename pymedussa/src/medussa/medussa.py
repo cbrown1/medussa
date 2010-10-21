@@ -91,9 +91,8 @@ class Device:
         s = ToneStream(self, fs, np.array([1.0, 1.0]), tone_freq)
         return s
 
-    def open_array(self, array, fs):
-        mix_mat = np.eye(array.size[1])
-        s = ArrayStream(self, device, fs, mix_mat, array)
+    def open_array(self, arr, fs):
+        s = ArrayStream(self, fs, None, arr)
         return s
 
 class Stream:
@@ -115,7 +114,7 @@ class Stream:
         if name == "fs":
             # enforce fs as floating point (add nonnegative check?)
             self.__dict__[name] = float(val)
-        elif name == "mix_mat":
+        elif name == "mix_mat" or name == "arr":
             # enforce array contiguity
             self.__dict__[name] = np.ascontiguousarray(val)
         else:
@@ -216,11 +215,19 @@ class ArrayStream(FiniteStream):
     cursor = 0
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
+        if len(arr.shape) == 1:
+            arr = arr.reshape(arr.size, 1)
+
         # Initialize `Stream` attributes
+        self.callback = cmedussa.callback_ndarray
         self.callback_ptr = cmedussa.callback_ndarray
         self.device = device
-        self.mix_mat = mix_mat
-        self.stream_p = 0
+
+        if mix_mat == None:
+            self.mix_mat = np.eye(arr.shape[1])
+        else:
+            self.mix_mat = mix_mat
+        self.stream_ptrS = 0
         self.fs = fs
 
         # Initialize `FiniteStream` attributes
@@ -235,6 +242,9 @@ class ArrayStream(FiniteStream):
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
 
+#    def play(self):
+#        self.cursor = 0
+#        super(ArrayStream, self).play()
 
 
 def generateHostApiInfo():
