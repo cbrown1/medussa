@@ -2,6 +2,7 @@
 #include "medussa_matrix.h"
 
 #define TWOPI 6.2831853071795862
+#define MAX_FRAME_SIZE 16
 
 int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       unsigned long frames,
@@ -15,6 +16,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
+    float tmp_buf[MAX_FRAME_SIZE];
     double *mix_mat_arr;
     double *arr_frames;
 
@@ -27,9 +29,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Point `self` to calling instance
     self = (PyObject *) user_data;
-    //PyObject_Print(self, stdout, Py_PRINT_RAW);
-
-    //printf("DEBUG 1\n");
 
     // `PyArrayObject *arr` from `self.arr`
     if (PyObject_HasAttrString(self, "arr")) {
@@ -43,8 +42,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    //printf("DEBUG 2\n");
-
     // `PyArrayObject *mix_mat` from `self.mix_mat`
     if (PyObject_HasAttrString(self, "mix_mat")) {
         attr = PyObject_GetAttrString(self, "mix_mat");
@@ -56,8 +53,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
-
-    //printf("DEBUG 3\n");
 
     // `int loop` from `self.loop`
     if (PyObject_HasAttrString(self, "loop")) {
@@ -71,8 +66,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    //printf("DEBUG 4\n");
-
     // `unsigned int cursor` from `self.cursor`
     if (PyObject_HasAttrString(self, "cursor")) {
         attr = PyObject_GetAttrString(self, "cursor");
@@ -85,8 +78,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    //printf("DEBUG 5\n");
-
     // Point `mix_mat_arr` to data buffer of `mix_mat`
     mix_mat_arr = (double *) mix_mat->data;
 
@@ -96,36 +87,33 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     // Determine `frame_size`, the number of channels, from `arr`
     frame_size = (unsigned int) PyArray_DIM(arr, 1);
 
-    //printf("cursor WAS at: %u\n", cursor);
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     for (i = 0; i < frames; i++) {
         if (PyArray_DIM(arr, 0) <= (cursor+i)) {
             break;
         }
+        //*
         for (j = 0; j < frame_size; j++) {
-            // printf("%f ", (float) *((double *) PyArray_GETPTR2(arr, i, j)));
-            // buf_out[i*frame_size + j] = (float) arr_frames[i*frame_size + j];
-            //printf("%d %d\n", i, j);
-            buf_out[i*frame_size + j] = (float) *((double *) PyArray_GETPTR2(arr, (cursor+i), j));
-            //buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) i) / 44100.0 * 400.0));
+            //buf_out[i*frame_size + j] = (float) *((double *) PyArray_GETPTR2(arr, (cursor+i), j));
+            buf_out[i*frame_size + j] = (float) arr_frames[cursor + i*frame_size + j];
         }
-        //printf("one frame\n");
+        /* */
+        //*
+        dmatrix_mult_tof(((double *) PyArray_DATA(mix_mat)), 1, 1,
+                         ((double *) PyArray_DATA(arr))+ cursor + i, 1, 1,
+                         tmp_buf, 1, 1);
+        /* */
+        for (j = 0; j < frame_size; j++) {
+            buf_out[i*frame_size + j] = tmp_buf[j];
+        }
     }
     cursor += frames;
-    //printf("cursor is at: %u\n", cursor);
-
-    //printf("DEBUG 6\n");
 
     // Move `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) { // python bug?
-        //printf("DEBUG 6-0\n");
-        //attr = PyInt_FromLong(cursor);
-        //Py_INCREF(attr);
+    if (PyObject_HasAttrString(self, "cursor")) {
         gstate = PyGILState_Ensure();
-        //printf("DEBUG 6-1\n");
         err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(cursor));
-        //printf("DEBUG 6-2\n");
         PyGILState_Release(gstate);
         if (err == -1) {
             printf("DEBUG: ERROR\n");
@@ -136,23 +124,15 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         printf("ERROR: no `cursor` attribute\n");
         return -1;
     }
-
-    //printf("DEBUG 7\n");
 
     if (cursor < PyArray_DIM(arr, 0)) {
-        //printf("not done, continuing...\n");
         return paContinue;
     }
 
-        // Move `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) { // python bug?
-        //printf("DEBUG 6-0\n");
-        //attr = PyInt_FromLong(cursor);
-        //Py_INCREF(attr);
+    // Reset `self.cursor`
+    if (PyObject_HasAttrString(self, "cursor")) {
         gstate = PyGILState_Ensure();
-        //printf("DEBUG 6-1\n");
         err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(0));
-        //printf("DEBUG 6-2\n");
         PyGILState_Release(gstate);
         if (err == -1) {
             printf("DEBUG: ERROR\n");
@@ -164,14 +144,10 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    //printf("DEBUG 8\n");
-
     if (loop) {
-        //printf("looping, so continuing...\n");
         return paContinue;
     }
     else {
-        //printf("array is played\n");
         return paComplete;
     }
 }

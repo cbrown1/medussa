@@ -4,11 +4,16 @@ from pal import signal
 from time import sleep
 
 x,fs = signal.wavread("clean.wav")
+#x,fs = signal.wavread("speech-noise-tone.wav")
 
-#y = np.ascontiguousarray(np.vstack((x, x*0)).swapaxes(0,1))
+y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
+x = y
 
 d = medussa.open_device()
 s = d.open_array(x,fs)
+
+#s.arr = np.linspace(0, s.arr.size, s.arr.size)
+
 #sy = d.open_array(y,fs)
 #s = d.create_tone(440.0, 44100.0)
 
