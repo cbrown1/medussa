@@ -227,7 +227,7 @@ class ArrayStream(FiniteStream):
             self.mix_mat = np.eye(arr.shape[1])
         else:
             self.mix_mat = mix_mat
-        self.stream_ptrS = 0
+        #self.stream_ptr = 0
         self.fs = fs
 
         # Initialize `FiniteStream` attributes
@@ -240,6 +240,9 @@ class ArrayStream(FiniteStream):
             output_channels = self.arr.shape[1]
         else:
             output_channels = self.device.out_device_info.maxOutputChannels
+
+        self.mix_mat = np.resize(self.mix_mat, (output_channels, self.mix_mat.shape[1]))
+
 
         # print "DEBUG: output_channels == %d" % (output_channels,)
 
