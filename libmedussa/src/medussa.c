@@ -39,45 +39,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         return NULL;
     }
 
-    /*
-    // `PaStreamParameters *spin` from `Stream.in_param`
-    if (PyObject_HasAttrString(self, "in_param")) {
-        attr = PyObject_GetAttrString(self, "in_param");
-        if (attr == NULL) {
-            return NULL;
-        }
-        else if (attr == Py_None) {
-            printf("DEBUG: in_param was None\n");
-        }
-        else {
-            Py_INCREF(attr);
-            spin = (PaStreamParameters *) PyInt_AsUnsignedLongMask(attr);
-            Py_DECREF(attr);
-        }
-    }
-    else {
-        return NULL;
-    }
-    */
-
-    /*
-    // `PaStreamParameters *spout` from `Stream.out_param`
-    if (PyObject_HasAttrString(self, "out_param")) {
-        attr = PyObject_GetAttrString(self, "out_param");
-        if (attr == NULL) {
-            return NULL;
-        }
-        printf("DEBUG: out_param == None? %d\n", attr == Py_None);
-        Py_INCREF(attr);
-        spout = (PaStreamParameters *) attr;
-        Py_DECREF(attr);
-    }
-    else {
-        return NULL;
-    }
-    */
-
-    //printf("DEBUG: channel count: %d\n", spout->channelCount);
 
     // `double fs` from `Stream.fs`
     if (PyObject_HasAttrString(self, "fs")) {
@@ -109,8 +70,6 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     //
     // ...end pulling values from calling object.
     //
-
-    //printf("channel count: %d\n", spout->channelCount);
 
     // Attempt to open the stream
     err = Pa_OpenStream(&stream,

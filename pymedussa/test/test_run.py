@@ -6,13 +6,12 @@ from time import sleep
 x,fs = signal.wavread("clean.wav")
 #x,fs = signal.wavread("speech-noise-tone.wav")
 
-y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
-x = y
+x = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
 
 d = medussa.open_device()
 s = d.open_array(x,fs)
 
-#s.arr = np.linspace(0, s.arr.size, s.arr.size)
+#s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
 
 #sy = d.open_array(y,fs)
 #s = d.create_tone(440.0, 44100.0)

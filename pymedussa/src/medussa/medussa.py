@@ -225,7 +225,6 @@ class ArrayStream(FiniteStream):
 
         if mix_mat == None:
             self.mix_mat = np.eye(arr.shape[1])
-            print "this"
         else:
             self.mix_mat = mix_mat
         self.stream_ptrS = 0
@@ -242,7 +241,7 @@ class ArrayStream(FiniteStream):
         else:
             output_channels = self.device.out_device_info.maxOutputChannels
 
-        print "output_channels == %d" % (output_channels,)
+        # print "DEBUG: output_channels == %d" % (output_channels,)
 
         self.out_param = PaStreamParameters(self.device.out_index,
                                             output_channels, # number of rows is output dimension

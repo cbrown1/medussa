@@ -61,7 +61,7 @@ int dmatrix_mult (double *a,  int a_m,  int a_n,
             for (k = 0; k < a_n; k++) {
                 ij += a[i*a_n + k] * b[k*b_n + j];
             }
-
+            // printf("i = %d, j = %d, ij = %.6f\n", i, j, ij);
             ab[i*ab_n + j] = ij;
         }
     }
@@ -93,7 +93,6 @@ int dmatrix_mult_tof (double *a,  int a_m,  int a_n,
             for (k = 0; k < a_n; k++) {
                 ij += a[i*a_n + k] * b[k*b_n + j];
             }
-            // printf("%.6f ", ij);
             ab[i*ab_n + j] = (float) ij;
         }
     }

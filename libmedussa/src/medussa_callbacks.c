@@ -12,15 +12,15 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 {
     PyGILState_STATE gstate;
 
-    unsigned int i, j, err, frame_size, cursor;
+    unsigned int i, j, err, frame_size, cursor, channel_count;
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
-    float tmp_buf[MAX_FRAME_SIZE];
+    double tmp_buf[MAX_FRAME_SIZE];
     double *mix_mat_arr;
     double *arr_frames;
 
-    PyObject *self, *attr;
+    PyObject *self, *attr, *out_param;
     PyArrayObject *arr;
     PyArrayObject *mix_mat;
 
@@ -29,6 +29,30 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Point `self` to calling instance
     self = (PyObject *) user_data;
+
+    // `PyObject *out_param` from `self.out_param`
+    if (PyObject_HasAttrString(self, "out_param")) {
+        attr = PyObject_GetAttrString(self, "out_param");
+        if (attr == NULL) {
+            return -1;
+        }
+        out_param = attr;
+    }
+    else {
+        return -1;
+    }
+
+    // `unsigned int channel_count` from `self.out_param.channelCount`
+    if (PyObject_HasAttrString(out_param, "channelCount")) {
+        attr = PyObject_GetAttrString(out_param, "channelCount");
+        if (attr == NULL) {
+            return -1;
+        }
+        channel_count = (unsigned int) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
 
     // `PyArrayObject *arr` from `self.arr`
     if (PyObject_HasAttrString(self, "arr")) {
@@ -79,36 +103,31 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     }
 
     // Point `mix_mat_arr` to data buffer of `mix_mat`
-    mix_mat_arr = (double *) mix_mat->data;
+    mix_mat_arr = (double *) PyArray_GETPTR2(mix_mat, 0, 0);
 
-    // Point `arr_frames` to C array of `arr`
-    arr_frames = (double *) arr->data;
+    // Point `arr_frames` to C array of `arr`, move cursor appropriately
+    arr_frames = (double *) PyArray_GETPTR2(arr, cursor, 0);
 
-    // Determine `frame_size`, the number of channels, from `arr`
+    // Determine `frame_size`, the number of channels, from `arr` (ERROR)
     frame_size = (unsigned int) PyArray_DIM(arr, 1);
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     for (i = 0; i < frames; i++) {
-        if (PyArray_DIM(arr, 0) <= (cursor+i)) {
+        if (PyArray_DIM(arr, 0) <= cursor+i) {
             break;
         }
-        //*
-        for (j = 0; j < frame_size; j++) {
-            //buf_out[i*frame_size + j] = (float) *((double *) PyArray_GETPTR2(arr, (cursor+i), j));
-            buf_out[i*frame_size + j] = (float) arr_frames[cursor + i*frame_size + j];
+
+        dmatrix_mult(mix_mat_arr, PyArray_DIM(mix_mat, 0), PyArray_DIM(mix_mat, 1),
+                     arr_frames+i*frame_size,  frame_size,    1,
+                     tmp_buf,     channel_count, 1);
+        for (j = 0; j < channel_count; j++){
+            buf_out[i*channel_count + j] = (float) tmp_buf[j];
         }
-        /* */
-        //*
-        dmatrix_mult_tof(((double *) PyArray_DATA(mix_mat)), 1, 1,
-                         ((double *) PyArray_DATA(arr))+ cursor + i, 1, 1,
-                         tmp_buf, 1, 1);
-        /* */
-        for (j = 0; j < frame_size; j++) {
-            buf_out[i*frame_size + j] = tmp_buf[j];
-        }
+        // */
     }
     cursor += frames;
+    //printf("cursor at: %d\n", cursor);
 
     // Move `self.cursor`
     if (PyObject_HasAttrString(self, "cursor")) {
@@ -125,7 +144,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
-    if (cursor < PyArray_DIM(arr, 0)) {
+    if (cursor < (PyArray_DIM(arr, 0))) {
         return paContinue;
     }
 
