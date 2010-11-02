@@ -236,12 +236,18 @@ class ArrayStream(FiniteStream):
         # Initialize this class' attributes
         self.arr = arr
 
-        if self.arr.shape[1] <= self.device.out_device_info.maxOutputChannels:
-            output_channels = self.arr.shape[1]
-        else:
-            output_channels = self.device.out_device_info.maxOutputChannels
+        #if self.arr.shape[1] <= self.device.out_device_info.maxOutputChannels:
+        #    output_channels = self.arr.shape[1]
+        #else:
+        #    output_channels = self.device.out_device_info.maxOutputChannels
+
+        output_channels = self.device.out_device_info.maxOutputChannels
 
         self.mix_mat = np.resize(self.mix_mat, (output_channels, self.mix_mat.shape[1]))
+        if output_channels > self.mix_mat.shape[1]:
+            self.mix_mat
+            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
+
 
 
         # print "DEBUG: output_channels == %d" % (output_channels,)
