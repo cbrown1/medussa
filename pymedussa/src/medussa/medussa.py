@@ -246,9 +246,7 @@ class ArrayStream(FiniteStream):
         self.mix_mat = np.resize(self.mix_mat, (output_channels, self.mix_mat.shape[1]))
         if output_channels > self.mix_mat.shape[1]:
             self.mix_mat
-            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
-
-
+            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  # zero out extra rows which, by default, are just repeated in memory
 
         # print "DEBUG: output_channels == %d" % (output_channels,)
 
@@ -261,6 +259,57 @@ class ArrayStream(FiniteStream):
 #    def play(self):
 #        self.cursor = 0
 #        super(ArrayStream, self).play()
+
+
+class SndfileStream(FiniteStream):
+    fin = None
+    finfo = None
+    finpath = None
+    cursor = 0
+
+    def __init__(self, device, mix_mat, finpath, loop=False):
+        # Initialize `Stream` attributes
+        self.callback = cmedussa.callback_sndfile_read
+        self.callback_ptr = cmedussa.callback_sndfile_read
+        self.device = device
+
+        # Initialize `FiniteStream` attributes
+        self.loop = loop
+
+        # Initialize this class' attributes
+        self.finpath = finpath
+        self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
+        self.fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(self.finfo))
+
+        print self.fin, type(self.fin)
+        print self.finfo.frames
+        print self.finfo.samplerate
+        print self.finfo.channels
+
+        # set sampling frequency
+        self.fs = self.finfo.samplerate
+
+        # set actual device output channels
+        output_channels = self.device.out_device_info.maxOutputChannels
+
+        if mix_mat == None:
+            self.mix_mat = np.eye(self.finfo.channels)
+        else:
+            self.mix_mat = mix_mat
+        self.mix_mat = np.resize(self.mix_mat, (output_channels, self.mix_mat.shape[1]))
+        if output_channels > self.mix_mat.shape[1]:
+            self.mix_mat
+            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  # zero out extra rows which, by default, are just repeated in memory
+
+        # print "DEBUG: output_channels == %d" % (output_channels,)
+
+        # Delete this probs: sndfile.csndfile.sf_close(self.fin)
+
+        self.out_param = PaStreamParameters(self.device.out_index,
+                                            output_channels, # number of rows is output dimension
+                                            paFloat32,
+                                            self.device.out_device_info.defaultLowInputLatency,
+                                            None)
 
 
 def generateHostApiInfo():

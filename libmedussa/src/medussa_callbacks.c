@@ -173,53 +173,180 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
 
 int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
-                          unsigned long frames,
-                          const PaStreamCallbackTimeInfo *time_info,
-                          PaStreamCallbackFlags status_flags,
-                          void *user_data)
+                           unsigned long frames,
+                           const PaStreamCallbackTimeInfo *time_info,
+                           PaStreamCallbackFlags status_flags,
+                           void *user_data)
 {
+    PyGILState_STATE gstate;
     float *buf_out;   // Points to `pa_buf_out`
-    SndfileData *sfd; // Points to `user_data`
 
     SNDFILE *fin;
-    SF_INFO *fin_info;
     int frames_read;
-    float *scale;
 
-    int i;
-    int alpha;
-    int beta;
-    float *tmp_arr;
+    int i, j, err;
+    int loop;
+    int cursor; // Tracks position in file between callbacks
+    int channel_count; // Number of stream output channels
+    int frame_size; // Samples per frame for input file
+    //double read_buf[1024];
+    double *read_buf; // we HAVE to malloc, but we're being ugly in this callback anyway, so oh well
+    double tmp_buf[MAX_FRAME_SIZE];
+    char *finpath;
+
+    PyObject *self, *attr, *out_param, *finfo;
+    PyArrayObject *mix_mat;
+
+    // Point `self` to calling instance
+    self = (PyObject *) user_data;
+
+    // `PyObject *out_param` from `self.out_param`
+    if (PyObject_HasAttrString(self, "out_param")) {
+        attr = PyObject_GetAttrString(self, "out_param");
+        if (attr == NULL) {
+            return -1;
+        }
+        out_param = attr;
+    }
+    else {
+        return -1;
+    }
+
+    // `unsigned int channel_count` from `self.out_param.channelCount`
+    if (PyObject_HasAttrString(out_param, "channelCount")) {
+        attr = PyObject_GetAttrString(out_param, "channelCount");
+        if (attr == NULL) {
+            return -1;
+        }
+        channel_count = (unsigned int) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `PyArrayObject *mix_mat` from `self.mix_mat`
+    if (PyObject_HasAttrString(self, "mix_mat")) {
+        attr = PyObject_GetAttrString(self, "mix_mat");
+        if (attr == NULL) {
+            return -1;
+        }
+        mix_mat = (PyArrayObject *) attr;
+    }
+    else {
+        return -1;
+    }
+
+    // `int loop` from `self.loop`
+    if (PyObject_HasAttrString(self, "loop")) {
+        attr = PyObject_GetAttrString(self, "loop");
+        if (attr == NULL) {
+            return -1;
+        }
+        loop = (int) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `unsigned int cursor` from `self.cursor`
+    if (PyObject_HasAttrString(self, "cursor")) {
+        attr = PyObject_GetAttrString(self, "cursor");
+        if (attr == NULL) {
+            return -1;
+        }
+        cursor = (unsigned int) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `char *finpath` from `self.finpath`
+    if (PyObject_HasAttrString(self, "finpath")) {
+        attr = PyObject_GetAttrString(self, "finpath");
+        if (attr == NULL) {
+            return -1;
+        }
+        finpath = PyString_AsString(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `SNDFILE *fin` from `self.fin`
+    if (PyObject_HasAttrString(self, "fin")) {
+        attr = PyObject_GetAttrString(self, "fin");
+        if (attr == NULL) {
+            return -1;
+        }
+        fin = (SNDFILE *) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
+
+    // `PyObject *finfo` from `self.finfo`
+    if (PyObject_HasAttrString(self, "finfo")) {
+        attr = PyObject_GetAttrString(self, "finfo");
+        if (attr == NULL) {
+            return -1;
+        }
+        finfo = attr;
+    }
+    else {
+        return -1;
+    }
+
+    // `int frame_size` from `self.finfo.channels`
+    if (PyObject_HasAttrString(finfo, "channels")) {
+        attr = PyObject_GetAttrString(finfo, "channels");
+        if (attr == NULL) {
+            return -1;
+        }
+        frame_size = (int) PyInt_AsLong(attr);
+    }
+    else {
+        return -1;
+    }
 
     buf_out = (float *) pa_buf_out;
 
-    sfd = (SndfileData *) user_data;
-    fin = (SNDFILE *) sfd->fin;
-    fin_info = (SF_INFO *) sfd->fin_info;
+    // This is ugly, but convenient. We can eventually avoid this if really, really necessary
+    read_buf = (double *) malloc(1024 * frame_size * sizeof(double));
+    frames_read = (int) sf_readf_double (fin, read_buf, frames);
 
-    tmp_arr = (float *) malloc(sizeof(float) * frames * fin_info->channels);
-
-    frames_read = (int) sf_readf_float (fin, tmp_arr, frames);
-
-    scale = (float *) sfd->scale;
-
-
-
-    // Scale the output data buffer now that it's been copied
-    //scale = sfd->scale; // Using local var to avoid derefencing pointer in loop
-    //for (i = 0; i < (frames_read * fin_info->channels); i++) {
-    //    tmp_arr[i] = tmp_arr[i] * scale;
-    //}
-
-    // Now copy portions of each frame into the true output buffer
-    alpha = fin_info->channels;
-    beta = sfd->channel_count;
     for (i = 0; i < frames_read; i++) {
-        memcpy(buf_out + i*beta, tmp_arr + i*alpha, sizeof(float)*alpha);
+        dmatrix_mult((double *) (mix_mat->data), PyArray_DIM(mix_mat, 0), PyArray_DIM(mix_mat, 1), 
+                     (read_buf+i*frame_size), frame_size, 1,
+                     tmp_buf, channel_count, 1);
+        //buf_out[2*i] = (float) read_buf[i];
+        //buf_out[2*i+1] = (float) read_buf[i];
+        for (j = 0; j < channel_count; j++) {
+            buf_out[i*channel_count + j] = (float) tmp_buf[j];
+        }
+    }
+    cursor += frames_read;
+
+    // Move `self.cursor`
+    if (PyObject_HasAttrString(self, "cursor")) {
+        gstate = PyGILState_Ensure();
+        err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(cursor));
+        PyGILState_Release(gstate);
+        if (err == -1) {
+            printf("DEBUG: ERROR\n");
+            return -1;
+        }
+    }
+    else {
+        printf("ERROR: no `cursor` attribute\n");
+        return -1;
     }
 
+    free(read_buf);
+
+    /*
     // Increment time counter by playback delta
     sfd->time += frames;
+    /* */
 
     if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
@@ -228,11 +355,12 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     else {
         // We've reached EOF
         sf_seek(fin, 0, SEEK_SET); // Reset cursor to start of sound file
-        if (sfd->loop) {
+        if (loop) {
             return paContinue;
         }
         else {
             // We're really all done
+            sf_close(fin); // Note, this implies we are opening the sndfile each time we call `self.play()`
             return paComplete;
         }
     }
