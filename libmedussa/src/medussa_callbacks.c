@@ -360,7 +360,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         }
         else {
             // We're really all done
-            sf_close(fin); // Note, this implies we are opening the sndfile each time we call `self.play()`
+            //sf_close(fin); // Note, this implies we are opening the sndfile each time we call `self.play()`
             return paComplete;
         }
     }

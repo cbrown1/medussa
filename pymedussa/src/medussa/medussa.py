@@ -208,11 +208,10 @@ class ToneStream(Stream):
 class FiniteStream(Stream):
     loop = None
     pa_fpb = 1024  # This lets us avoid `malloc` in the callback
-
+    cursor = 0
 
 class ArrayStream(FiniteStream):
     arr = None
-    cursor = 0
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
         if len(arr.shape) == 1:
@@ -265,7 +264,6 @@ class SndfileStream(FiniteStream):
     fin = None
     finfo = None
     finpath = None
-    cursor = 0
 
     def __init__(self, device, mix_mat, finpath, loop=False):
         # Initialize `Stream` attributes
@@ -303,14 +301,14 @@ class SndfileStream(FiniteStream):
 
         # print "DEBUG: output_channels == %d" % (output_channels,)
 
-        # Delete this probs: sndfile.csndfile.sf_close(self.fin)
-
         self.out_param = PaStreamParameters(self.device.out_index,
                                             output_channels, # number of rows is output dimension
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
 
+    def __del__(self):
+        sndfile.csndfile.sf_close(c_void_p(self.fin))
 
 def generateHostApiInfo():
     HostApiInfoPointer = POINTER(PaHostApiInfo)
