@@ -3,14 +3,16 @@ import numpy as np
 from pal import signal
 from time import sleep
 
-x,fs = signal.wavread("clean.wav")
+fs = 44100
+#x,fs = signal.wavread("clean.wav")
 #x,fs = signal.wavread("speech-noise-tone.wav")
 
 #y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
 
 d = medussa.open_device()
 #s = d.open_array(x,fs)
-s = medussa.SndfileStream(d, None, "clean.wav")
+#s = medussa.SndfileStream(d, None, "clean.wav")
+s = d.open_file("clean.wav")
 #s = medussa.SndfileStream(d, None, "speech-noise-tone.wav")
 
 #s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)

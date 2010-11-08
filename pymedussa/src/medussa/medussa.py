@@ -95,6 +95,10 @@ class Device:
         s = ArrayStream(self, fs, None, arr)
         return s
 
+    def open_file(self, finpath):
+        s = SndfileStream(self, None, finpath)
+        return s
+
 class Stream:
     # device : PaDevice
     device = None
@@ -210,6 +214,40 @@ class FiniteStream(Stream):
     pa_fpb = 1024  # This lets us avoid `malloc` in the callback
     cursor = 0
 
+    frames = None # Total length of the signal in frames
+    duration = None # Total length of the signal in milliseconds
+
+    def time(self, pos=None, posunit="ms"):
+        """
+        If `pos` is `None`, returns the current cursor position in milliseconds.
+        Otherwise, sets the cursor position to `pos`, as deterimined by the argument to `posunit`.
+
+        `posunit` may be of value:
+            "ms": assume `pos` is of type `float`
+            "sec": `assume `pos` is of type float`
+            "frames": assume `pos` is of type `int`
+        """
+        if pos == None:
+            return self.cursor / 44100.0 * 1000.0
+        elif posunit == "ms":
+            newcursor = int(pos / 1000.0 * 44100.0)
+            if not (newcursor < self.frames):
+                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
+            self.cursor = int(pos / 1000.0 * 44100.0)
+        elif posunit == "sec":
+            newcursor = int(pos * 44100.0)
+            if not (newcursor < self.frames):
+                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
+            self.cursor = int(pos * 44100.0)
+        elif posunit == "frames":
+            assert isinstance(pos, int)
+            if not (pos < self.frames):
+                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
+            self.cursor = pos
+        else:
+            raise RuntimeError("Bad argument to `posunit`")
+
+
 class ArrayStream(FiniteStream):
     arr = None
 
@@ -235,6 +273,10 @@ class ArrayStream(FiniteStream):
         # Initialize this class' attributes
         self.arr = arr
 
+        # Set length data
+        self.frames = self.arr.shape[0]
+        self.duration = self.frames / float(self.fs) * 1000
+
         #if self.arr.shape[1] <= self.device.out_device_info.maxOutputChannels:
         #    output_channels = self.arr.shape[1]
         #else:
@@ -254,10 +296,6 @@ class ArrayStream(FiniteStream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
-
-#    def play(self):
-#        self.cursor = 0
-#        super(ArrayStream, self).play()
 
 
 class SndfileStream(FiniteStream):
@@ -289,6 +327,10 @@ class SndfileStream(FiniteStream):
 
         # set actual device output channels
         output_channels = self.device.out_device_info.maxOutputChannels
+
+        # set signal length
+        self.frames = self.finfo.frames
+        self.duration = self.finfo.frames / float(self.finfo.samplerate) * 1000.0
 
         if mix_mat == None:
             self.mix_mat = np.eye(self.finfo.channels)

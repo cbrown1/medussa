@@ -310,6 +310,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
     buf_out = (float *) pa_buf_out;
 
+    sf_seek(fin, cursor, SEEK_SET);
+
     // This is ugly, but convenient. We can eventually avoid this if really, really necessary
     read_buf = (double *) malloc(1024 * frame_size * sizeof(double));
     frames_read = (int) sf_readf_double (fin, read_buf, frames);
@@ -354,13 +356,28 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     }
     else {
         // We've reached EOF
-        sf_seek(fin, 0, SEEK_SET); // Reset cursor to start of sound file
+        sf_seek(fin, 0, SEEK_SET); // Reset `libsndfile` cursor to start of sound file
+
+        // Move `self.cursor`
+        if (PyObject_HasAttrString(self, "cursor")) {
+            gstate = PyGILState_Ensure();
+            err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(0));
+            PyGILState_Release(gstate);
+            if (err == -1) {
+                printf("DEBUG: ERROR\n");
+                return -1;
+            }
+        }
+        else {
+            printf("ERROR: no `cursor` attribute\n");
+            return -1;
+        }
+
         if (loop) {
             return paContinue;
         }
         else {
             // We're really all done
-            //sf_close(fin); // Note, this implies we are opening the sndfile each time we call `self.play()`
             return paComplete;
         }
     }
