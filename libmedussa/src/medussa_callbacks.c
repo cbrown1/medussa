@@ -199,6 +199,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
     // Point `self` to calling instance
     self = (PyObject *) user_data;
+    if (self == NULL) { printf("DEBUG 0: NULL pointer\n"); }
 
     // `PyObject *out_param` from `self.out_param`
     if (PyObject_HasAttrString(self, "out_param")) {
@@ -309,19 +310,20 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     }
 
     buf_out = (float *) pa_buf_out;
+    if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }
 
     sf_seek(fin, cursor, SEEK_SET);
 
     // This is ugly, but convenient. We can eventually avoid this if really, really necessary
     read_buf = (double *) malloc(1024 * frame_size * sizeof(double));
+    if (read_buf == NULL) { printf("DEBUG 2: NULL pointer\n"); }
+
     frames_read = (int) sf_readf_double (fin, read_buf, frames);
 
     for (i = 0; i < frames_read; i++) {
         dmatrix_mult((double *) (mix_mat->data), PyArray_DIM(mix_mat, 0), PyArray_DIM(mix_mat, 1), 
                      (read_buf+i*frame_size), frame_size, 1,
                      tmp_buf, channel_count, 1);
-        //buf_out[2*i] = (float) read_buf[i];
-        //buf_out[2*i+1] = (float) read_buf[i];
         for (j = 0; j < channel_count; j++) {
             buf_out[i*channel_count + j] = (float) tmp_buf[j];
         }
@@ -343,6 +345,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
 
+    if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
     free(read_buf);
 
     /*
