@@ -194,7 +194,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     double tmp_buf[MAX_FRAME_SIZE];
     char *finpath;
 
-    PyObject *self, *attr, *out_param, *finfo;
+    PyObject *self, *attr, *out_param, *finfo, *tmp;
     PyArrayObject *mix_mat;
 
     // Point `self` to calling instance
@@ -208,6 +208,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         out_param = attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -220,6 +221,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         channel_count = (unsigned int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -232,6 +234,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         mix_mat = (PyArrayObject *) attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -244,6 +247,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         loop = (int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -256,6 +260,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         cursor = (unsigned int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -268,6 +273,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         finpath = PyString_AsString(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -280,6 +286,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         fin = (SNDFILE *) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -292,6 +299,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         finfo = attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -304,6 +312,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         frame_size = (int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -332,9 +341,11 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
     // Move `self.cursor`
     if (PyObject_HasAttrString(self, "cursor")) {
+        tmp = PyInt_FromLong(cursor);
         gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(cursor));
+        err = PyObject_SetAttrString(self, "cursor", tmp);
         PyGILState_Release(gstate);
+        Py_CLEAR(tmp);
         if (err == -1) {
             printf("DEBUG: ERROR\n");
             return -1;
@@ -348,11 +359,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
     free(read_buf);
 
-    /*
-    // Increment time counter by playback delta
-    sfd->time += frames;
-    /* */
-
     if (frames_read == frames) {
         // Frames returned equals frames requested, so we didn't reach EOF
         return paContinue;
@@ -363,9 +369,11 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 
         // Move `self.cursor`
         if (PyObject_HasAttrString(self, "cursor")) {
+            tmp = PyInt_FromLong(0);
             gstate = PyGILState_Ensure();
-            err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(0));
+            err = PyObject_SetAttrString(self, "cursor", tmp);
             PyGILState_Release(gstate);
+            Py_CLEAR(tmp);
             if (err == -1) {
                 printf("DEBUG: ERROR\n");
                 return -1;
