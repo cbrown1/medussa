@@ -2,6 +2,7 @@ from portaudio import *
 import sndfile
 import numpy as np
 from time import sleep
+import atexit
 
 
 # Select the correct name for the shared library, dependent on platform
@@ -18,6 +19,11 @@ if libname == None:
 
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
+
+
+@atexit.register
+def medussa_exit():
+    pa.Pa_Terminate()
 
 
 class Device:
@@ -178,6 +184,10 @@ class Stream:
         ERROR_CHECK(err)
         return bool(err)
 
+    def __del__(self):
+        pa.Pa_StopStream(self.stream_ptr)
+        pa.Pa_CloseStream(self.stream_ptr)
+
 
 class ToneStream(Stream):
     tone_freq = None
@@ -317,10 +327,10 @@ class SndfileStream(FiniteStream):
         self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
         self.fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(self.finfo))
 
-        print self.fin, type(self.fin)
-        print self.finfo.frames
-        print self.finfo.samplerate
-        print self.finfo.channels
+        #print "DEBUG:", self.fin, type(self.fin)
+        #print "DEBUG:", self.finfo.frames
+        #print "DEBUG:", self.finfo.samplerate
+        #print "DEBUG:", self.finfo.channels
 
         # set sampling frequency
         self.fs = self.finfo.samplerate
@@ -350,6 +360,8 @@ class SndfileStream(FiniteStream):
                                             None)
 
     def __del__(self):
+        #pa.Pa_StopStream(self.stream_ptr)
+        #pa.Pa_CloseStream(self.stream_ptr)
         sndfile.csndfile.sf_close(c_void_p(self.fin))
 
 def generateHostApiInfo():
