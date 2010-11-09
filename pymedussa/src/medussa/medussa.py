@@ -185,7 +185,7 @@ class Stream:
         return bool(err)
 
     def __del__(self):
-        pa.Pa_StopStream(self.stream_ptr)
+        #pa.Pa_StopStream(self.stream_ptr)
         pa.Pa_CloseStream(self.stream_ptr)
 
 
@@ -361,7 +361,7 @@ class SndfileStream(FiniteStream):
 
     def __del__(self):
         #pa.Pa_StopStream(self.stream_ptr)
-        #pa.Pa_CloseStream(self.stream_ptr)
+        pa.Pa_CloseStream(self.stream_ptr)
         sndfile.csndfile.sf_close(c_void_p(self.fin))
 
 def generateHostApiInfo():
