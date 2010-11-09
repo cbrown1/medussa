@@ -20,7 +20,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     double *mix_mat_arr;
     double *arr_frames;
 
-    PyObject *self, *attr, *out_param;
+    PyObject *self, *attr, *out_param, *tmp;
     PyArrayObject *arr;
     PyArrayObject *mix_mat;
 
@@ -37,6 +37,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         out_param = attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -49,6 +50,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         channel_count = (unsigned int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -61,6 +63,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         arr = (PyArrayObject *) attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -73,6 +76,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         mix_mat = (PyArrayObject *) attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -85,6 +89,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         loop = (int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -97,6 +102,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         cursor = (unsigned int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -131,13 +137,15 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Move `self.cursor`
     if (PyObject_HasAttrString(self, "cursor")) {
+        tmp = PyInt_FromLong(cursor);
         gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(cursor));
+        err = PyObject_SetAttrString(self, "cursor", tmp);
         PyGILState_Release(gstate);
         if (err == -1) {
             printf("DEBUG: ERROR\n");
             return -1;
         }
+        Py_CLEAR(tmp);
     }
     else {
         printf("ERROR: no `cursor` attribute\n");
@@ -150,13 +158,15 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Reset `self.cursor`
     if (PyObject_HasAttrString(self, "cursor")) {
+        tmp = PyInt_FromLong(0);
         gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", PyInt_FromLong(0));
+        err = PyObject_SetAttrString(self, "cursor", tmp);
         PyGILState_Release(gstate);
         if (err == -1) {
             printf("DEBUG: ERROR\n");
             return -1;
         }
+        Py_CLEAR(tmp);
     }
     else {
         printf("ERROR: no `cursor` attribute\n");
@@ -413,7 +423,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
 
     PaStreamParameters *spout;
 
-    PyObject *self, *attr;
+    PyObject *self, *attr, *tmp;
     PyArrayObject *mix_mat;
 
     // Point `self` to calling instance
@@ -426,6 +436,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         fs = (float) PyFloat_AsDouble(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -438,6 +449,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         tone_freq = (float) PyFloat_AsDouble(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -450,6 +462,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         t = (unsigned int) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -462,6 +475,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         mix_mat = (PyArrayObject *) attr;
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -474,6 +488,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             return -1;
         }
         spout = (PaStreamParameters *) PyInt_AsLong(attr);
+        Py_CLEAR(attr);
     }
     else {
         return -1;
@@ -498,13 +513,14 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
 
     // Set `self.t` to the current time value
     if (PyObject_HasAttrString(self, "t")) {
-        attr = PyInt_FromLong(t);
+        tmp = PyInt_FromLong(t);
         gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "t", attr);
+        err = PyObject_SetAttrString(self, "t", tmp);
         PyGILState_Release(gstate);
         if (err == -1) {
             return -1;
         }
+        Py_CLEAR(tmp);
     }
     else {
         printf("ERROR: no `t` attribute\n");
