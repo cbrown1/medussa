@@ -511,6 +511,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         t++;
     }
 
+    /*
     // Set `self.t` to the current time value
     if (PyObject_HasAttrString(self, "t")) {
         tmp = PyInt_FromLong(t);
@@ -526,6 +527,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         printf("ERROR: no `t` attribute\n");
         return -1;
     }
+    */
 
     return paContinue;
 }
