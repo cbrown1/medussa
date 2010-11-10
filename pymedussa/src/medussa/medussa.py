@@ -493,7 +493,7 @@ def playarr(arr, fs, channel=1):
     Plays an array on the default device with blocking, Matlab-style.
     """
     d = open_default_device()
-    s = ArrayStream(d, fs, None, arr)
+    s = ArrayStream(d, arr, fs)
     s.open()
     s.play()
     while s.is_playing():
@@ -507,7 +507,7 @@ def playfile(filename, channel=1):
     correspondingly long time!
     """
     d = open_default_device()
-    s = SndfileStream(d, None, filename)
+    s = SndfileStream(d, filename)
     s.open()
     s.play()
     while s.is_playing():
