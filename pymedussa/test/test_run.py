@@ -11,9 +11,8 @@ x,fs = signal.wavread("clean.wav")
 #y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
 
 d = medussa.open_device()
-#s = d.open_array(x,fs)
-sa = medussa.SndfileStream(d, None, "clean.wav")
-sf = d.open_file("clean.wav")
+s = d.open_array(x,fs)
+s2 = d.open_file("clean.wav")
 #s = medussa.SndfileStream(d, None, "speech-noise-tone.wav")
 
 #s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
