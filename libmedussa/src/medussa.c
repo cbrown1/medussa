@@ -99,3 +99,23 @@ void test_msg ()
 {
     printf("hello, world.\n");
 }
+
+void sndfile_as_ndarray (char *finpath, PyObject *arr)
+{
+    int frames_read;
+
+    SNDFILE *fin;
+    SF_INFO *finfo;
+    //PyArrayObject *array;
+    //array = (PyArrayObject *) arr;
+
+    printf("finpath: %s\n", finpath);
+
+    printf("debug 1\n");
+    fin = sf_open(finpath, SFM_READ, finfo);
+    printf("debug 2: %p\n", fin);
+    frames_read = (int) sf_readf_double (fin, (double *) PyArray_DATA(arr), finfo->frames);
+    printf("debug 3\n");
+    sf_close(fin);
+    printf("debug 4\n");
+}

@@ -511,3 +511,28 @@ def playfile(filename, channel=1):
     while s.is_playing():
         sleep(.01)
 
+def readfile(finpath):
+    """
+    Read any libsndfile-compatible sound file into an ndarray.
+
+    Parameters
+    ----------
+    filename : str
+
+    Returns
+    -------
+    (arr, fs) : (ndarray, float)
+    """
+    finfo = sndfile.SF_INFO(0,0,0,0,0,0)
+    fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(finfo))
+    sndfile.csndfile.sf_close(c_void_p(fin))
+
+    print finfo.frames, finfo.channels
+    arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
+    fs = finfo.samplerate
+
+    cmedussa.sndfile_as_ndarray(finpath, py_object(arr))
+
+    sleep(0.1)
+
+    return (arr, fs)

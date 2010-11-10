@@ -5,15 +5,15 @@ from time import sleep
 import sys
 
 fs = 44100
-x,fs = signal.wavread("clean.wav")
+#x,fs = medussa.readfile("clean.wav")
 #x,fs = signal.wavread("speech-noise-tone.wav")
 
 #y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
 
 d = medussa.open_device()
-s = d.open_array(x,fs)
-s2 = d.open_file("clean.wav")
-#s = medussa.SndfileStream(d, None, "speech-noise-tone.wav")
+#s = d.open_array(x,fs)
+#s = d.open_file("clean.wav")
+s = d.create_tone(400,44100)
 
 #s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
 

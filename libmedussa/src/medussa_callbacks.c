@@ -429,7 +429,9 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
 
-    /*
+
+    gstate = PyGILState_Ensure();
+
     // `float fs` from `self.fs`
     if (PyObject_HasAttrString(self, "fs")) {
         attr = PyObject_GetAttrString(self, "fs");
@@ -442,10 +444,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
-    */
-    fs = 44100.0;
 
-    /*
     // `float tone_freq` from `self.tone_freq`
     if (PyObject_HasAttrString(self, "tone_freq")) {
         attr = PyObject_GetAttrString(self, "tone_freq");
@@ -458,10 +457,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
-    */
-    tone_freq = 400.0;
 
-    /*
     // `unsigned int t` from `self.t`
     if (PyObject_HasAttrString(self, "t")) {
         attr = PyObject_GetAttrString(self, "t");
@@ -474,10 +470,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
-    */
-    t = 0;
 
-    /*
     // `PyArrayObject *mix_mat` from `self.mix_mat`
     if (PyObject_HasAttrString(self, "mix_mat")) {
         attr = PyObject_GetAttrString(self, "mix_mat");
@@ -490,9 +483,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
-    */
 
-    /*
     // `PaStreamParameters *spout` from `Stream.out_param`
     if (PyObject_HasAttrString(self, "spout_ptr")) {
         attr = PyObject_GetAttrString(self, "spout_ptr");
@@ -506,15 +497,17 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
     frame_size = spout->channelCount;
-    */
+
+    PyGILState_Release(gstate);
+
 
     // Point to data array of `mix_mat`
-    //mix_mat_arr = (double *) PyArray_DATA(mix_mat);
+    mix_mat_arr = (double *) PyArray_DATA(mix_mat);
 
     // Point to actual output buffer
     buf_out = (float *) pa_buf_out;
     
-    /*
+
     // Main loop for tone generation
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
@@ -523,8 +516,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         }
         t++;
     }
-    */
 
+    /*
     frame_size = (unsigned int) 2;
     // Dummy, debug main loop for tone generation
     for (i = 0; i < frames; i++) {
@@ -533,6 +526,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         }
         t++;
     }
+    */
 
     /*
     // Set `self.t` to the current time value
