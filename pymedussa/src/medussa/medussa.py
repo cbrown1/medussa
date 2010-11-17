@@ -118,13 +118,15 @@ class Stream:
 
     # Mixing matrix for computing output
     mix_mat = None
+    mute_mat = None
     pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
+
 
     def __setattr__(self, name, val):
         if name == "fs":
             # enforce fs as floating point (add nonnegative check?)
             self.__dict__[name] = float(val)
-        elif name == "mix_mat" or name == "arr":
+        elif name == "mix_mat" or name == "arr" or name == "mute_mat":
             # enforce array contiguity
             self.__dict__[name] = np.ascontiguousarray(val)
         else:
@@ -184,6 +186,10 @@ class Stream:
         ERROR_CHECK(err)
         return bool(err)
 
+    def mute(self):
+        # simply swaps the mix matrix with a zero matrix of same shape, or back
+        self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+
     def __del__(self):
         #pa.Pa_StopStream(self.stream_ptr)
         pa.Pa_CloseStream(self.stream_ptr)
@@ -200,6 +206,7 @@ class ToneStream(Stream):
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
         self.mix_mat = mix_mat
+        self.mute_mat = mix_mat * 0.0
         self.stream_p = 0
         self.fs = fs
 
@@ -298,6 +305,7 @@ class ArrayStream(FiniteStream):
         if output_channels > self.mix_mat.shape[1]:
             self.mix_mat
             self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  # zero out extra rows which, by default, are just repeated in memory
+        self.mute_mat = self.mix_mat * 0.0
 
         # print "DEBUG: output_channels == %d" % (output_channels,)
 
@@ -351,7 +359,7 @@ class SndfileStream(FiniteStream):
             self.mix_mat
             self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  # zero out extra rows which, by default, are just repeated in memory
 
-        # print "DEBUG: output_channels == %d" % (output_channels,)
+        self.mute_mat = self.mix_mat * 0.0
 
         self.out_param = PaStreamParameters(self.device.out_index,
                                             output_channels, # number of rows is output dimension
@@ -498,6 +506,7 @@ def playarr(arr, fs, channel=1):
     while s.is_playing():
         sleep(.01)
 
+
 def playfile(filename, channel=1):
     """
     Plays a soundfile on the default device with blocking, Matlab-style.
@@ -510,6 +519,7 @@ def playfile(filename, channel=1):
     s.play()
     while s.is_playing():
         sleep(.01)
+
 
 def readfile(finpath):
     """

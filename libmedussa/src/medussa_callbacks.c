@@ -429,7 +429,6 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
 
-
     gstate = PyGILState_Ensure();
 
     // `float fs` from `self.fs`
