@@ -226,6 +226,37 @@ class ToneStream(Stream):
                                             None)
 
 
+class WhiteStream(Stream):
+    tone_freq = None
+    t = None
+
+    def __init__(self, device, fs, mix_mat, tone_freq):
+        # Initialize `Stream` attributes
+        # OLD: self.callback_ptr = ctypes.cast(ctypes.pointer(cmedussa.callback_tone), c_void_p)
+        self.callback = cmedussa.callback_tone
+        self.callback_ptr = cmedussa.callback_tone
+        self.device = device
+        self.mix_mat = mix_mat
+        self.mute_mat = mix_mat * 0.0
+        self.stream_p = 0
+        self.fs = fs
+
+        # Initialize this class' attributes
+        self.tone_freq = tone_freq
+        self.t = 0
+
+        # Find a smart way to determine this value,
+        # which has to be hardcoded into the callback
+        self.pa_fpb = 1024
+
+        #self.out_param = PaStreamParameters(devindex, channel_count, sample_format, sugg_lat, hostapispecstrminfo)
+        self.out_param = PaStreamParameters(self.device.out_index,
+                                            self.mix_mat.shape[0], # number of rows is output dimension
+                                            paFloat32,
+                                            self.device.out_device_info.defaultLowInputLatency,
+                                            None)
+
+
 class FiniteStream(Stream):
     loop = None
     pa_fpb = 1024  # This lets us avoid `malloc` in the callback
