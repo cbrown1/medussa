@@ -30,6 +30,9 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
 
+    // Begin attribute acquisition
+    gstate = PyGILState_Ensure();
+
     // `PyObject *out_param` from `self.out_param`
     if (PyObject_HasAttrString(self, "out_param")) {
         attr = PyObject_GetAttrString(self, "out_param");
@@ -107,6 +110,9 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
+
+    // End attribute acquisition
+    PyGILState_Release(gstate);
 
     // Point `mix_mat_arr` to data buffer of `mix_mat`
     mix_mat_arr = (double *) PyArray_GETPTR2(mix_mat, 0, 0);
@@ -210,6 +216,9 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     // Point `self` to calling instance
     self = (PyObject *) user_data;
     if (self == NULL) { printf("DEBUG 0: NULL pointer\n"); }
+
+    // Begin attribute acquisition
+    gstate = PyGILState_Ensure();
 
     // `PyObject *out_param` from `self.out_param`
     if (PyObject_HasAttrString(self, "out_param")) {
@@ -327,6 +336,9 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     else {
         return -1;
     }
+
+    // End attribute acquisition
+    PyGILState_Release(gstate);
 
     buf_out = (float *) pa_buf_out;
     if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }
