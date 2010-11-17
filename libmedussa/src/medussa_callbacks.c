@@ -539,13 +539,14 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     }
     */
 
-    /*
+    // /*
+   
     // Set `self.t` to the current time value
+    gstate = PyGILState_Ensure();
     if (PyObject_HasAttrString(self, "t")) {
         tmp = PyInt_FromLong(t);
-        gstate = PyGILState_Ensure();
         err = PyObject_SetAttrString(self, "t", tmp);
-        PyGILState_Release(gstate);
+        
         if (err == -1) {
             return -1;
         }
@@ -555,7 +556,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         printf("ERROR: no `t` attribute\n");
         return -1;
     }
-    */
+    PyGILState_Release(gstate);
+    // */
 
     return paContinue;
 }
