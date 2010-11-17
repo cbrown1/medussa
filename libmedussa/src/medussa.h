@@ -26,7 +26,3 @@ PaStream *open_stream (PyObject *,
                        PaStreamCallback *);
 
 void start_streams (PaStream **, int);
-
-void test_msg ();
-
-void sndfile_as_ndarray (char *finpath, PyObject *arr);

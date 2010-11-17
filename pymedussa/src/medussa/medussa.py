@@ -525,14 +525,21 @@ def readfile(finpath):
     """
     finfo = sndfile.SF_INFO(0,0,0,0,0,0)
     fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(finfo))
-    sndfile.csndfile.sf_close(c_void_p(fin))
 
-    print finfo.frames, finfo.channels
-    arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
     fs = finfo.samplerate
+    BUFFTYPE = ctypes.c_double * (finfo.frames * finfo.channels)
+    buff = BUFFTYPE()
+    frames_read = sndfile.csndfile.sf_readf_double(fin, byref(buff), finfo.frames)
+    #print "frames_read", frames_read
 
-    cmedussa.sndfile_as_ndarray(finpath, py_object(arr))
+    err = sndfile.csndfile.sf_close(c_void_p(fin))
+    #print "err", err
 
-    sleep(0.1)
+    #print finfo.frames, finfo.channels
+    arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
 
-    return (arr, fs)
+    for i in xrange(finfo.frames):
+        for j in xrange(finfo.channels):
+            arr[i][j] = buff[i*finfo.channels + j]
+
+    return (arr, float(fs))
