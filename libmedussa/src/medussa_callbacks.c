@@ -659,7 +659,7 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 printf("clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp;
+            buf_out[i*frame_size + j] = tmp * ((float) mix_mat_arr[j]);
         }
     }
 

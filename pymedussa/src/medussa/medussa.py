@@ -95,30 +95,30 @@ class Device:
             self.__dict__[name] = val
 
     def create_tone(self, tone_freq, fs):
-        '''
+        """
         Creates a tone stream.
-        '''
-        s = ToneStream(self, fs, np.array([1.0, 1.0]), tone_freq)
+        """
+        s = ToneStream(self, fs, None, tone_freq)
         return s
 
     def create_white(self, fs):
-        '''
-        Creates a tone stream.
-        '''
-        s = WhiteStream(self, fs, np.array([1.0, 1.0]))
+        """
+        Creates a stream of Gaussian/white noise.
+        """
+        s = WhiteStream(self, fs, None)
         return s
 
     def open_array(self, arr, fs):
-        '''
+        """
         Creates an array stream.
-        '''
+        """
         s = ArrayStream(self, fs, None, arr)
         return s
 
     def open_file(self, finpath):
-        '''
+        """
         Creates a sound file stream.
-        '''
+        """
         s = SndfileStream(self, None, finpath)
         return s
 
@@ -243,8 +243,14 @@ class ToneStream(Stream):
         self.callback = cmedussa.callback_tone
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
-        self.mix_mat = mix_mat
-        self.mute_mat = mix_mat * 0.0
+
+        if mix_mat == None:
+            output_channels = self.device.out_device_info.maxOutputChannels
+            self.mix_mat = np.ones((output_channels,1))
+        else:
+            self.mix_mat = mix_mat
+
+        self.mute_mat = self.mix_mat * 0.0
         self.stream_p = 0
         self.fs = fs
 
@@ -277,8 +283,14 @@ class WhiteStream(Stream):
         self.callback = cmedussa.callback_white
         self.callback_ptr = cmedussa.callback_white
         self.device = device
-        self.mix_mat = mix_mat
-        self.mute_mat = mix_mat * 0.0
+
+        if mix_mat == None:
+            output_channels = self.device.out_device_info.maxOutputChannels
+            self.mix_mat = np.ones((output_channels,1))
+        else:
+            self.mix_mat = mix_mat
+
+        self.mute_mat = self.mix_mat * 0.0
         self.stream_p = 0
         self.fs = fs
 
