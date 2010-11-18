@@ -115,9 +115,9 @@ class Device:
         return s
 
 class Stream:
-    '''
+    """
     Uber-generic stream class.
-    '''
+    """
     # device : PaDevice
     device = None
 
@@ -180,9 +180,9 @@ class Stream:
             raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     def play(self):
-        '''
+        """
         Starts playback of the stream.
-        '''
+        """
         if (self.stream_ptr == None):
             self.open()
             self.start()
@@ -197,23 +197,23 @@ class Stream:
             self.start()
 
     def pause(self):
-        '''
+        """
         Pauses playback of the stream (Playback cursor is not reset).
-        '''
+        """
         self.stop()
 
     def is_playing(self):
-        '''
+        """
         Boolean indicating whether the stream is currently playing.
-        '''
+        """
         err = pa.Pa_IsStreamActive(self.stream_ptr)
         ERROR_CHECK(err)
         return bool(err)
 
     def mute(self):
-        '''
+        """
         Mutes the stream. Mix matrix is unaffected.
-        '''
+        """
         # simply swaps the mix matrix with a zero matrix of same shape, or back
         self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
 
@@ -223,9 +223,9 @@ class Stream:
 
 
 class ToneStream(Stream):
-    '''
-    Stream object representing pink noise.
-    '''
+    """
+    Stream object representing a pure tone.
+    """
     tone_freq = None
     t = None
 
@@ -257,9 +257,9 @@ class ToneStream(Stream):
 
 
 class WhiteStream(Stream):
-    '''
+    """
     Stream object representing white noise.
-    '''
+    """
     tone_freq = None
     t = None
 
@@ -291,9 +291,9 @@ class WhiteStream(Stream):
 
 
 class FiniteStream(Stream):
-    '''
+    """
     Generic stream object used to derive sndfilestream and arraystream objects.
-    '''
+    """
     loop = None
     pa_fpb = 1024  # This lets us avoid `malloc` in the callback
     cursor = 0
@@ -312,17 +312,17 @@ class FiniteStream(Stream):
             "frames": assume `pos` is of type `int`
         """
         if pos == None:
-            return self.cursor / 44100.0 * 1000.0
+            return self.cursor / self.fs * 1000.0
         elif posunit == "ms":
-            newcursor = int(pos / 1000.0 * 44100.0)
+            newcursor = int(pos / 1000.0 * self.fs)
             if not (newcursor < self.frames):
                 raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
-            self.cursor = int(pos / 1000.0 * 44100.0)
+            self.cursor = int(pos / 1000.0 * self.fs)
         elif posunit == "sec":
-            newcursor = int(pos * 44100.0)
+            newcursor = int(pos * self.fs)
             if not (newcursor < self.frames):
                 raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
-            self.cursor = int(pos * 44100.0)
+            self.cursor = int(pos * self.fs)
         elif posunit == "frames":
             assert isinstance(pos, int)
             if not (pos < self.frames):
@@ -333,9 +333,9 @@ class FiniteStream(Stream):
 
 
 class ArrayStream(FiniteStream):
-    '''
+    """
     Stream object representing a NumPy array.
-    '''
+    """
     arr = None
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
@@ -387,9 +387,9 @@ class ArrayStream(FiniteStream):
 
 
 class SndfileStream(FiniteStream):
-    '''
+    """
     Stream object representing a sound file on disk.
-    '''
+    """
     fin = None
     finfo = None
     finpath = None
@@ -534,9 +534,9 @@ def open_default_device():
 
 
 def start_streams(streams, open_streams=False, normalize=False):
-    '''
+    """
     Tries to start playback of specified streams as synchronously as possible.
-    '''
+    """
     if open_streams:
         [s.open() for s in streams]
 

@@ -527,19 +527,6 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         }
         t++;
     }
-
-    /*
-    frame_size = (unsigned int) 2;
-    // Dummy, debug main loop for tone generation
-    for (i = 0; i < frames; i++) {
-        for (j = 0; j < frame_size; j++) {
-            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq));
-        }
-        t++;
-    }
-    */
-
-    // /*
    
     // Set `self.t` to the current time value
     gstate = PyGILState_Ensure();
@@ -557,7 +544,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
         return -1;
     }
     PyGILState_Release(gstate);
-    // */
+
 
     return paContinue;
 }
