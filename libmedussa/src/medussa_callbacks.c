@@ -562,8 +562,6 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
 
     double *mix_mat_arr;
 
-    double c_fit = 2.565;
-    double k_fit = 10.0;
     double tmp;
 
     PyGILState_STATE gstate;
@@ -653,11 +651,11 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
             //printf("%.6f\n", rk_gauss(state));
             if (tmp < -1.0) {
                 tmp = -1.0;
-                printf("clipped below\n");
+                //printf("DEBUG: clipped below\n");
             }
             if (tmp > 1.0) {
                 tmp = 1.0;
-                printf("clipped above\n");
+                //printf("DEBUG: clipped above\n");
             }
             buf_out[i*frame_size + j] = tmp * ((float) mix_mat_arr[j]);
         }
