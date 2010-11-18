@@ -646,7 +646,6 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            // buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat_arr[j]));
             tmp = rk_gauss(state) * 0.1;
             //printf("%.6f\n", rk_gauss(state));
             if (tmp < -1.0) {
