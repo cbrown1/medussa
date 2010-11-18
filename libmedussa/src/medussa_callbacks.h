@@ -1,5 +1,6 @@
 #include "medussa_types.h"
 #include <math.h>
+#include "randomkit.h"
 
 int callback_ndarray (const void *,
                       void *,
@@ -21,6 +22,13 @@ int callback_tone (const void *,
                    const PaStreamCallbackTimeInfo *,
                    PaStreamCallbackFlags,
                    void *);
+
+int callback_white (const void *,
+                    void *,
+                    unsigned long,
+                    const PaStreamCallbackTimeInfo *,
+                    PaStreamCallbackFlags,
+                    void *);
 
 int callback_pink (const void *,
                    void *,

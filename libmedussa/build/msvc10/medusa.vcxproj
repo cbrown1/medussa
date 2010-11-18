@@ -15,12 +15,14 @@
     <ClCompile Include="..\..\src\medussa_callbacks.c" />
     <ClCompile Include="..\..\src\medussa.c" />
     <ClCompile Include="..\..\src\medussa_types.c" />
+    <ClCompile Include="..\..\src\randomkit.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\medussa_matrix.h" />
     <ClInclude Include="..\..\src\medussa_callbacks.h" />
     <ClInclude Include="..\..\src\medussa.h" />
     <ClInclude Include="..\..\src\medussa_types.h" />
+    <ClInclude Include="..\..\src\randomkit.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="medussa.def" />

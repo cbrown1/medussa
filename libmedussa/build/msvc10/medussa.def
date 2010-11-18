@@ -3,5 +3,8 @@ EXPORTS
 	callback_ndarray
 	callback_sndfile_read
 	callback_tone
+	callback_white
 	open_stream
 	start_streams
+	rk_seed
+	rk_randomseed

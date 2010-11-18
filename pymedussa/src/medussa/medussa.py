@@ -3,6 +3,7 @@ import sndfile
 import numpy as np
 from time import sleep
 import atexit
+import rkit
 
 
 # Select the correct name for the shared library, dependent on platform
@@ -98,6 +99,13 @@ class Device:
         Creates a tone stream.
         '''
         s = ToneStream(self, fs, np.array([1.0, 1.0]), tone_freq)
+        return s
+
+    def create_white(self, fs):
+        '''
+        Creates a tone stream.
+        '''
+        s = WhiteStream(self, fs, np.array([1.0, 1.0]))
         return s
 
     def open_array(self, arr, fs):
@@ -260,14 +268,14 @@ class WhiteStream(Stream):
     """
     Stream object representing white noise.
     """
-    tone_freq = None
-    t = None
+    rk_state = None
+    rk_state_ptr = None
 
-    def __init__(self, device, fs, mix_mat, tone_freq):
+    def __init__(self, device, fs, mix_mat):
         # Initialize `Stream` attributes
         # OLD: self.callback_ptr = ctypes.cast(ctypes.pointer(cmedussa.callback_tone), c_void_p)
-        self.callback = cmedussa.callback_tone
-        self.callback_ptr = cmedussa.callback_tone
+        self.callback = cmedussa.callback_white
+        self.callback_ptr = cmedussa.callback_white
         self.device = device
         self.mix_mat = mix_mat
         self.mute_mat = mix_mat * 0.0
@@ -275,8 +283,9 @@ class WhiteStream(Stream):
         self.fs = fs
 
         # Initialize this class' attributes
-        self.tone_freq = tone_freq
-        self.t = 0
+        self.rk_state = rkit.Rk_state()
+        self.rk_state_ptr = ctypes.addressof(self.rk_state)
+        cmedussa.rk_randomseed(byref(self.rk_state))
 
         # Find a smart way to determine this value,
         # which has to be hardcoded into the callback
