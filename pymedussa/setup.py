@@ -1,21 +1,28 @@
 # -*- coding: utf-8 -*-
 from distutils.core import setup
 import platform
+from distutils.sysconfig import get_python_lib
+from os.path import join
 
 medussa_package = ['medussa']
 medussa_package_dir = 'src/medussa'
-medussa_requires = ['numpy (>=1.2)',]
 medussa_package_data = ['*.py']
 medussa_data_files = []
+medussa_requires = ['numpy (>=1.2)',]
 
 if platform.system() == "Windows":
-	medussa_package_data.append('../../lib/medussa.dll')
-	medussa_package_data.append('../../lib/portaudio_x86.dll')
-	medussa_package_data.append('../../lib/libsndfile-1.dll')
+#	medussa_package_data.append('../../lib/medussa.dll')
+#	medussa_package_data.append('../../lib/portaudio_x86.dll')
+#	medussa_package_data.append('../../lib/libsndfile-1.dll')
+	medussa_data_files.append('lib/medussa.dll')
+	medussa_data_files.append('lib/portaudio_x86.dll')
+	medussa_data_files.append('lib/libsndfile-1.dll')
+	medussa_data_files_path = join(get_python_lib(prefix=''), 'medussa')
 else:
-	medussa_data_files.append('lib/libmedussa.so')
 	medussa_requires.append('portaudio (>=19.0)')
 	medussa_requires.append('libsndfile (>=1.0)')
+	medussa_data_files_path = 'lib'
+	medussa_data_files.append('lib/libmedussa.so')
 
 setup(name='medussa',
 	version='1.0',
@@ -29,7 +36,7 @@ setup(name='medussa',
 	requires = medussa_requires,
 	package_dir={'medussa': medussa_package_dir},
 	package_data={'medussa': medussa_package_data},
-	data_files=[('lib',medussa_data_files)],
+	data_files=[(medussa_data_files_path, medussa_data_files)],
 	keywords = 'sound audio wavplay',
 	license = 'GPL',
 	platforms = 'Win32, Linux',
