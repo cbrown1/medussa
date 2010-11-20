@@ -2,26 +2,27 @@ ROOTDIR = ../..
 LIBDIR = $(ROOTDIR)/lib
 INCLUDEDIR = $(ROOTDIR)/include
 SRCDIR = $(ROOTDIR)/src
+FLAGS = -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
 
 CC = gcc
 
 all: medussa.o
-	gcc -shared -Wl,-soname,libmedussa.so -o libmedussa.so ./medussa.o -lportaudio -lsndfile
+	$(CC) -shared -Wl,-soname,libmedussa.so -o libmedussa.so ./*.o -lportaudio -lsndfile
 
-medussa.o: $(SRCDIR)/medussa.c medussa_callbacks.o medussa_matrix.o medussa_types.o
-	gcc -c -fPIC $(SRCDIR)/medussa.c -o medussa.o -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+medussa.o: $(SRCDIR)/medussa.c medussa_callbacks.o medussa_matrix.o medussa_types.o randomkit.o
+	$(CC) -c -fPIC $(SRCDIR)/medussa.c $(FLAGS)
 
 medussa_callbacks.o: $(SRCDIR)/medussa_callbacks.c $(SRCDIR)/randomkit.o
-	gcc -c $(SRCDIR)/medussa_callbacks.c -o medussa_callbacks.o -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+	$(CC) -c -fPIC $(SRCDIR)/medussa_callbacks.c $(FLAGS)
 
 medussa_matrix.o: $(SRCDIR)/medussa_matrix.c
-	gcc -c $(SRCDIR)/medussa_matrix.c -o medussa_matrix.o -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+	$(CC) -c -fPIC $(SRCDIR)/medussa_matrix.c $(FLAGS)
 
 medussa_types.o: $(SRCDIR)/medussa_types.c
-	gcc -c $(SRCDIR)/medussa_types.c -o medussa_types.o -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+	$(CC) -c -fPIC $(SRCDIR)/medussa_types.c $(FLAGS)
 
 randomkit.o: $(SRCDIR)/randomkit.c
-	gcc -c $(SRCDIR)/randomkit.c -o randomkit.o -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+	$(CC) -c -fPIC $(SRCDIR)/randomkit.c $(FLAGS)
 
 clean:
 	rm libmedussa.so
@@ -29,3 +30,4 @@ clean:
 	rm medussa_callbacks.o
 	rm medussa_types.o
 	rm medussa_matrix.o
+	rm randomkit.o

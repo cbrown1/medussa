@@ -1,6 +1,6 @@
 import medussa
 import numpy as np
-from pal import signal
+#from pal import signal
 from time import sleep
 import sys
 
@@ -12,9 +12,9 @@ x,fs = medussa.readfile("clean.wav")
 
 d = medussa.open_device()
 #s = d.open_array(x,fs)
-#s = d.open_file("clean.wav")
+s = d.open_file("clean.wav")
 #s = d.create_tone(400,44100)
-s = d.create_white(44100)
+#s = d.create_white(44100)
 
 #s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
 
