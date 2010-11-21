@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from portaudio import *
 import sndfile
 import numpy as np
@@ -28,6 +29,9 @@ def medussa_exit():
 
 
 class Device:
+    '''
+    Audio device object.
+    '''
     in_index = None
     in_device_info = None
     in_name = None
@@ -96,28 +100,72 @@ class Device:
 
     def create_tone(self, tone_freq, fs):
         """
-        Creates a tone stream.
+        Returns a stream object representing a pure tone.
+
+        Parameters
+        ----------
+        tone_freq : int
+            The frequency, in Hz, of the tone.
+        fs : int
+            The sampling frequency.
+
+        Returns
+        -------
+        s : Stream object
+            The stream object.
         """
         s = ToneStream(self, fs, None, tone_freq)
         return s
 
     def create_white(self, fs):
         """
-        Creates a stream of Gaussian/white noise.
+        Returns a stream object representing Gaussian/white noise.
+
+        Parameters
+        ----------
+        fs : int
+            The sampling frequency.
+
+        Returns
+        -------
+        s : Stream object
+            The stream object.
         """
         s = WhiteStream(self, fs, None)
         return s
 
     def open_array(self, arr, fs):
         """
-        Creates an array stream.
+        Returns a stream object representing an ndarray.
+
+        Parameters
+        ----------
+        arr : array
+            The array of audio data.
+        fs : int
+            The sampling frequency.
+
+        Returns
+        -------
+        s : Stream object
+            The stream object.
         """
         s = ArrayStream(self, fs, None, arr)
         return s
 
     def open_file(self, finpath):
         """
-        Creates a sound file stream.
+        Returns a stream object representing a soundfile on disk.
+
+        Parameters
+        ----------
+        finpath : string
+            The path to the sound file.
+
+        Returns
+        -------
+        s : Stream object
+            The stream object.
         """
         s = SndfileStream(self, None, finpath)
         return s
@@ -175,12 +223,15 @@ class Stream:
 
     def stop(self):
         '''
-        Stops playback of the stream (Playback cursor is reset).
+        Stops playback of the stream (Playback cursor is reset to zero).
         '''
         err = pa.Pa_StopStream(self.stream_ptr)
         ERROR_CHECK(err)
 
     def pa_time(self):
+        '''
+        Returns the portaudio time.
+        '''
         t = pa.Pa_GetStreamTime(self.stream_ptr)
         if t:
             return t.value
@@ -324,13 +375,26 @@ class FiniteStream(Stream):
 
     def time(self, pos=None, posunit="ms"):
         """
-        If `pos` is `None`, returns the current cursor position in milliseconds.
-        Otherwise, sets the cursor position to `pos`, as deterimined by the argument to `posunit`.
+        Gets or sets the current cursor position.
+        If `pos` is `None`, returns the current cursor position in ms.
+        Otherwise, sets the cursor position to `pos`, as deterimined by
+        the argument to `posunit`.
 
-        `posunit` may be of value:
-            "ms": assume `pos` is of type `float`
+        Parameters
+        ----------
+        pos : numeric
+            The position to set the cursor to.
+        posunit : string
+            The units of pos. May be of value:
+            "ms": assume `pos` is of type `float` [default]
             "sec": `assume `pos` is of type float`
             "frames": assume `pos` is of type `int`
+
+        Returns
+        -------
+        pos : numeric
+            The current position of the cursor. This value is returned if
+            no input `pos` is specified.
         """
         if pos == None:
             return self.cursor / self.fs * 1000.0
@@ -512,29 +576,45 @@ def printAvailableDevices(host_api=None, verbose=False):
     if verbose:
         for i,di in enumerate(devices):
             print "index:", i
-            print "structVersion", di.structVersion
-            print "name", di.name
-            print "hostApi:", PaHostApiTypeId.from_int[di.hostApi]
-            print "maxInputChannels:", di.maxInputChannels
-            print "maxOutputChannels:", di.maxOutputChannels
-            print "defaultLowInputLatency", di.defaultLowInputLatency
-            print "defaultLowOutputLatency", di.defaultLowOutputLatency
-            print "defaultHighInputLatency", di.defaultHighInputLatency
-            print "defaultHighOutputLatency", di.defaultHighOutputLatency
-            print "defaultSampleRate", di.defaultSampleRate
+            print " structVersion", di.structVersion
+            print " name", di.name
+            print " hostApi:", PaHostApiTypeId.from_int[di.hostApi]
+            print " maxInputChannels:", di.maxInputChannels
+            print " maxOutputChannels:", di.maxOutputChannels
+            print " defaultLowInputLatency", di.defaultLowInputLatency
+            print " defaultLowOutputLatency", di.defaultLowOutputLatency
+            print " defaultHighInputLatency", di.defaultHighInputLatency
+            print " defaultHighOutputLatency", di.defaultHighOutputLatency
+            print " defaultSampleRate", di.defaultSampleRate
             print ""
     else:
         for i,di in enumerate(devices):
             print "index:", i
-            print "name", di.name
-            print "hostApi:", PaHostApiTypeId.from_int[di.hostApi]
-            print "maxInputChannels:", di.maxInputChannels
-            print "maxOutputChannels:", di.maxOutputChannels
-            print "defaultSampleRate", di.defaultSampleRate
+            print " name", di.name
+            print " hostApi:", PaHostApiTypeId.from_int[di.hostApi]
+            print " maxInputChannels:", di.maxInputChannels
+            print " maxOutputChannels:", di.maxOutputChannels
+            print " defaultSampleRate", di.defaultSampleRate
             print ""
 
 
 def open_device(out_device_index=None, in_device_index=None):
+    '''
+    Opens the specified input and output devices.
+    Use None for default devices.
+
+    Parameters
+    ----------
+    out_device_index : int
+        Index to the desired output device.
+    in_device_index : int
+        Index to the desired input device.
+
+    Returns
+    -------
+    d : Device object
+        Object representing the specified devices.
+    '''
     if out_device_index == None:
         out_device_index = pa.Pa_GetDefaultOutputDevice()
 
@@ -544,7 +624,7 @@ def open_device(out_device_index=None, in_device_index=None):
 
 def open_default_device():
     """
-    This differs from `open_device()` (i.e. with no arguments) only in
+    This differs from `open_device()` (with no arguments) only in
     that a default output device is also opened.
     """
     out_di = pa.Pa_GetDefaultOutputDevice()

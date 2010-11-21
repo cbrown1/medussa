@@ -1,3 +1,0 @@
-LIBRARY _medusaext.pyd
-EXPORTS
-init_medusaext
