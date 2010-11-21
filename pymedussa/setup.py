@@ -19,10 +19,8 @@ if platform.system() == "Windows":
 	medussa_data_files.append('lib/libsndfile-1.dll')
 	medussa_data_files_path = join(get_python_lib(prefix=''), 'medussa')
 else:
-	medussa_requires.append('portaudio (>=19.0)')
-	medussa_requires.append('libsndfile (>=1.0)')
-	medussa_data_files_path = 'lib'
 	medussa_data_files.append('lib/libmedussa.so')
+	medussa_data_files_path = 'lib'
 
 setup(name='medussa',
 	version='1.0',
@@ -43,12 +41,11 @@ setup(name='medussa',
 	long_description="""\
  Medussa is a cross-platform, high-performance, high-level audio library
  based on Port Audio and libsndfile. You can play NumPy arrays, stream
- sound files from disk, or create pure tones, or 'on-line' white or pink
- noise. There are high-level functions like the playarr function (like
- matlab's wavplay) function. Medussa also allows you to access specific
- host api's or devices, create streams as needed, and control them all
- asynchronously. Or, for the most control, you can access the port audio
- library directly. Sweet!
+ sound files from disk, or create pure tones or 'on-line' white or pink
+ noise. There are high-level functions like playarr (similar to matlab's
+ wavplay). You can also access specific host api's or devices, create
+ streams as needed, and control them all asynchronously. Or for the most
+ control, you can access the port audio library directly. Sweet!
  """,
 	classifiers=[
 		"License :: OSI Approved :: GNU General Public License (GPL)",
@@ -57,7 +54,6 @@ setup(name='medussa',
 		"Operating System :: POSIX",
 		"Operating System :: MacOS :: MacOS X",
 		"Programming Language :: Python",
-		"Programming Language :: Python :: 2.5",
 		"Programming Language :: Python :: 2.6",
 		"Programming Language :: Python :: 2.7",
 		"Environment :: Console",
