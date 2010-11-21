@@ -11,6 +11,6 @@ c:\python%maj%%min%\python setup.py bdist_msi --plat-name="win32" --target-versi
 goto End1
 
 :NoArg
-echo Pass Python version number as major.minor. Example: build_win.bat 2.7
+echo Pass Python version number as major.minor. Example: package_win.bat 2.7
 goto End1
 :End1
