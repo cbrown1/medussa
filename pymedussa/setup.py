@@ -8,12 +8,10 @@ medussa_package = ['medussa']
 medussa_package_dir = 'src/medussa'
 medussa_package_data = ['*.py']
 medussa_data_files = []
+medussa_data_files_path = ''
 medussa_requires = ['numpy (>=1.2)',]
 
 if platform.system() == "Windows":
-#	medussa_package_data.append('../../lib/medussa.dll')
-#	medussa_package_data.append('../../lib/portaudio_x86.dll')
-#	medussa_package_data.append('../../lib/libsndfile-1.dll')
 	medussa_data_files.append('lib/medussa.dll')
 	medussa_data_files.append('lib/portaudio_x86.dll')
 	medussa_data_files.append('lib/libsndfile-1.dll')

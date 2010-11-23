@@ -2,18 +2,19 @@ import platform
 import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
-
+from os.path import exists
 from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\portaudio_x86.dll"
+    libname = get_python_lib() + "\\medussa\\portaudio_x86.dll"
+    if not exists(libname):
+        raise RuntimeError("Unable to locate library: " + libname)
+	
 else:
     libname = find_library("portaudio")
-
-# Doesn't work given current pseudo-hardcoded Win32 path
-if libname == None:
-    raise RuntimeError("Unable to locate library `portaudio`.")
+    if libname == None:
+        raise RuntimeError("Unable to locate library `portaudio`.")
 
 # Load the shared library
 pa = ctypes.CDLL(libname)

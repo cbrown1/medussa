@@ -6,6 +6,8 @@ if %ver%.==. goto NoArg
 set maj=%ver:~0,-2%
 set min=%ver:~2%
 
+rd /s /q build
+
 REM Build installer
 c:\python%maj%%min%\python setup.py bdist_msi --plat-name="win32" --target-version="%ver%"
 goto End1

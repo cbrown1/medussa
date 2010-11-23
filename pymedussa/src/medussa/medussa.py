@@ -5,18 +5,19 @@ import numpy as np
 from time import sleep
 import atexit
 import rkit
-
+from os.path import exists
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medussa.dll"
+    libname = get_python_lib() + "\\medussa\\medussa.dll"
+    if not exists(libname):
+        raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
     libname = "/usr/local/lib/libmedussa.so"
 else:
     libname = find_library("medussa")
-
-if libname == None:
-    raise RuntimeError("Unable to locate library `medussa`")
+    if libname == None:
+        raise RuntimeError("Unable to locate library `medussa`")
 
 
 # Instantiate FFI reference to libmedussa
@@ -608,7 +609,7 @@ def printAvailableDevices(host_api=None, verbose=False):
     devices = getAvailableDevices(host_api, verbose)
     
     if len(devices) == 0:
-         print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
+        print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
         return None
 
     if verbose:

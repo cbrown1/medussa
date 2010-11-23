@@ -1,18 +1,19 @@
 import platform
 from ctypes.util import find_library
 from distutils.sysconfig import get_python_lib
-
+from os.path import exists
 from ctypes import *
 
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\libsndfile-1.dll"
+    libname = get_python_lib() + "\\medussa\\libsndfile-1.dll"
+    if not exists(libname):
+	    raise RuntimeError("Unable to locate library: " + libname)
 else:
     libname = find_library("sndfile") # untested
-
-if libname == None:
-    raise RuntimeError("Unable to locate library `libsndfile`")
+    if libname == None:
+        raise RuntimeError("Unable to locate library `libsndfile`")
 
 csndfile = CDLL(libname)
 
