@@ -554,7 +554,22 @@ def generateDeviceInfo():
         yield di
 
 
-def printAvailableDevices(host_api=None, verbose=False):
+def getAvailableDevices(host_api=None, verbose=False):
+    '''
+    Returns a list containing information on the available audio devices.
+        
+    Parameters
+    ----------
+    host_api : string
+        Filters the list of devices to include only the specified host_api.
+    verbose : Bool
+        Include more information.
+
+    Returns
+    -------
+    devices : list
+        The list of devices. 
+    '''
     # If necessary, wrap `host_api` in a list so it is iterable
     if isinstance(host_api, str):
         host_api = [host_api]
@@ -570,7 +585,30 @@ def printAvailableDevices(host_api=None, verbose=False):
         devices = [di for di in generateDeviceInfo() if (di.hostApi in host_api)]
 
     if len(devices) == 0:
-        print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
+        return None
+    else:
+        return devices
+
+
+def printAvailableDevices(host_api=None, verbose=False):
+    '''
+    Displays information on the available audio devices.
+    
+    Parameters
+    ----------
+    host_api : string
+        Filters the list of devices to include only the specified host_api.
+    verbose : Bool
+        Print more information.
+
+    Returns
+    -------
+    None
+    '''
+    devices = getAvailableDevices(host_api, verbose)
+    
+    if len(devices) == 0:
+         print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
         return None
 
     if verbose:
@@ -637,6 +675,15 @@ def open_default_device():
 def start_streams(streams, open_streams=False, normalize=False):
     """
     Tries to start playback of specified streams as synchronously as possible.
+    
+    Parameters
+    ----------
+    streams : list
+        List of stream objects.
+
+    Returns
+    -------
+    None
     """
     if open_streams:
         [s.open() for s in streams]
@@ -676,6 +723,17 @@ def terminate():
 def playarr(arr, fs, channel=1):
     """
     Plays an array on the default device with blocking, Matlab-style.
+
+    Parameters
+    ----------
+    arr : ndarray
+        The array to play. Each column is treated as a channel. 
+    fs : int
+        The sampling frequency.
+
+    Returns
+    -------
+    None
     """
     d = open_default_device()
     s = d.open_array(arr, fs)
@@ -690,6 +748,15 @@ def playfile(filename):
 
     Use with care! Long soundfiles will cause the interpreter to lock for a
     correspondingly long time!
+    
+    Parameters
+    ----------
+    filename : str
+        The path to the file to play.
+
+    Returns
+    -------
+    None
     """
     d = open_default_device()
     s = d.open_file(filename)
