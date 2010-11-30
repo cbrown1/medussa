@@ -4,6 +4,7 @@
 #define TWOPI 6.2831853071795862
 #define MAX_FRAME_SIZE 16
 
+
 int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       unsigned long frames,
                       const PaStreamCallbackTimeInfo *time_info,
@@ -23,99 +24,23 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     PyObject *self, *attr, *out_param, *tmp;
     PyArrayObject *arr;
     PyArrayObject *mix_mat;
+    
+    stream_user_data *sud;
+    finite_user_data *fud;
+    array_user_data *aud;
 
     // Point `buf_out` to actual output buffer
     buf_out = (float *) pa_buf_out;
 
     // Point `self` to calling instance
-    self = (PyObject *) user_data;
-
-    // Begin attribute acquisition
-    gstate = PyGILState_Ensure();
-
-    // `PyObject *out_param` from `self.out_param`
-    if (PyObject_HasAttrString(self, "out_param")) {
-        attr = PyObject_GetAttrString(self, "out_param");
-        if (attr == NULL) {
-            return -1;
-        }
-        out_param = attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `unsigned int channel_count` from `self.out_param.channelCount`
-    if (PyObject_HasAttrString(out_param, "channelCount")) {
-        attr = PyObject_GetAttrString(out_param, "channelCount");
-        if (attr == NULL) {
-            return -1;
-        }
-        channel_count = (unsigned int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyArrayObject *arr` from `self.arr`
-    if (PyObject_HasAttrString(self, "arr")) {
-        attr = PyObject_GetAttrString(self, "arr");
-        if (attr == NULL) {
-            return -1;
-        }
-        arr = (PyArrayObject *) attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyArrayObject *mix_mat` from `self.mix_mat`
-    if (PyObject_HasAttrString(self, "mix_mat")) {
-        attr = PyObject_GetAttrString(self, "mix_mat");
-        if (attr == NULL) {
-            return -1;
-        }
-        mix_mat = (PyArrayObject *) attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `int loop` from `self.loop`
-    if (PyObject_HasAttrString(self, "loop")) {
-        attr = PyObject_GetAttrString(self, "loop");
-        if (attr == NULL) {
-            return -1;
-        }
-        loop = (int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `unsigned int cursor` from `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) {
-        attr = PyObject_GetAttrString(self, "cursor");
-        if (attr == NULL) {
-            return -1;
-        }
-        cursor = (unsigned int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // End attribute acquisition
-    PyGILState_Release(gstate);
+    aud = (array_user_data *) user_data;
+    fud = (finite_user_data *) aud->parent;
+    sud = (stream_user_data *) fud->parent;
 
     // Point `mix_mat_arr` to data buffer of `mix_mat`
+    
     mix_mat_arr = (double *) PyArray_GETPTR2(mix_mat, 0, 0);
+    mix_mat_arr = ud
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
     arr_frames = (double *) PyArray_GETPTR2(arr, cursor, 0);
