@@ -7,6 +7,8 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     PaError err;
     PyObject *attr;
 
+    PyGILState_STATE gstate;
+
     // Variables for `Pa_OpenStream()`
     PaStream *stream;
     //PaStreamParameters *spin;
@@ -16,6 +18,8 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     void *user_data;
     //PaStreamCallback *callback_ptr;
 
+    printf("debug 1\n");
+    gstate = PyGILState_Ensure();
     //
     // Start pulling values from calling object...
     //
@@ -31,13 +35,15 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         else {
             Py_INCREF(attr);
             err = PyInt_AsUnsignedLongMask(attr);
-            user_data = (PaStream *) PyInt_AsUnsignedLongMask(attr);
+            user_data = (void *) PyInt_AsUnsignedLongMask(attr);
             Py_CLEAR(attr);
         }
     }
     else {
         return NULL;
     }
+    printf("user_data: %p\n", user_data);
+    printf("debug 2\n");
 
     // `PaStream *stream` from `Stream.stream_ptr` 
     if (PyObject_HasAttrString(self, "stream_ptr")) {
@@ -59,6 +65,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         return NULL;
     }
 
+    printf("debug 3\n");
 
     // `double fs` from `Stream.fs`
     if (PyObject_HasAttrString(self, "fs")) {
@@ -87,9 +94,12 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     else {
         return NULL;
     }
+    PyGILState_Release(gstate);
     //
     // ...end pulling values from calling object.
     //
+
+    printf("debug 4\n");
 
     // Attempt to open the stream
     err = Pa_OpenStream(&stream,

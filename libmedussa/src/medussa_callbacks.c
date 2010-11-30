@@ -11,19 +11,13 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
-    PyGILState_STATE gstate;
-
-    unsigned int i, j, err, frame_size, cursor, channel_count;
+    unsigned int i, j, frame_size, cursor, channel_count;
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
     double tmp_buf[MAX_FRAME_SIZE];
-    double *mix_mat_arr;
-    double *arr_frames;
-
-    PyObject *self, *attr, *out_param, *tmp;
-    PyArrayObject *arr;
-    PyArrayObject *mix_mat;
+    double *mix_mat;
+    double *arr;
     
     stream_user_data *sud;
     finite_user_data *fud;
@@ -37,72 +31,53 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     fud = (finite_user_data *) aud->parent;
     sud = (stream_user_data *) fud->parent;
 
+    loop = fud->loop;
+
     // Point `mix_mat_arr` to data buffer of `mix_mat`
-    
-    mix_mat_arr = (double *) PyArray_GETPTR2(mix_mat, 0, 0);
-    mix_mat_arr = ud
+    mix_mat = (double *) sud->mix_mat;
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
-    arr_frames = (double *) PyArray_GETPTR2(arr, cursor, 0);
+    cursor = fud->cursor;
+    arr = aud->ndarr + cursor;
 
     // Determine `frame_size`, the number of channels, from `arr` (ERROR)
-    frame_size = (unsigned int) PyArray_DIM(arr, 1);
+    frame_size = (unsigned int) aud->ndarr_1;
+
+    channel_count = sud->out_param->channelCount;
+    //printf("channel count: %d\n", channel_count);
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     for (i = 0; i < frames; i++) {
-        if (PyArray_DIM(arr, 0) <= cursor+i) {
+        if (aud->ndarr_0 <= cursor+i) {
             break;
         }
 
-        dmatrix_mult(mix_mat_arr, PyArray_DIM(mix_mat, 0), PyArray_DIM(mix_mat, 1),
-                     arr_frames+i*frame_size,  frame_size,    1,
-                     tmp_buf,     channel_count, 1);
+        dmatrix_mult(mix_mat,
+                     sud->mix_mat_0, sud->mix_mat_1,
+                     arr+i*frame_size,
+                     frame_size, 1,
+                     tmp_buf,
+                     channel_count, 1);
         for (j = 0; j < channel_count; j++){
-            buf_out[i*channel_count + j] = (float) tmp_buf[j];
+            //buf_out[i*channel_count + j] = (float) tmp_buf[j];
+            //printf("%.6f\t", buf_out[i*channel_count + j]);
+            buf_out[i*channel_count + j] = (float) arr[i*frame_size];
         }
-        // */
+        //printf("i, frames: %d, %d\n", i, frames);
     }
     cursor += frames;
     //printf("cursor at: %d\n", cursor);
 
     // Move `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) {
-        tmp = PyInt_FromLong(cursor);
-        gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", tmp);
-        PyGILState_Release(gstate);
-        if (err == -1) {
-            printf("DEBUG: ERROR\n");
-            return -1;
-        }
-        Py_CLEAR(tmp);
-    }
-    else {
-        printf("ERROR: no `cursor` attribute\n");
-        return -1;
-    }
+    fud->cursor = cursor;
 
-    if (cursor < (PyArray_DIM(arr, 0))) {
+    if (cursor < (aud->ndarr_0)) {
         return paContinue;
     }
 
     // Reset `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) {
-        tmp = PyInt_FromLong(0);
-        gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", tmp);
-        PyGILState_Release(gstate);
-        if (err == -1) {
-            printf("DEBUG: ERROR\n");
-            return -1;
-        }
-        Py_CLEAR(tmp);
-    }
-    else {
-        printf("ERROR: no `cursor` attribute\n");
-        return -1;
-    }
+    fud->cursor = 0;
 
     if (loop) {
         return paContinue;

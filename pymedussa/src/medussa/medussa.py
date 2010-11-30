@@ -33,15 +33,15 @@ class StreamUserData(ctypes.Structure):
     """
     struct stream_user_data {
         void *parent;
-    
+
         void *device;
-        
+
         PaStream *stream;
         PaStreamParameters *in_param;
         PaStreamParameters *out_param;
         double fs;
         PaStreamCallback *callback;
-    
+
         double *mix_mat;
         double *mute_mat;
         int pa_fpb;
@@ -53,9 +53,13 @@ class StreamUserData(ctypes.Structure):
                 ("in_param",  c_void_p),
                 ("out_param", c_void_p),
                 ("fs",        c_double),
-                ("callback",  c_void_p),
+#                ("callback",  c_void_p),
                 ("mix_mat",   POINTER(c_double)),
+                ("mix_mat_0", c_int),
+                ("mix_mat_1", c_int),
                 ("mute_mat",  POINTER(c_double)),
+                ("mute_mat_0", c_int),
+                ("mute_mat_1", c_int),
                 ("pa_fpb",    c_int))
 
 
@@ -63,7 +67,7 @@ class FiniteUserData(ctypes.Structure):
     """
     struct finite_user_data {
         void *parent;
-    
+
         unsigned int loop;
         unsigned int cursor;
         int frames;
@@ -82,13 +86,15 @@ class ArrayUserData(ctypes.Structure):
     struct array_user_data {
         void *parent;
         PyObject *self;
-    
+
         double *ndarr;
     };
     """
     _fields_ = (("parent", c_void_p),
                 ("self",   py_object),
-                ("ndarr",  POINTER(c_double)))
+                ("ndarr",  POINTER(c_double)),
+                ("ndarr_0", c_int),
+                ("ndarr_1", c_int))
 
 
 class Device:
@@ -252,7 +258,7 @@ class Stream:
     mix_mat = None
     mute_mat = None
     pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
-    
+
     # structs for the callbacks
     stream_user_data = StreamUserData()
 
@@ -439,7 +445,7 @@ class FiniteStream(Stream):
 
     frames = None # Total length of the signal in frames
     duration = None # Total length of the signal in milliseconds
-    
+
     finite_user_data = FiniteUserData()
 
     def time(self, pos=None, posunit="ms"):
@@ -498,23 +504,27 @@ class ArrayStream(FiniteStream):
             self.stream_user_data.stream = val
             self.__dict__[name] = val
         elif name == "in_param":
-            self.stream_user_data.in_param = val
+            self.stream_user_data.in_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
             self.__dict__[name] = val
         elif name == "out_param":
-            self.stream_user_data.out_param = val
+            self.stream_user_data.out_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
             self.__dict__[name] = val
         elif name == "fs":
             self.stream_user_data.fs = float(val)
             self.__dict__[name] = float(val)
-        elif name == "callback":
-            self.stream_user_data.callback = val
-            self.__dict__[name] = val
+#        elif name == "callback":
+#            self.stream_user_data.callback = int(val)
+#            self.__dict__[name] = val
         elif name == "mix_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
             self.array_user_data.mix_mat = np.ctypeslib.as_ctypes(self.mix_mat)
+            self.array_user_data.mix_mat_0 = self.mix_mat.shape[0]
+            self.array_user_data.mix_mat_1 = self.mix_mat.shape[1]
         elif name == "mute_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
             self.array_user_data.mute_mat = np.ctypeslib.as_ctypes(self.mute_mat)
+            self.array_user_data.mute_mat_0 = self.mute_mat.shape[0]
+            self.array_user_data.mute_mat_1 = self.mute_mat.shape[1]
         elif name == "pa_fpb":
             self.stream_user_data.pa_fpb = val
             self.__dict__[name] = val
@@ -532,7 +542,9 @@ class ArrayStream(FiniteStream):
             self.__dict__[name] = val
         elif name == "arr":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.array_user_data.ndarr = np.ctypeslib.as_ctypes(self.arr)
+            self.array_user_data.ndarr = ctypes.cast(np.ctypeslib.as_ctypes(self.arr), POINTER(c_double))
+            self.array_user_data.ndarr_0 = val.shape[0]
+            self.array_user_data.ndarr_1 = val.shape[1]
         else:
             self.__dict__[name] = val
 
@@ -582,10 +594,10 @@ class ArrayStream(FiniteStream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
-        self.array_user_data.parent = addressof(self.finite_user_data)
-        self.finite_user_data.parent = addressof(self.stream_user_data)
-        self.user_data = self.array_user_data
-                                                
+        self.array_user_data.parent = ctypes.cast(ctypes.pointer(self.finite_user_data), ctypes.c_void_p)
+        self.finite_user_data.parent = ctypes.cast(ctypes.pointer(self.stream_user_data), ctypes.c_void_p)
+        self.user_data = ctypes.addressof(self.array_user_data)
+
 
 
 class SndfileStream(FiniteStream):
@@ -674,7 +686,7 @@ def generateDeviceInfo():
 def getAvailableDevices(host_api=None, verbose=False):
     '''
     Returns a list containing information on the available audio devices.
-        
+
     Parameters
     ----------
     host_api : string
@@ -685,7 +697,7 @@ def getAvailableDevices(host_api=None, verbose=False):
     Returns
     -------
     devices : list
-        The list of devices. 
+        The list of devices.
     '''
     # If necessary, wrap `host_api` in a list so it is iterable
     if isinstance(host_api, str):
@@ -710,7 +722,7 @@ def getAvailableDevices(host_api=None, verbose=False):
 def printAvailableDevices(host_api=None, verbose=False):
     '''
     Displays information on the available audio devices.
-    
+
     Parameters
     ----------
     host_api : string
@@ -723,7 +735,7 @@ def printAvailableDevices(host_api=None, verbose=False):
     None
     '''
     devices = getAvailableDevices(host_api, verbose)
-    
+
     if len(devices) == 0:
         print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
         return None
@@ -792,7 +804,7 @@ def open_default_device():
 def start_streams(streams, open_streams=False, normalize=False):
     """
     Tries to start playback of specified streams as synchronously as possible.
-    
+
     Parameters
     ----------
     streams : list
@@ -844,7 +856,7 @@ def playarr(arr, fs, channel=1):
     Parameters
     ----------
     arr : ndarray
-        The array to play. Each column is treated as a channel. 
+        The array to play. Each column is treated as a channel.
     fs : int
         The sampling frequency.
 
@@ -865,7 +877,7 @@ def playfile(filename):
 
     Use with care! Long soundfiles will cause the interpreter to lock for a
     correspondingly long time!
-    
+
     Parameters
     ----------
     filename : str
