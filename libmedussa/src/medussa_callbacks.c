@@ -48,11 +48,16 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
+    /*
+    printf("sud->mix_mat_0: %d\n", sud->mix_mat_0);
+    printf("sud->mix_mat_1: %d\n", sud->mix_mat_1);
+    printf("frame_size: %d\n", frame_size);
+    */
     for (i = 0; i < frames; i++) {
         if (aud->ndarr_0 <= cursor+i) {
             break;
         }
-
+        
         dmatrix_mult(mix_mat,
                      sud->mix_mat_0, sud->mix_mat_1,
                      arr+i*frame_size,
@@ -60,9 +65,9 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                      tmp_buf,
                      channel_count, 1);
         for (j = 0; j < channel_count; j++){
-            //buf_out[i*channel_count + j] = (float) tmp_buf[j];
+            buf_out[i*channel_count + j] = (float) tmp_buf[j];
             //printf("%.6f\t", buf_out[i*channel_count + j]);
-            buf_out[i*channel_count + j] = (float) arr[i*frame_size];
+            //buf_out[i*channel_count + j] = (float) arr[i*frame_size];
         }
         //printf("i, frames: %d, %d\n", i, frames);
     }

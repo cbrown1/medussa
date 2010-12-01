@@ -517,14 +517,14 @@ class ArrayStream(FiniteStream):
 #            self.__dict__[name] = val
         elif name == "mix_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.array_user_data.mix_mat = np.ctypeslib.as_ctypes(self.mix_mat)
-            self.array_user_data.mix_mat_0 = self.mix_mat.shape[0]
-            self.array_user_data.mix_mat_1 = self.mix_mat.shape[1]
+            self.stream_user_data.mix_mat = ctypes.cast(np.ctypeslib.as_ctypes(self.mix_mat), POINTER(c_double))
+            self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
+            self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
         elif name == "mute_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.array_user_data.mute_mat = np.ctypeslib.as_ctypes(self.mute_mat)
-            self.array_user_data.mute_mat_0 = self.mute_mat.shape[0]
-            self.array_user_data.mute_mat_1 = self.mute_mat.shape[1]
+            self.stream_user_data.mute_mat = ctypes.cast(np.ctypeslib.as_ctypes(self.mute_mat), POINTER(c_double))
+            self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
+            self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
         elif name == "pa_fpb":
             self.stream_user_data.pa_fpb = val
             self.__dict__[name] = val
