@@ -240,7 +240,7 @@ class Device:
         return s
 
 
-class Stream:
+class Stream(object):
     """
     Maximally-generic stream class.
     """
@@ -547,6 +547,13 @@ class ArrayStream(FiniteStream):
             self.array_user_data.ndarr_1 = val.shape[1]
         else:
             self.__dict__[name] = val
+
+    # We need only override names that are modified by a given callback
+    def __getattribute__(self, name):
+        if name == "cursor":
+            return self.finite_user_data.cursor
+        else:
+            return object.__getattribute__(self, name)
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
         if len(arr.shape) == 1:
