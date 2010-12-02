@@ -78,7 +78,7 @@ cd ..
 #cp ../docs/* deb/usr/share/doc/$package
 
 # Make deb package
-deb="${section}-${package}_${ver}_${architecture}.deb"
+deb="${section}-${package}_${ver}_py${pyver}_${architecture}.deb"
 dpkg-deb -b deb ${deb}
 
 rm -r deb
