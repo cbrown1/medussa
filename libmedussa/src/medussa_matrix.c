@@ -47,10 +47,12 @@ int dmatrix_mult (double *a,  int a_m,  int a_n,
 
     if (a_n != b_m) {
         // Matrix multiplication not defined
+        printf("Matrix multiplication not defined\n");
         return -1;
     }
     if ((a_m != ab_m) || (ab_n != b_n)) {
         // Output matrix has wrong dimensions
+        printf("Output matrix has wrong dimensions\n");
         return -2;
     }
 
