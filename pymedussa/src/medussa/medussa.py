@@ -517,12 +517,12 @@ class ArrayStream(FiniteStream):
 #            self.__dict__[name] = val
         elif name == "mix_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.stream_user_data.mix_mat = ctypes.cast(np.ctypeslib.as_ctypes(self.mix_mat), POINTER(c_double))
+            self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
             self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
             self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
         elif name == "mute_mat":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.stream_user_data.mute_mat = ctypes.cast(np.ctypeslib.as_ctypes(self.mute_mat), POINTER(c_double))
+            self.stream_user_data.mute_mat = self.mute_mat.ctypes.data_as(POINTER(c_double))
             self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
             self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
         elif name == "pa_fpb":
@@ -542,7 +542,7 @@ class ArrayStream(FiniteStream):
             self.__dict__[name] = val
         elif name == "arr":
             self.__dict__[name] = np.ascontiguousarray(val)
-            self.array_user_data.ndarr = ctypes.cast(np.ctypeslib.as_ctypes(self.arr), POINTER(c_double))
+            self.array_user_data.ndarr = self.arr.ctypes.data_as(POINTER(c_double))
             self.array_user_data.ndarr_0 = val.shape[0]
             self.array_user_data.ndarr_1 = val.shape[1]
         else:

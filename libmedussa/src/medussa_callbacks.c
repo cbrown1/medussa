@@ -36,20 +36,19 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     // Point `mix_mat_arr` to data buffer of `mix_mat`
     mix_mat = (double *) sud->mix_mat;
 
-    // Point `arr_frames` to C array of `arr`, move cursor appropriately
-    cursor = fud->cursor;
-    arr = aud->ndarr + cursor;
-
     // Determine `frame_size`, the number of channels, from `arr` (ERROR)
     frame_size = (unsigned int) aud->ndarr_1;
 
+    // Point `arr_frames` to C array of `arr`, move cursor appropriately
+    cursor = fud->cursor;
+    arr = aud->ndarr + cursor*frame_size;
+
     channel_count = sud->out_param->channelCount;
-    //printf("channel count: %d\n", channel_count);
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     for (i = 0; i < frames; i++) {
-        if (aud->ndarr_0 <= cursor+i) {
+        if (aud->ndarr_0 <= (fud->cursor+i)) {
             break;
         }
         
@@ -59,18 +58,17 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                      frame_size, 1,
                      tmp_buf,
                      channel_count, 1);
-        for (j = 0; j < channel_count; j++){
+
+        for (j = 0; j < channel_count; j++) {
             buf_out[i*channel_count + j] = (float) tmp_buf[j];
-            //printf("%.6f\t", buf_out[i*channel_count + j]);
-            //buf_out[i*channel_count + j] = (float) arr[i*frame_size];
         }
     }
-    cursor += frames;
+    cursor += i;
 
     // Move `self.cursor`
     fud->cursor = cursor;
 
-    if (cursor < (aud->ndarr_0)) {
+    if (cursor < aud->ndarr_0) {
         return paContinue;
     }
 

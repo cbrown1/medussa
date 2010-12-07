@@ -6,15 +6,21 @@ import sys
 
 fs = 44100
 x,fs = medussa.readfile("clean.wav")
+y = np.hstack((x,x))
 #x,fs = medussa.readfile("speech-noise-tone.wav")
-
-#y = np.ascontiguousarray(np.vstack((x, x)).swapaxes(0,1))
+#shape =x.shape
+#x[:,0] = 1.0
+#x[:,1] = 2.0
+#x[:,2] = 3.0
 
 d = medussa.open_device()
 s = d.open_array(x,fs)
 #s = d.open_file("clean.wav")
 #s = d.create_tone(400,44100)
 #s = d.create_white(44100)
+#s.play()
+#sleep(6)
+
 
 #s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
 
