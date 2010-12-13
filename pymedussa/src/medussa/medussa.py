@@ -633,7 +633,68 @@ class SndfileStream(FiniteStream):
     fin = None
     finpath = None
     finfo = None
-    sndfile_user_data = None
+    sndfile_user_data = SndfileUserData()
+
+    def __setattr__(self, name, val):
+        if name == "stream":
+            self.stream_user_data.stream = val
+            self.__dict__[name] = val
+        elif name == "in_param":
+            self.stream_user_data.in_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "out_param":
+            self.stream_user_data.out_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "fs":
+            self.stream_user_data.fs = float(val)
+            self.__dict__[name] = float(val)
+#        elif name == "callback":
+#            self.stream_user_data.callback = int(val)
+#            self.__dict__[name] = val
+        elif name == "mix_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
+            self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
+        elif name == "mute_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mute_mat = self.mute_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
+            self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
+        elif name == "pa_fpb":
+            self.stream_user_data.pa_fpb = val
+            self.__dict__[name] = val
+        elif name == "loop":
+            self.finite_user_data.loop = val
+            self.__dict__[name] = val
+        elif name == "cursor":
+            self.finite_user_data.cursor = val
+            self.__dict__[name] = val
+        elif name == "frames":
+            self.finite_user_data.frames = val
+            self.__dict__[name] = val
+        elif name == "duration":
+            self.finite_user_data.duration = val
+            self.__dict__[name] = val
+        elif name == "finpath":
+            self.sndfile_user_data.finpath = c_char_p(val)
+            self.__dict__[name] = val
+        elif name == "fin":
+            #self.sndfile_user_data.fin = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.sndfile_user_data.fin = val
+            self.__dict__[name] = val
+        elif name == "finfo":
+            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val), POINTER(sndfile.SF_INFO))
+            self.__dict__[name] = val
+        else:
+            self.__dict__[name] = val
+
+    # We need only override names that are modified by a given callback
+    def __getattribute__(self, name):
+        if name == "cursor":
+            return self.finite_user_data.cursor
+        else:
+            return object.__getattribute__(self, name)
 
     def __init__(self, device, mix_mat, finpath, loop=False):
         # Initialize `Stream` attributes
@@ -675,6 +736,9 @@ class SndfileStream(FiniteStream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
+        self.sndfile_user_data.parent = ctypes.cast(ctypes.pointer(self.finite_user_data), ctypes.c_void_p)
+        self.finite_user_data.parent = ctypes.cast(ctypes.pointer(self.stream_user_data), ctypes.c_void_p)
+        self.user_data = ctypes.addressof(self.sndfile_user_data)
 
     def __del__(self):
         #pa.Pa_StopStream(self.stream_ptr)

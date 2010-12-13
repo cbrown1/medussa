@@ -14,8 +14,8 @@ x,fs = medussa.readfile("clean.wav")
 #x[:,2] = 3.0
 
 d = medussa.open_device()
-s = d.open_array(x,fs)
-#s = d.open_file("clean.wav")
+#s = d.open_array(x,fs)
+s = d.open_file("clean.wav")
 #s = d.create_tone(400,44100)
 #s = d.create_white(44100)
 #s.play()
