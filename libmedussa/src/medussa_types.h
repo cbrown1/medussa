@@ -44,3 +44,13 @@ struct array_user_data {
     int ndarr_1;
 };
 typedef struct array_user_data array_user_data;
+
+struct sndfile_user_data {
+    void *parent;
+    PyObject *self;
+
+    SNDFILE *fin;
+    char *finpath;
+    SF_INFO *finfo;
+};
+typedef struct sndfile_user_data sndfile_user_data;

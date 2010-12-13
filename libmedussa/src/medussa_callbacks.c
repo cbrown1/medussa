@@ -90,7 +90,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
                            PaStreamCallbackFlags status_flags,
                            void *user_data)
 {
-    PyGILState_STATE gstate;
     float *buf_out;   // Points to `pa_buf_out`
 
     SNDFILE *fin;
@@ -106,135 +105,31 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     double tmp_buf[MAX_FRAME_SIZE];
     char *finpath;
 
-    PyObject *self, *attr, *out_param, *finfo, *tmp;
-    PyArrayObject *mix_mat;
+    sndfile_user_data *sfud;
+    finite_user_data  *fud;
+    stream_user_data  *stud;
+        
+    SF_INFO *finfo;
+    PaStreamParameters *out_param;
+    double *mix_mat;
 
-    // Point `self` to calling instance
-    self = (PyObject *) user_data;
-    if (self == NULL) { printf("DEBUG 0: NULL pointer\n"); }
+    sfud = (sndfile_user_data *) user_data;
+    fud  = (finite_user_data *)  sfud->parent;
+    stud = (stream_user_data *)  fud->parent;
+
 
     // Begin attribute acquisition
-    gstate = PyGILState_Ensure();
-
-    // `PyObject *out_param` from `self.out_param`
-    if (PyObject_HasAttrString(self, "out_param")) {
-        attr = PyObject_GetAttrString(self, "out_param");
-        if (attr == NULL) {
-            return -1;
-        }
-        out_param = attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `unsigned int channel_count` from `self.out_param.channelCount`
-    if (PyObject_HasAttrString(out_param, "channelCount")) {
-        attr = PyObject_GetAttrString(out_param, "channelCount");
-        if (attr == NULL) {
-            return -1;
-        }
-        channel_count = (unsigned int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyArrayObject *mix_mat` from `self.mix_mat`
-    if (PyObject_HasAttrString(self, "mix_mat")) {
-        attr = PyObject_GetAttrString(self, "mix_mat");
-        if (attr == NULL) {
-            return -1;
-        }
-        mix_mat = (PyArrayObject *) attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `int loop` from `self.loop`
-    if (PyObject_HasAttrString(self, "loop")) {
-        attr = PyObject_GetAttrString(self, "loop");
-        if (attr == NULL) {
-            return -1;
-        }
-        loop = (int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `unsigned int cursor` from `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) {
-        attr = PyObject_GetAttrString(self, "cursor");
-        if (attr == NULL) {
-            return -1;
-        }
-        cursor = (unsigned int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `char *finpath` from `self.finpath`
-    if (PyObject_HasAttrString(self, "finpath")) {
-        attr = PyObject_GetAttrString(self, "finpath");
-        if (attr == NULL) {
-            return -1;
-        }
-        finpath = PyString_AsString(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `SNDFILE *fin` from `self.fin`
-    if (PyObject_HasAttrString(self, "fin")) {
-        attr = PyObject_GetAttrString(self, "fin");
-        if (attr == NULL) {
-            return -1;
-        }
-        fin = (SNDFILE *) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyObject *finfo` from `self.finfo`
-    if (PyObject_HasAttrString(self, "finfo")) {
-        attr = PyObject_GetAttrString(self, "finfo");
-        if (attr == NULL) {
-            return -1;
-        }
-        finfo = attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `int frame_size` from `self.finfo.channels`
-    if (PyObject_HasAttrString(finfo, "channels")) {
-        attr = PyObject_GetAttrString(finfo, "channels");
-        if (attr == NULL) {
-            return -1;
-        }
-        frame_size = (int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
+    out_param = stud->out_param;
+    finfo = sfud->finfo;
+    channel_count = out_param->channelCount;
+    mix_mat = (double *) stud->mix_mat;
+    loop = fud->loop;
+    cursor = fud->cursor;
+    finpath = sfud->finpath;
+    fin = sfud->fin;
+    frame_size = finfo->channels;
     // End attribute acquisition
-    PyGILState_Release(gstate);
+
 
     buf_out = (float *) pa_buf_out;
     if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }
@@ -248,7 +143,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     frames_read = (int) sf_readf_double (fin, read_buf, frames);
 
     for (i = 0; i < frames_read; i++) {
-        dmatrix_mult((double *) (mix_mat->data), PyArray_DIM(mix_mat, 0), PyArray_DIM(mix_mat, 1), 
+        dmatrix_mult(mix_mat, stud->mix_mat_0, stud->mix_mat_1, 
                      (read_buf+i*frame_size), frame_size, 1,
                      tmp_buf, channel_count, 1);
         for (j = 0; j < channel_count; j++) {
@@ -258,21 +153,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     cursor += frames_read;
 
     // Move `self.cursor`
-    if (PyObject_HasAttrString(self, "cursor")) {
-        tmp = PyInt_FromLong(cursor);
-        gstate = PyGILState_Ensure();
-        err = PyObject_SetAttrString(self, "cursor", tmp);
-        PyGILState_Release(gstate);
-        Py_CLEAR(tmp);
-        if (err == -1) {
-            printf("DEBUG: ERROR\n");
-            return -1;
-        }
-    }
-    else {
-        printf("ERROR: no `cursor` attribute\n");
-        return -1;
-    }
+    fud->cursor = cursor;
 
     if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
     free(read_buf);
@@ -286,21 +167,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         sf_seek(fin, 0, SEEK_SET); // Reset `libsndfile` cursor to start of sound file
 
         // Move `self.cursor`
-        if (PyObject_HasAttrString(self, "cursor")) {
-            tmp = PyInt_FromLong(0);
-            gstate = PyGILState_Ensure();
-            err = PyObject_SetAttrString(self, "cursor", tmp);
-            PyGILState_Release(gstate);
-            Py_CLEAR(tmp);
-            if (err == -1) {
-                printf("DEBUG: ERROR\n");
-                return -1;
-            }
-        }
-        else {
-            printf("ERROR: no `cursor` attribute\n");
-            return -1;
-        }
+        fud->cursor = 0;
 
         if (loop) {
             return paContinue;

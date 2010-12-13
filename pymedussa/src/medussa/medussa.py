@@ -96,6 +96,25 @@ class ArrayUserData(ctypes.Structure):
                 ("ndarr_0", c_int),
                 ("ndarr_1", c_int))
 
+class SndfileUserData(ctypes.Structure):
+    """
+    struct sndfile_user_data {
+        void *parent;
+        PyObject *self;
+
+        SNDFILE *fin;
+        char    *finpath;
+        SF_INFO *finfo;
+    };
+
+    """
+    _fields_ = (("parent",  c_void_p),
+                ("self",    py_object),
+                ("fin",     c_void_p),
+                ("finpath", c_char_p),
+                ("finfo",   POINTER(sndfile.SF_INFO)))
+
+
 
 class Device:
     """
@@ -612,8 +631,9 @@ class SndfileStream(FiniteStream):
     Stream object representing a sound file on disk.
     """
     fin = None
-    finfo = None
     finpath = None
+    finfo = None
+    sndfile_user_data = None
 
     def __init__(self, device, mix_mat, finpath, loop=False):
         # Initialize `Stream` attributes
@@ -628,11 +648,6 @@ class SndfileStream(FiniteStream):
         self.finpath = finpath
         self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
         self.fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(self.finfo))
-
-        #print "DEBUG:", self.fin, type(self.fin)
-        #print "DEBUG:", self.finfo.frames
-        #print "DEBUG:", self.finfo.samplerate
-        #print "DEBUG:", self.finfo.channels
 
         # set sampling frequency
         self.fs = self.finfo.samplerate

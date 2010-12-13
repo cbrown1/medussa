@@ -6,7 +6,7 @@ import sys
 
 fs = 44100
 x,fs = medussa.readfile("clean.wav")
-y = np.hstack((x,x))
+#y = np.hstack((x,x))
 #x,fs = medussa.readfile("speech-noise-tone.wav")
 #shape =x.shape
 #x[:,0] = 1.0
@@ -22,22 +22,6 @@ s = d.open_array(x,fs)
 #sleep(6)
 
 
-#s.arr = np.linspace(0, s.arr.size, s.arr.size).reshape(s.arr.shape)
-
-#sy = d.open_array(y,fs)
-#s = d.create_tone(440.0, 44100.0)
-
-
-#s1 = d.create_tone(440.0, 44100.0)
-#s2 = d.create_tone(880.0, 44100.0)
-#fade = np.linspace(0.0, 1.0, 500)
-#s1.play(), s2.play()
-#for i in xrange(500):
-#    s1.mix_mat = np.array([1.0-fade[i], fade[i]])
-#    s2.mix_mat = np.array([fade[i], 1.0-fade[i]])
-#    sleep(0.001)
-
-#s = medussa.SndfileStream(d, "speech-noise-tone.wav")
 
 def sweep_right(s, delta=0.001, steps=500):
     s.play()
