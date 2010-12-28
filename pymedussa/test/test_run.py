@@ -4,8 +4,8 @@ import numpy as np
 from time import sleep
 import sys
 
-fs = 44100
-x,fs = medussa.readfile("clean.wav")
+fs = 44100.0
+#x,fs = medussa.readfile("clean.wav")
 #y = np.hstack((x,x))
 #x,fs = medussa.readfile("speech-noise-tone.wav")
 #shape =x.shape
@@ -15,8 +15,8 @@ x,fs = medussa.readfile("clean.wav")
 
 d = medussa.open_device()
 #s = d.open_array(x,fs)
-s = d.open_file("clean.wav")
-#s = d.create_tone(400,44100)
+#s = d.open_file("clean.wav")
+s = d.create_tone(400,44100)
 #s = d.create_white(44100)
 #s.play()
 #sleep(6)

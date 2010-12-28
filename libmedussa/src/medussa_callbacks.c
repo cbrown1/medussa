@@ -95,7 +95,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     SNDFILE *fin;
     int frames_read;
 
-    int i, j, err;
+    int i, j;
     int loop;
     int cursor; // Tracks position in file between callbacks
     int channel_count; // Number of stream output channels
@@ -191,123 +191,50 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs, tone_freq;
 
-    double *mix_mat_arr;
-    int err;
-
-    PyGILState_STATE gstate;
+    double *mix_mat;
 
     PaStreamParameters *spout;
 
-    PyObject *self, *attr, *tmp;
-    PyArrayObject *mix_mat;
+    stream_user_data *sud;
+    tone_user_data *tud;
+    tud = (tone_user_data *) user_data;
+    sud = (stream_user_data *) tud->parent;
 
     // Point `self` to calling instance
-    self = (PyObject *) user_data;
-
-    gstate = PyGILState_Ensure();
-
     // `float fs` from `self.fs`
-    if (PyObject_HasAttrString(self, "fs")) {
-        attr = PyObject_GetAttrString(self, "fs");
-        if (attr == NULL) {
-            return -1;
-        }
-        fs = (float) PyFloat_AsDouble(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
+    fs = (float) sud->fs;
 
     // `float tone_freq` from `self.tone_freq`
-    if (PyObject_HasAttrString(self, "tone_freq")) {
-        attr = PyObject_GetAttrString(self, "tone_freq");
-        if (attr == NULL) {
-            return -1;
-        }
-        tone_freq = (float) PyFloat_AsDouble(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
+    tone_freq = (float) tud->tone_freq;
 
     // `unsigned int t` from `self.t`
-    if (PyObject_HasAttrString(self, "t")) {
-        attr = PyObject_GetAttrString(self, "t");
-        if (attr == NULL) {
-            return -1;
-        }
-        t = (unsigned int) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyArrayObject *mix_mat` from `self.mix_mat`
-    if (PyObject_HasAttrString(self, "mix_mat")) {
-        attr = PyObject_GetAttrString(self, "mix_mat");
-        if (attr == NULL) {
-            return -1;
-        }
-        mix_mat = (PyArrayObject *) attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
+    t = tud->t;
 
     // `PaStreamParameters *spout` from `Stream.out_param`
-    if (PyObject_HasAttrString(self, "spout_ptr")) {
-        attr = PyObject_GetAttrString(self, "spout_ptr");
-        if (attr == NULL) {
-            return -1;
-        }
-        spout = (PaStreamParameters *) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-    frame_size = spout->channelCount;
-
-    PyGILState_Release(gstate);
-
+    spout = (PaStreamParameters *) sud->out_param;
 
     // Point to data array of `mix_mat`
-    mix_mat_arr = (double *) PyArray_DATA(mix_mat);
+    mix_mat = (double *) sud->mix_mat;
 
     // Point to actual output buffer
     buf_out = (float *) pa_buf_out;
+
+    frame_size = sud->mix_mat_0;
+
+    //printf("%f, %f, %d\n", fs, tone_freq, frame_size);
     
 
     // Main loop for tone generation
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat_arr[j]));
+            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat[j]));
         }
         t++;
     }
    
     // Set `self.t` to the current time value
-    gstate = PyGILState_Ensure();
-    if (PyObject_HasAttrString(self, "t")) {
-        tmp = PyInt_FromLong(t);
-        err = PyObject_SetAttrString(self, "t", tmp);
-        
-        if (err == -1) {
-            return -1;
-        }
-        Py_CLEAR(tmp);
-    }
-    else {
-        printf("ERROR: no `t` attribute\n");
-        return -1;
-    }
-    PyGILState_Release(gstate);
-
+    tud->t = t;
 
     return paContinue;
 }

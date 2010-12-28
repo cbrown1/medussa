@@ -54,3 +54,12 @@ struct sndfile_user_data {
     SF_INFO *finfo;
 };
 typedef struct sndfile_user_data sndfile_user_data;
+
+struct tone_user_data {
+    void *parent;
+    PyObject *self;
+
+    unsigned int t;
+    double tone_freq;
+};
+typedef struct tone_user_data tone_user_data;

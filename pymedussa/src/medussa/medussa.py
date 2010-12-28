@@ -114,7 +114,22 @@ class SndfileUserData(ctypes.Structure):
                 ("finpath", c_char_p),
                 ("finfo",   POINTER(sndfile.SF_INFO)))
 
+class ToneUserData(ctypes.Structure):
+    """
+    """
+    _fields_ = (("parent",    c_void_p),
+                ("self",      py_object),
+                ("t",         c_uint),
+                ("tone_freq", c_double))
 
+
+"""
+class WhiteUserData(ctypes.Structure):
+    "
+    "
+    _fields_ = (("x", x),
+                ("y", y))
+"""
 
 class Device:
     """
@@ -379,6 +394,45 @@ class ToneStream(Stream):
     """
     tone_freq = None
     t = None
+    tone_user_data = None
+
+    def __setattr__(self, name, val):
+        if name == "stream":
+            self.stream_user_data.stream = val
+            self.__dict__[name] = val
+        elif name == "in_param":
+            self.stream_user_data.in_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "out_param":
+            self.stream_user_data.out_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "fs":
+            self.stream_user_data.fs = float(val)
+            self.__dict__[name] = float(val)
+#        elif name == "callback":
+#            self.stream_user_data.callback = int(val)
+#            self.__dict__[name] = val
+        elif name == "mix_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
+            self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
+        elif name == "mute_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mute_mat = self.mute_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
+            self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
+        elif name == "pa_fpb":
+            self.stream_user_data.pa_fpb = val
+            self.__dict__[name] = val
+        elif name == "tone_freq":
+            self.tone_user_data.tone_freq = val
+            self.__dict__[name] = val
+        elif name == "t":
+            self.tone_user_data.t = val
+            self.__dict__[name] = val
+        else:
+            self.__dict__[name] = val
 
     def __init__(self, device, fs, mix_mat, tone_freq):
         # Initialize `Stream` attributes
@@ -386,6 +440,8 @@ class ToneStream(Stream):
         self.callback = cmedussa.callback_tone
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
+
+        self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
             output_channels = self.device.out_device_info.maxOutputChannels
@@ -411,7 +467,8 @@ class ToneStream(Stream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
-
+        self.tone_user_data.parent = ctypes.cast(ctypes.pointer(self.stream_user_data), ctypes.c_void_p)
+        self.user_data = ctypes.addressof(self.tone_user_data)
 
 class WhiteStream(Stream):
     """
@@ -578,6 +635,8 @@ class ArrayStream(FiniteStream):
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
+        self.finite_user_data = FiniteUserData()
+
         # Initialize `Stream` attributes
         self.callback = cmedussa.callback_ndarray
         self.callback_ptr = cmedussa.callback_ndarray
@@ -701,6 +760,8 @@ class SndfileStream(FiniteStream):
         self.callback = cmedussa.callback_sndfile_read
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
+
+        self.finite_user_data = FiniteUserData()
 
         # Initialize `FiniteStream` attributes
         self.loop = loop
