@@ -294,7 +294,7 @@ class Stream(object):
     pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
 
     # structs for the callbacks
-    stream_user_data = StreamUserData()
+    stream_user_data = None
 
 
     def __setattr__(self, name, val):
@@ -366,7 +366,9 @@ class Stream(object):
         """
         Pauses playback of the stream (Playback cursor is not reset).
         """
-        self.stop()
+        err = pa.Pa_StopStream(self.stream_ptr)
+        ERROR_CHECK(err)
+        #self.stop()
 
     def is_playing(self):
         """
@@ -441,6 +443,7 @@ class ToneStream(Stream):
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
 
+        self.stream_user_data = StreamUserData()
         self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
@@ -522,7 +525,7 @@ class FiniteStream(Stream):
     frames = None # Total length of the signal in frames
     duration = None # Total length of the signal in milliseconds
 
-    finite_user_data = FiniteUserData()
+    finite_user_data = None
 
     def time(self, pos=None, posunit="ms"):
         """
@@ -567,6 +570,9 @@ class FiniteStream(Stream):
         else:
             raise RuntimeError("Bad argument to `posunit`")
 
+    def stop(self):
+        super(FiniteStream, self).stop()
+        self.cursor = 0
 
 class ArrayStream(FiniteStream):
     """
@@ -635,6 +641,7 @@ class ArrayStream(FiniteStream):
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
+        self.stream_user_data = StreamUserData()
         self.finite_user_data = FiniteUserData()
         self.array_user_data = ArrayUserData()
 
@@ -683,7 +690,6 @@ class ArrayStream(FiniteStream):
         self.array_user_data.parent = ctypes.cast(ctypes.pointer(self.finite_user_data), ctypes.c_void_p)
         self.finite_user_data.parent = ctypes.cast(ctypes.pointer(self.stream_user_data), ctypes.c_void_p)
         self.user_data = ctypes.addressof(self.array_user_data)
-
 
 
 class SndfileStream(FiniteStream):
@@ -762,11 +768,14 @@ class SndfileStream(FiniteStream):
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
 
+        self.stream_user_data = StreamUserData()
         self.finite_user_data = FiniteUserData()
         self.sndfile_user_data = SndfileUserData()
 
         # Initialize `FiniteStream` attributes
         self.loop = loop
+
+        self.cursor = 0
 
         # Initialize this class' attributes
         self.finpath = finpath
