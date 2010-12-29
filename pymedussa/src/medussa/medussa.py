@@ -573,7 +573,7 @@ class ArrayStream(FiniteStream):
     Stream object representing a NumPy array.
     """
     arr = None
-    array_user_data = ArrayUserData()
+    array_user_data = None
 
     def __setattr__(self, name, val):
         if name == "stream":
@@ -636,6 +636,7 @@ class ArrayStream(FiniteStream):
             arr = arr.reshape(arr.size, 1)
 
         self.finite_user_data = FiniteUserData()
+        self.array_user_data = ArrayUserData()
 
         # Initialize `Stream` attributes
         self.callback = cmedussa.callback_ndarray
@@ -692,7 +693,7 @@ class SndfileStream(FiniteStream):
     fin = None
     finpath = None
     finfo = None
-    sndfile_user_data = SndfileUserData()
+    sndfile_user_data = None
 
     def __setattr__(self, name, val):
         if name == "stream":
@@ -762,6 +763,7 @@ class SndfileStream(FiniteStream):
         self.device = device
 
         self.finite_user_data = FiniteUserData()
+        self.sndfile_user_data = SndfileUserData()
 
         # Initialize `FiniteStream` attributes
         self.loop = loop
