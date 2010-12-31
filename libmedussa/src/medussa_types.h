@@ -3,6 +3,7 @@
 
 #include <portaudio.h>
 #include <sndfile.h>
+#include "randomkit.h"
 
 struct stream_user_data {
     void *parent;
@@ -63,3 +64,11 @@ struct tone_user_data {
     double tone_freq;
 };
 typedef struct tone_user_data tone_user_data;
+
+struct white_user_data {
+    void *parent;
+    PyObject *self;
+
+    rk_state *rks;
+};
+typedef struct white_user_data white_user_data;

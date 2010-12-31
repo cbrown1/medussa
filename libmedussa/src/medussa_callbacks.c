@@ -250,93 +250,35 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs;
 
-    double *mix_mat_arr;
+    double *mix_mat;
 
     double tmp;
 
-    PyGILState_STATE gstate;
-
     PaStreamParameters *spout;
 
-    PyObject *self, *attr;
-    PyArrayObject *mix_mat;
+    white_user_data *wud;
+    stream_user_data *sud;
 
     // PRNG variables
-    rk_state *state;
+    rk_state *rks;
 
-    // Point `self` to calling instance
-    self = (PyObject *) user_data;
+    wud = (white_user_data *) user_data;
+    sud = (stream_user_data *) wud->parent;
 
-    gstate = PyGILState_Ensure();
+    fs = sud->fs;
+    rks = wud->rks;
+    mix_mat = (double *) sud->mix_mat;
+    spout = sud->out_param;
 
-    // `float fs` from `self.fs`
-    if (PyObject_HasAttrString(self, "fs")) {
-        attr = PyObject_GetAttrString(self, "fs");
-        if (attr == NULL) {
-            return -1;
-        }
-        fs = (float) PyFloat_AsDouble(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `rk_state *state` from `self.rk_state_ptr`
-    if (PyObject_HasAttrString(self, "rk_state_ptr")) {
-        attr = PyObject_GetAttrString(self, "rk_state_ptr");
-        if (attr == NULL) {
-            return -1;
-        }
-        state = (rk_state *) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PyArrayObject *mix_mat` from `self.mix_mat`
-    if (PyObject_HasAttrString(self, "mix_mat")) {
-        attr = PyObject_GetAttrString(self, "mix_mat");
-        if (attr == NULL) {
-            return -1;
-        }
-        mix_mat = (PyArrayObject *) attr;
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-
-    // `PaStreamParameters *spout` from `Stream.out_param`
-    if (PyObject_HasAttrString(self, "spout_ptr")) {
-        attr = PyObject_GetAttrString(self, "spout_ptr");
-        if (attr == NULL) {
-            return -1;
-        }
-        spout = (PaStreamParameters *) PyInt_AsLong(attr);
-        Py_CLEAR(attr);
-    }
-    else {
-        return -1;
-    }
-    frame_size = spout->channelCount;
-
-    PyGILState_Release(gstate);
-
-
-    // Point to data array of `mix_mat`
-    mix_mat_arr = (double *) PyArray_DATA(mix_mat);
-
-    // Point to actual output buffer
     buf_out = (float *) pa_buf_out;
-    
+
+    frame_size = spout->channelCount;
 
     // Main loop for tone generation
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            tmp = rk_gauss(state) * 0.1;
+            tmp = rk_gauss(rks) * 0.1;
             //printf("%.6f\n", rk_gauss(state));
             if (tmp < -1.0) {
                 tmp = -1.0;
@@ -346,7 +288,7 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 //printf("DEBUG: clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp * ((float) mix_mat_arr[j]);
+            buf_out[i*frame_size + j] = tmp * ((float) mix_mat[j]);
         }
     }
 

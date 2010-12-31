@@ -116,6 +116,13 @@ class SndfileUserData(ctypes.Structure):
 
 class ToneUserData(ctypes.Structure):
     """
+    struct tone_user_data {
+        void *parent;
+        PyObject *self;
+
+        unsigned int t;
+        double tone_freq;
+    };
     """
     _fields_ = (("parent",    c_void_p),
                 ("self",      py_object),
@@ -123,13 +130,19 @@ class ToneUserData(ctypes.Structure):
                 ("tone_freq", c_double))
 
 
-"""
 class WhiteUserData(ctypes.Structure):
-    "
-    "
-    _fields_ = (("x", x),
-                ("y", y))
-"""
+    """
+    struct white_user_data {
+        void *parent;
+        PyObject *self;
+
+        rk_state *rks;
+    };
+    """
+    _fields_ = (("parent", c_void_p),
+                ("self",   py_object),
+                ("rks",    c_void_p))
+
 
 class Device:
     """
@@ -477,8 +490,44 @@ class WhiteStream(Stream):
     """
     Stream object representing white noise.
     """
+    mix_mat = None
     rk_state = None
-    rk_state_ptr = None
+    white_user_data = None
+
+    def __setattr__(self, name, val):
+        if name == "stream":
+            self.stream_user_data.stream = val
+            self.__dict__[name] = val
+        elif name == "in_param":
+            self.stream_user_data.in_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "out_param":
+            self.stream_user_data.out_param = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        elif name == "fs":
+            self.stream_user_data.fs = float(val)
+            self.__dict__[name] = float(val)
+#        elif name == "callback":
+#            self.stream_user_data.callback = int(val)
+#            self.__dict__[name] = val
+        elif name == "mix_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
+            self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
+        elif name == "mute_mat":
+            self.__dict__[name] = np.ascontiguousarray(val)
+            self.stream_user_data.mute_mat = self.mute_mat.ctypes.data_as(POINTER(c_double))
+            self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
+            self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
+        elif name == "pa_fpb":
+            self.stream_user_data.pa_fpb = val
+            self.__dict__[name] = val
+        elif name == "rk_state":
+            self.white_user_data.rks = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
+            self.__dict__[name] = val
+        else:
+            self.__dict__[name] = val
 
     def __init__(self, device, fs, mix_mat):
         # Initialize `Stream` attributes
@@ -486,6 +535,9 @@ class WhiteStream(Stream):
         self.callback = cmedussa.callback_white
         self.callback_ptr = cmedussa.callback_white
         self.device = device
+
+        self.stream_user_data = StreamUserData()
+        self.white_user_data = WhiteUserData()
 
         if mix_mat == None:
             output_channels = self.device.out_device_info.maxOutputChannels
@@ -499,7 +551,6 @@ class WhiteStream(Stream):
 
         # Initialize this class' attributes
         self.rk_state = rkit.Rk_state()
-        self.rk_state_ptr = ctypes.addressof(self.rk_state)
         cmedussa.rk_randomseed(byref(self.rk_state))
 
         # Find a smart way to determine this value,
@@ -512,6 +563,8 @@ class WhiteStream(Stream):
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
+        self.white_user_data.parent = ctypes.cast(ctypes.pointer(self.stream_user_data), ctypes.c_void_p)
+        self.user_data = ctypes.addressof(self.white_user_data)
 
 
 class FiniteStream(Stream):
@@ -842,7 +895,7 @@ def generateDeviceInfo():
 
 
 def getAvailableDevices(host_api=None, verbose=False):
-    '''
+    """
     Returns a list containing information on the available audio devices.
 
     Parameters
@@ -856,7 +909,7 @@ def getAvailableDevices(host_api=None, verbose=False):
     -------
     devices : list
         The list of devices.
-    '''
+    """
     # If necessary, wrap `host_api` in a list so it is iterable
     if isinstance(host_api, str):
         host_api = [host_api]
@@ -878,7 +931,7 @@ def getAvailableDevices(host_api=None, verbose=False):
 
 
 def printAvailableDevices(host_api=None, verbose=False):
-    '''
+    """
     Displays information on the available audio devices.
 
     Parameters
@@ -891,7 +944,7 @@ def printAvailableDevices(host_api=None, verbose=False):
     Returns
     -------
     None
-    '''
+    """
     devices = getAvailableDevices(host_api, verbose)
 
     if len(devices) == 0:
@@ -924,7 +977,7 @@ def printAvailableDevices(host_api=None, verbose=False):
 
 
 def open_device(out_device_index=None, in_device_index=None):
-    '''
+    """
     Opens the specified input and output devices.
     Use None for default devices.
 
@@ -939,7 +992,7 @@ def open_device(out_device_index=None, in_device_index=None):
     -------
     d : Device object
         Object representing the specified devices.
-    '''
+    """
     if out_device_index == None:
         out_device_index = pa.Pa_GetDefaultOutputDevice()
 
