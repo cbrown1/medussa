@@ -797,18 +797,26 @@ class SndfileStream(FiniteStream):
             self.finite_user_data.duration = val
             self.__dict__[name] = val
         elif name == "finpath":
-            if not (inspect.stack()[1][3] == "__init__"):
-                pass
-            else:
+            # Only permit assignment to `finpath` attribute if we are in `__init__`
+            if inspect.stack()[1][3] == "__init__":
                 self.sndfile_user_data.finpath = c_char_p(val)
                 self.__dict__[name] = val
+            else:
+                raise RuntimeError("`%s` attribute is immutable." % (name))
         elif name == "fin":
-            #self.sndfile_user_data.fin = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
-            self.sndfile_user_data.fin = val
-            self.__dict__[name] = val
+            # Only permit assignment to `fin` attribute if we are in `__init__`
+            if inspect.stack()[1][3] == "__init__":
+                self.sndfile_user_data.fin = val
+                self.__dict__[name] = val
+            else:
+                raise RuntimeError("`%s` attribute is immutable." % (name))
         elif name == "finfo":
-            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val), POINTER(sndfile.SF_INFO))
-            self.__dict__[name] = val
+            # Only permit assignment to `fin` attribute if we are in `__init__`
+            if inspect.stack()[1][3] == "__init__":
+                self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val), POINTER(sndfile.SF_INFO))
+                self.__dict__[name] = val
+            else:
+                raise RuntimeError("`%s` attribute is immutable." % (name))
         else:
             self.__dict__[name] = val
 
