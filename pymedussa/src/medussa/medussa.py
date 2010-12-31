@@ -6,6 +6,7 @@ from time import sleep
 import atexit
 import rkit
 from os.path import exists
+import inspect
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
@@ -796,8 +797,11 @@ class SndfileStream(FiniteStream):
             self.finite_user_data.duration = val
             self.__dict__[name] = val
         elif name == "finpath":
-            self.sndfile_user_data.finpath = c_char_p(val)
-            self.__dict__[name] = val
+            if not (inspect.stack()[1][3] == "__init__"):
+                pass
+            else:
+                self.sndfile_user_data.finpath = c_char_p(val)
+                self.__dict__[name] = val
         elif name == "fin":
             #self.sndfile_user_data.fin = ctypes.cast(ctypes.pointer(val), ctypes.c_void_p)
             self.sndfile_user_data.fin = val
