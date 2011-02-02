@@ -726,7 +726,8 @@ class ArrayStream(FiniteStream):
         #else:
         #    output_channels = self.device.out_device_info.maxOutputChannels
 
-        output_channels = self.device.out_device_info.maxOutputChannels
+        #output_channels = self.device.out_device_info.maxOutputChannels
+        output_channels = 2
 
         self.mix_mat = np.resize(self.mix_mat, (output_channels, self.mix_mat.shape[1]))
         if output_channels > self.mix_mat.shape[1]:
