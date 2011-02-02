@@ -159,7 +159,9 @@ class Device:
     out_name = None
     out_hostapi = None
 
-    def __init__(self, in_index=None, out_index=None):
+    output_channels = None
+
+    def __init__(self, in_index=None, out_index=None, output_channels=None):
         """
         Note that, because we have overridden `__setattr__`, an index
         assignment in general will automatically update the user-friendly
@@ -169,6 +171,8 @@ class Device:
             self.in_index = in_index
         if out_index != None:
             self.out_index = out_index
+        if output_channels != None:
+            self.output_channels = output_channels
 
     def __setattr__(self, name, val):
         """

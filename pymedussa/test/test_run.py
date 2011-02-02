@@ -4,8 +4,13 @@ import numpy as np
 from time import sleep
 import sys
 
+from scipy.io import wavfile
+
 fs = 44100.0
-x,fs = medussa.readfile("clean.wav")
+#x,fs = medussa.readfile("clean.wav")
+fs,x = wavfile.read("clean.wav")
+x = x * 1.0
+x = x / 32767.0
 #y = np.hstack((x,x))
 #x,fs = medussa.readfile("speech-noise-tone.wav")
 #shape =x.shape
@@ -13,6 +18,7 @@ x,fs = medussa.readfile("clean.wav")
 #x[:,1] = 2.0
 #x[:,2] = 3.0
 
+#d = medussa.open_device(11)
 d = medussa.open_device()
 sleep(1)
 s1 = d.open_array(x,fs)
