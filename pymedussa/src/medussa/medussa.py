@@ -465,7 +465,10 @@ class ToneStream(Stream):
         self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
-            output_channels = self.device.out_device_info.maxOutputChannels
+            if self.device.output_channels == None:
+                output_channels = self.device.out_device_info.maxOutputChannels
+            else:
+                output_channels = self.device.output_channels
             self.mix_mat = np.ones((output_channels,1))
         else:
             self.mix_mat = mix_mat
@@ -545,7 +548,10 @@ class WhiteStream(Stream):
         self.white_user_data = WhiteUserData()
 
         if mix_mat == None:
-            output_channels = self.device.out_device_info.maxOutputChannels
+            if self.device.output_channels == None:
+                output_channels = self.device.out_device_info.maxOutputChannels
+            else:
+                output_channels = self.device.output_channels
             self.mix_mat = np.ones((output_channels,1))
         else:
             self.mix_mat = mix_mat
@@ -856,7 +862,10 @@ class SndfileStream(FiniteStream):
         self.fs = self.finfo.samplerate
 
         # set actual device output channels
-        output_channels = self.device.out_device_info.maxOutputChannels
+        if self.device.output_channels == None:
+            output_channels = self.device.out_device_info.maxOutputChannels
+        else:
+            output_channels = self.device.output_channels
 
         # set signal length
         self.frames = self.finfo.frames

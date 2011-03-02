@@ -20,6 +20,7 @@ x = x / 32767.0
 
 #d = medussa.open_device(11)
 d = medussa.open_device()
+d.output_channels = 2
 sleep(1)
 s1 = d.open_array(x,fs)
 s2 = d.open_file("clean.wav")
