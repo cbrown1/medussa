@@ -1002,7 +1002,7 @@ def printAvailableDevices(host_api=None, verbose=False):
             print ""
 
 
-def open_device(out_device_index=None, in_device_index=None):
+def open_device(out_device_index=None, in_device_index=None, output_channels=None):
     """
     Opens the specified input and output devices.
     Use None for default devices.
@@ -1022,11 +1022,11 @@ def open_device(out_device_index=None, in_device_index=None):
     if out_device_index == None:
         out_device_index = pa.Pa_GetDefaultOutputDevice()
 
-    d = Device(in_device_index, out_device_index)
+    d = Device(in_device_index, out_device_index, output_channels)
     return d
 
 
-def open_default_device():
+def open_default_device(output_channels=None):
     """
     This differs from `open_device()` (with no arguments) only in
     that a default output device is also opened.
@@ -1034,7 +1034,7 @@ def open_default_device():
     out_di = pa.Pa_GetDefaultOutputDevice()
     in_di = pa.Pa_GetDefaultInputDevice()
 
-    d = Device(in_di, out_di)
+    d = Device(in_di, out_di, output_channels)
     return d
 
 
