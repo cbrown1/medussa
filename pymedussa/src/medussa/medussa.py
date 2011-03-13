@@ -857,6 +857,13 @@ class SndfileStream(FiniteStream):
         self.finpath = finpath
         self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
         self.fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(self.finfo))
+        print 'fin', self.fin
+        print 'finfo', self.finfo
+        print 'finfo.frames', self.finfo.frames
+        print 'finfo.channels', self.finfo.channels
+        print 'finfo.format', self.finfo.format
+        print 'finfo.samplerate', self.finfo.samplerate
+        print 'finfo.seekable', self.finfo.seekable
 
         # set sampling frequency
         self.fs = self.finfo.samplerate
@@ -1147,15 +1154,14 @@ def readfile(finpath):
     fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(finfo))
 
     fs = finfo.samplerate
+
     BUFFTYPE = ctypes.c_double * (finfo.frames * finfo.channels)
     buff = BUFFTYPE()
-    frames_read = sndfile.csndfile.sf_readf_double(fin, byref(buff), finfo.frames)
-    #print "frames_read", frames_read
+
+    frames_read = cmedussa.readfile_helper(fin, byref(buff), finfo.frames)
 
     err = sndfile.csndfile.sf_close(c_void_p(fin))
-    #print "err", err
 
-    #print finfo.frames, finfo.channels
     arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
 
     for i in xrange(finfo.frames):

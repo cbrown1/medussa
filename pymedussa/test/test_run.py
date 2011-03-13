@@ -7,10 +7,11 @@ import sys
 from scipy.io import wavfile
 
 fs = 44100.0
-#x,fs = medussa.readfile("clean.wav")
-fs,x = wavfile.read("clean.wav")
-x = x * 1.0
-x = x / 32767.0
+x,fs = medussa.readfile("clean.wav")
+#fs,x = wavfile.read("clean.wav")
+#fs,x = wavfile.read("speech-noise-tone.wav")
+#x = x * 1.0
+#x = x / 32767.0
 #y = np.hstack((x,x))
 #x,fs = medussa.readfile("speech-noise-tone.wav")
 #shape =x.shape
@@ -23,9 +24,9 @@ d = medussa.open_device(output_channels=2)
 #d.output_channels = 2
 sleep(1)
 s1 = d.open_array(x,fs)
-s2 = d.open_file("clean.wav")
-s3 = d.create_tone(400,fs)
-s4 = d.create_white(fs)
+#s2 = d.open_file("clean.wav")
+#s3 = d.create_tone(400,fs)
+#s4 = d.create_white(fs)
 #s.play()
 #sleep(6)
 

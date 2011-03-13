@@ -26,3 +26,4 @@ PaStream *open_stream (PyObject *,
                        PaStreamCallback *);
 
 void start_streams (PaStream **, int);
+int readfile_helper (SNDFILE *fin, double *arr, int frames);

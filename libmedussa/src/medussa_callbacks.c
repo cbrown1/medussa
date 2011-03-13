@@ -23,13 +23,8 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     finite_user_data *fud;
     array_user_data *aud;
 
-    printf("DEBUG-NDARRAY-1: start of callback\n");
-    printf("DEBUG-NDARRAY: value of `frames` == %u\n", frames);
-
     // Point `buf_out` to actual output buffer
     buf_out = (float *) pa_buf_out;
-
-    printf("DEBUG-NDARRAY-2\n");
 
     // Point `self` to calling instance
     aud = (array_user_data *) user_data;
@@ -42,42 +37,25 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         printf("ERROR [callback_ndarray]: `finite_user_data` is NULL\n");
         return 1;
     }
-    printf("DEBUG-NDARRAY-2-0: value of `fud` == %p\n", fud);
     sud = (stream_user_data *) fud->parent;
     if (aud == NULL) {
         printf("ERROR [callback_ndarray]: `stream_user_data` is NULL\n");
         return 1;
     }
 
-    printf("DEBUG-NDARRAY-3\n");
-
     loop = fud->loop;
-
-    printf("DEBUG-NDARRAY-4\n");
 
     // Point `mix_mat_arr` to data buffer of `mix_mat`
     mix_mat = (double *) sud->mix_mat;
 
-    printf("DEBUG-NDARRAY-5\n");
-
     // Determine `frame_size`, the number of channels, from `arr` (ERROR)
     frame_size = (unsigned int) aud->ndarr_1;
-    printf("DEBUG-NDARRAY: `frame_size` == %d\n", frame_size);
-
-    printf("DEBUG-NDARRAY-6\n");
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
     cursor = fud->cursor;
     arr = aud->ndarr + cursor*frame_size;
 
-    printf("DEBUG-NDARRAY-7\n");
-
     channel_count = sud->out_param->channelCount;
-
-    printf("DEBUG-NDARRAY-8: before main loop\n");
-
-    printf("\tDEBUG-NDARRAY-8-0: value of `fud`: %p\n", fud);
-    printf("\tDEBUG-NDARRAY-8-1: value of `cursor`: %d\n", cursor);
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
@@ -85,9 +63,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         if (aud->ndarr_0 <= (fud->cursor+i)) {
             break;
         }
-//        printf("\tDEBUG-NDARRAY-8-in_loop-0: value of `fud`: %p\n", fud);
-//        printf("\t\tDEBUG: sud->mix_mat_0: %d\n", sud->mix_mat_0);
-//        printf("\t\tDEBUG: sud->mix_mat_1: %d\n", sud->mix_mat_1);
         
         dmatrix_mult(mix_mat,
                      sud->mix_mat_0, sud->mix_mat_1,
@@ -95,36 +70,22 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                      frame_size, 1,
                      tmp_buf,
                      channel_count, 1);
-//        printf("\tDEBUG-NDARRAY-8-in_loop-1: value of `fud`: %p\n", fud);
 
         for (j = 0; j < channel_count; j++) {
             buf_out[i*channel_count + j] = (float) tmp_buf[j];
         }
-//        printf("\tDEBUG-NDARRAY-8-in_loop-2: value of `fud`: %p\n", fud);
     }
     cursor += i;
 
-    printf("DEBUG-NDARRAY-9: after main loop\n");
-
-    printf("\tDEBUG: value of `cursor`: %d\n", cursor);
-    printf("\tDEBUG: value of `fud`: %p\n", fud);
-    printf("\tDEBUG: value of `fud->cursor`: %d\n", fud->cursor);
-
     // Move `self.cursor`
     fud->cursor = cursor;
-
-    printf("DEBUG-NDARRAY-10\n");
 
     if (cursor < aud->ndarr_0) {
         return paContinue;
     }
 
-    printf("DEBUG-NDARRAY-11\n");
-
     // Reset `self.cursor`
     fud->cursor = 0;
-
-    printf("DEBUG-NDARRAY-12\n");
 
     if (loop) {
         return paContinue;
@@ -180,7 +141,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     fin = sfud->fin;
     frame_size = finfo->channels;
     // End attribute acquisition
-
 
     buf_out = (float *) pa_buf_out;
     if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }

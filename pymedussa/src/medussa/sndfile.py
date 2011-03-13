@@ -11,7 +11,7 @@ if platform.system() == "Windows":
     if not exists(libname):
 	    raise RuntimeError("Unable to locate library: " + libname)
 else:
-    libname = find_library("sndfile") # untested
+    libname = find_library("sndfile")
     if libname == None:
         raise RuntimeError("Unable to locate library `libsndfile`")
 
@@ -41,3 +41,8 @@ class SF_INFO (Structure):
 SFM_READ  = c_int(0x10)
 SFM_WRITE = c_int(0x20)
 SFM_RDWR  = c_int(0x30)
+
+# set argument and return types for relevant `libsndfile' functions
+#csndfile.sf_seek.restype = 
+csndfile.sf_seek.argtypes = [c_void_p, c_uint, c_int]
+

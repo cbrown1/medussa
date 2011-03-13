@@ -117,3 +117,15 @@ void start_streams (PaStream *stream_array[], int num_streams)
         Pa_StartStream(stream_array[i]);
     }
 }
+
+int readfile_helper (SNDFILE *fin, double *arr, int frames)
+{
+    int frames_read;
+    int err;
+
+    err = sf_seek(fin, 0, 0);
+    if (err != 0) { return err; }
+
+    frames_read = sf_readf_double(fin, arr, frames);
+    return frames_read;
+}
