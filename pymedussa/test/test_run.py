@@ -7,7 +7,7 @@ import sys
 from scipy.io import wavfile
 
 fs = 44100.0
-x,fs = medussa.readfile("clean.wav")
+#x,fs = medussa.readfile("test/clean.wav")
 #fs,x = wavfile.read("clean.wav")
 #fs,x = wavfile.read("speech-noise-tone.wav")
 #x = x * 1.0
@@ -21,12 +21,13 @@ x,fs = medussa.readfile("clean.wav")
 
 #d = medussa.open_device(11)
 d = medussa.open_device(output_channels=2)
+#d = medussa.open_device()
 #d.output_channels = 2
-sleep(1)
-s1 = d.open_array(x,fs)
-#s2 = d.open_file("clean.wav")
-#s3 = d.create_tone(400,fs)
-#s4 = d.create_white(fs)
+#sleep(1)
+#s = d.open_array(x,fs)
+s = d.open_file("test/clean.wav")
+#s = d.create_tone(400,fs)
+#s = d.create_white(fs)
 #s.play()
 #sleep(6)
 

@@ -14,7 +14,6 @@ struct stream_user_data {
     PaStreamParameters *in_param;
     PaStreamParameters *out_param;
     double fs;
-    //PaStreamCallback *callback;
 
     double *mix_mat;
     int mix_mat_0;
@@ -72,3 +71,11 @@ struct white_user_data {
     rk_state *rks;
 };
 typedef struct white_user_data white_user_data;
+
+struct pink_user_data {
+    void *parent;
+    PyObject *self;
+
+    rk_state *rks;
+};
+typedef struct pink_user_data pink_user_data;

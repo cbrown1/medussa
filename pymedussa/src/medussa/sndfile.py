@@ -4,6 +4,7 @@ from distutils.sysconfig import get_python_lib
 from os.path import exists
 from ctypes import *
 
+import sndfile_formats as formats
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":

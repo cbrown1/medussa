@@ -129,3 +129,10 @@ int readfile_helper (SNDFILE *fin, double *arr, int frames)
     frames_read = sf_readf_double(fin, arr, frames);
     return frames_read;
 }
+
+int writefile_helper (SNDFILE *fout, double *arr, int frames)
+{
+    int frames_written = 0;
+//    frames_written = sf_writef_double (SNDFILE *fout, double *arr, frames);
+    return frames_written;
+}
