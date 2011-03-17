@@ -7,6 +7,7 @@ import atexit
 import rkit
 from os.path import exists
 import inspect
+from pink import Pink_noise_t
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
@@ -143,6 +144,20 @@ class WhiteUserData(ctypes.Structure):
                 ("rks",    c_void_p))
 
 
+class PinkUserData(ctypes.Structure):
+    """
+    struct pink_user_data {
+        void *parent;
+        PyObject *self;
+
+        pink_noise_t *pn;
+    };
+    """
+    _fields_ = (("parent", c_void_p),
+                ("self",   py_object),
+                ("pn",     c_void_p))
+
+
 class Device(object):
     """
     Audio device object.
@@ -257,6 +272,23 @@ class Device(object):
             The stream object.
         """
         s = WhiteStream(self, fs, None)
+        return s
+
+    def create_pink(self, fs):
+        """
+        Returns a stream object representing pink noise.
+
+        Parameters
+        ----------
+        fs : int
+            The sampling frequency.
+
+        Returns
+        -------
+        s : Stream object
+            The stream object.
+        """
+        s = PinkStream(self, fs, None)
         return s
 
     def open_array(self, arr, fs):
@@ -602,28 +634,14 @@ class PinkStream(Stream):
     """
     Stream object representing pink noise.
     """
-    rk_state = None
     pink_user_data = None
-
-    @property
-    def rk_state(self):
-        return self._rk_state
-
-    @rk_state.setter
-    def rk_state(self, val):
-        self._rk_state = val
-        self.white_user_data.rks = ctypes.addressof(self._rk_state)
-
-    @rk_state.deleter
-    def rk_state(self):
-        del self._rk_state
 
     def __init__(self, device, fs, mix_mat):
         self.callback_ptr = cmedussa.callback_pink
         self.device = device
 
         self.stream_user_data = StreamUserData()
-        self.white_user_data = PinkUserData()
+        self.pink_user_data = PinkUserData()
 
         if mix_mat == None:
             if self.device.output_channels == None:
@@ -638,13 +656,10 @@ class PinkStream(Stream):
         self.fs = fs
         print fs
 
-        # Initialize this class' attributes
-        self.rk_state = rkit.Rk_state()
-        print self.rk_state
-        cmedussa.rk_randomseed(byref(self.rk_state))
+        self.pn = Pink_noise_t()
+        self.pink_user_data.pn = ctypes.addressof(self.pn)
+        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 4)
 
-        # Find a smart way to determine this value,
-        # which has to be hardcoded into the callback
         self.pa_fpb = 1024
 
         self.out_param = PaStreamParameters(self.device.out_index,
@@ -653,8 +668,8 @@ class PinkStream(Stream):
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
 
-        self.white_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.white_user_data)
+        self.pink_user_data.parent = ctypes.addressof(self.stream_user_data)
+        self.user_data = ctypes.addressof(self.pink_user_data)
 
 
 class FiniteStream(Stream):

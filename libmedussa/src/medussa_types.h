@@ -4,6 +4,7 @@
 #include <portaudio.h>
 #include <sndfile.h>
 #include "randomkit.h"
+#include "pink.h"
 
 struct stream_user_data {
     void *parent;
@@ -76,6 +77,6 @@ struct pink_user_data {
     void *parent;
     PyObject *self;
 
-    rk_state *rks;
+    pink_noise_t *pn;
 };
 typedef struct pink_user_data pink_user_data;

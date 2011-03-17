@@ -15,9 +15,9 @@ libmedussa.so.1: libmedussa.so.1.0.1
 	ln -s libmedussa.so.1.0.1 libmedussa.so.1
 
 libmedussa.so.1.0.1: medussa.o
-	gcc -shared -Wl,-soname,libmedussa.so -o libmedussa.so.1.0.1 medussa.o medussa_callbacks.o medussa_matrix.o medussa_types.o randomkit.o $(FLAGS)
+	gcc -shared -Wl,-soname,libmedussa.so -o libmedussa.so.1.0.1 medussa.o medussa_callbacks.o medussa_matrix.o medussa_types.o randomkit.o pink.o $(FLAGS)
 
-medussa.o: $(SRCDIR)/medussa.c medussa_callbacks.o medussa_matrix.o medussa_types.o randomkit.o
+medussa.o: $(SRCDIR)/medussa.c medussa_callbacks.o medussa_matrix.o medussa_types.o randomkit.o pink.o
 	gcc -c -fPIC $(SRCDIR)/medussa.c $(FLAGS) -o medussa.o
 
 medussa_callbacks.o: $(SRCDIR)/medussa_callbacks.c $(SRCDIR)/randomkit.o
@@ -31,6 +31,9 @@ medussa_types.o: $(SRCDIR)/medussa_types.c
 
 randomkit.o: $(SRCDIR)/randomkit.c
 	gcc -c -fPIC $(SRCDIR)/randomkit.c $(FLAGS)
+
+pink.o: $(SRCDIR)/pink.c
+	gcc -c -fPIC $(SRCDIR)/pink.c $(FLAGS)
 
 clean:
 	rm randomkit.o

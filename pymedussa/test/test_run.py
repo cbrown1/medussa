@@ -4,10 +4,8 @@ import numpy as np
 from time import sleep
 import sys
 
-from scipy.io import wavfile
-
 fs = 44100.0
-#x,fs = medussa.readfile("test/clean.wav")
+x,fs = medussa.readfile("test/clean.wav")
 #fs,x = wavfile.read("clean.wav")
 #fs,x = wavfile.read("speech-noise-tone.wav")
 #x = x * 1.0
@@ -25,9 +23,10 @@ d = medussa.open_device(output_channels=2)
 #d.output_channels = 2
 #sleep(1)
 #s = d.open_array(x,fs)
-s = d.open_file("test/clean.wav")
+#s = d.open_file("test/clean.wav")
 #s = d.create_tone(400,fs)
-#s = d.create_white(fs)
+sw = d.create_white(fs)
+sp = d.create_pink(fs)
 #s.play()
 #sleep(6)
 

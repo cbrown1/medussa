@@ -323,17 +323,17 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
 
     PaStreamParameters *spout;
 
-    white_user_data *wud;
+    pink_user_data *pud;
     stream_user_data *sud;
 
-    // PRNG variables
-    rk_state *rks;
+    pink_noise_t *pn;
 
-    wud = (white_user_data *) user_data;
-    sud = (stream_user_data *) wud->parent;
+    pud = (pink_user_data *) user_data;
+    sud = (stream_user_data *) pud->parent;
 
     fs = sud->fs;
-    rks = wud->rks;
+    pn = (pink_noise_t *) pud->pn;
+
     mix_mat = (double *) sud->mix_mat;
     spout = sud->out_param;
 
@@ -345,7 +345,7 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            tmp = rk_gauss(rks) * 0.1;
+            tmp = generate_pink_noise_sample(pn);
             //printf("%.6f\n", rk_gauss(state));
             if (tmp < -1.0) {
                 tmp = -1.0;
@@ -361,3 +361,4 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
 
     return paContinue;
 }
+
