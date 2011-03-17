@@ -4,11 +4,17 @@ import numpy as np
 from time import sleep
 import sys
 
-fs = 44100.0
-x,fs = medussa.readfile("test/speech-noise-tone.wav")
-#x,fs = medussa.readfile("speech-noise-tone.wav")
+from medussa.sndfile import formats
 
-#y = medussa.writewav("test/threetone.wav", x, fs/2)
+fs = 44100.0
+x,fs = medussa.readfile("test/clean.wav")
+#x,fs = medussa.readfile("test/speech-noise-tone.wav")
+
+#y = medussa.writewav("test/clean2.wav", x, fs)
+#flac16 = formats.SF_FORMAT_FLAC[0] | formats.SF_FORMAT_PCM_16[0]
+#oggv = formats.SF_FORMAT_OGG[0] | formats.SF_FORMAT_VORBIS[0]
+#y = medussa.writefile("test/clean2.ogg", x, fs, format=oggv)
+#print y
 
 #d = medussa.open_device(output_channels=2)
 #d = medussa.open_device()
