@@ -609,11 +609,9 @@ class WhiteStream(Stream):
 
         self.mute_mat = self.mix_mat * 0.0
         self.fs = fs
-        print fs
 
         # Initialize this class' attributes
         self.rk_state = rkit.Rk_state()
-        print self.rk_state
         cmedussa.rk_randomseed(byref(self.rk_state))
 
         # Find a smart way to determine this value,
@@ -654,7 +652,6 @@ class PinkStream(Stream):
 
         self.mute_mat = self.mix_mat * 0.0
         self.fs = fs
-        print fs
 
         self.pn = Pink_noise_t()
         self.pink_user_data.pn = ctypes.addressof(self.pn)
