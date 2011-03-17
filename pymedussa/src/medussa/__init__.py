@@ -11,7 +11,7 @@
  """
 
 #from medussa import playarr, playfile, cmedussa, Device, ContigArrayHandle, ArrayStream, ToneData, ToneStream, SndfileStream, SndfileData, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate
-from medussa import playarr, playfile, cmedussa, Device, ToneStream, ArrayStream, SndfileStream, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate, readfile
+from medussa import playarr, playfile, cmedussa, Device, ToneStream, ArrayStream, SndfileStream, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate, readfile, writefile, writewav
 from portaudio import pa, ERROR_CHECK
 
 __version__ = "1.0"

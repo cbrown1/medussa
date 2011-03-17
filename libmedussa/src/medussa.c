@@ -130,9 +130,23 @@ int readfile_helper (SNDFILE *fin, double *arr, int frames)
     return frames_read;
 }
 
-int writefile_helper (SNDFILE *fout, double *arr, int frames)
+int writefile_helper (char *foutpath, SF_INFO *finfo, double *arr, int format, int frames)
 {
     int frames_written = 0;
-//    frames_written = sf_writef_double (SNDFILE *fout, double *arr, frames);
+    SNDFILE *fout;
+
+    finfo->format = format;
+
+    if (!sf_format_check(finfo)) {
+        printf("Bad SF_INFO struct.\n");
+        return -1;
+    }
+
+    fout = sf_open(foutpath, SFM_WRITE, finfo);
+
+    frames_written = sf_writef_double (fout, arr, frames);
+
+    sf_close(fout);
+
     return frames_written;
 }

@@ -1218,15 +1218,42 @@ def readfile(finpath):
 
     return (arr, float(fs))
 
-def writefile(foutpath, arr,
+def writefile(foutpath, arr, fs,
               format=(sndfile.formats.SF_FORMAT_WAV[0] | sndfile.formats.SF_FORMAT_PCM_16[0]),
               frames=None):
+
     if frames == None:
-        frames = np.product(arr.shape)
+        frames = arr.shape[0]
 
     finfo = sndfile.SF_INFO(0,0,0,0,0,0)
-    fout = sndfile.csndfile.sf_open(finpath, sndfile.SFM_WRITE, byref(finfo))
-    finfo.format = format
+    finfo.samplerate = int(fs)
+    finfo.channels = arr.shape[1]
+    finfo.format = c_int(format)
 
-    return None
+    arr = np.ascontiguousarray(arr)
+    _arr = arr.ctypes.data_as(POINTER(c_double))
 
+    frames_written = cmedussa.writefile_helper(foutpath,
+                                               byref(finfo),
+                                               _arr,
+                                               format,
+                                               frames)
+
+    return frames_written
+
+def writewav(foutpath, arr, fs, bits='s16', frames=None):
+    majformat = sndfile.formats.SF_FORMAT_WAV[0]
+
+    subformat = {8: sndfile.formats.SF_FORMAT_PCM_S8[0],
+                 16: sndfile.formats.SF_FORMAT_PCM_16[0],
+                 24: sndfile.formats.SF_FORMAT_PCM_24[0],
+                 32: sndfile.formats.SF_FORMAT_PCM_32[0],
+                 's8': sndfile.formats.SF_FORMAT_PCM_S8[0],
+                 's16': sndfile.formats.SF_FORMAT_PCM_16[0],
+                 's24': sndfile.formats.SF_FORMAT_PCM_24[0],
+                 's32': sndfile.formats.SF_FORMAT_PCM_32[0],
+                 'u8': sndfile.formats.SF_FORMAT_PCM_U8[0]}
+
+    endformat = majformat | subformat[bits]
+
+    return writefile(foutpath, arr, fs, format=endformat, frames=frames)

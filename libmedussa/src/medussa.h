@@ -27,4 +27,5 @@ PaStream *open_stream (PyObject *,
 
 void start_streams (PaStream **, int);
 int readfile_helper (SNDFILE *fin, double *arr, int frames);
-int writefile_helper (SNDFILE *fout, double *arr, int frames);
+//int writefile_helper (SNDFILE *fout, double *arr, int frames);
+int writefile_helper (char *foutpath, SF_INFO *finfo, double *arr, int format, int frames);
