@@ -11,11 +11,15 @@
  """
 
 #from medussa import playarr, playfile, cmedussa, Device, ContigArrayHandle, ArrayStream, ToneData, ToneStream, SndfileStream, SndfileData, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate
-from medussa import playarr, playfile, cmedussa, Device, ToneStream, ArrayStream, SndfileStream, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate, readfile, writefile, writewav
+from medussa import (play_arr, play_file, cmedussa, Device, ToneStream, 
+                    ArrayStream, SndfileStream, generate_hostapi_info, 
+                    generate_device_info, print_available_devices, 
+                    start_streams, open_device, open_default_device, init, 
+                    terminate, read_file, write_file, write_wav)
 from portaudio import pa, ERROR_CHECK
 
 __version__ = "1.0"
-__pa_version__ = "Release %d, %s" % (pa.Pa_GetVersion(), pa.Pa_GetVersionText())
+__pa_version__ = "%s, Release %d" % (pa.Pa_GetVersionText(), pa.Pa_GetVersion())
 
 err = pa.Pa_Initialize()
 try:

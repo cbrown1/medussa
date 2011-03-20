@@ -310,13 +310,13 @@ class Device(object):
         s = ArrayStream(self, fs, None, arr)
         return s
 
-    def open_file(self, finpath):
+    def open_file(self, file_name):
         """
         Returns a stream object representing a soundfile on disk.
 
         Parameters
         ----------
-        finpath : string
+        file_name : string
             The path to the sound file.
 
         Returns
@@ -324,7 +324,7 @@ class Device(object):
         s : Stream object
             The stream object.
         """
-        s = SndfileStream(self, None, finpath)
+        s = SndfileStream(self, None, file_name)
         return s
 
 
@@ -951,7 +951,7 @@ class SndfileStream(FiniteStream):
         pa.Pa_CloseStream(self.stream_ptr)
         sndfile.csndfile.sf_close(c_void_p(self.fin))
 
-def generateHostApiInfo():
+def generate_hostapi_info():
     HostApiInfoPointer = POINTER(PaHostApiInfo)
     api_count = pa.Pa_GetHostApiCount()
     for i in xrange(api_count):
@@ -960,7 +960,7 @@ def generateHostApiInfo():
         yield hai
 
 
-def generateDeviceInfo():
+def generate_device_info():
     DeviceInfoPointer = POINTER(PaDeviceInfo)
     device_count = pa.Pa_GetDeviceCount()
 
@@ -975,14 +975,14 @@ def generateDeviceInfo():
         yield di
 
 
-def getAvailableDevices(host_api=None, verbose=False):
+def getAvailableDevices(hostapi=None, verbose=False):
     """
     Returns a list containing information on the available audio devices.
 
     Parameters
     ----------
-    host_api : string
-        Filters the list of devices to include only the specified host_api.
+    hostapi : string
+        Filters the list of devices to include only the specified hostapi.
     verbose : Bool
         Include more information.
 
@@ -991,19 +991,19 @@ def getAvailableDevices(host_api=None, verbose=False):
     devices : list
         The list of devices.
     """
-    # If necessary, wrap `host_api` in a list so it is iterable
-    if isinstance(host_api, str):
-        host_api = [host_api]
+    # If necessary, wrap `hostapi` in a list so it is iterable
+    if isinstance(hostapi, str):
+        hostapi = [hostapi]
 
-    if host_api == None:
+    if hostapi == None:
         # No constraints
-        devices = list(generateDeviceInfo())
+        devices = list(generate_device_info())
     else:
         # Remap user-friendly aliases to integer enum values
-        host_api = [HostApiTypeAliases[x] for x in host_api]
+        hostapi = [HostApiTypeAliases[x] for x in hostapi]
 
-        # Filter output of `generateDeviceInfo()`
-        devices = [di for di in generateDeviceInfo() if (di.hostApi in host_api)]
+        # Filter output of generate_device_info()`
+        devices = [di for di in generate_device_info() if (di.hostApi in hostapi)]
 
     if len(devices) == 0:
         return None
@@ -1011,14 +1011,14 @@ def getAvailableDevices(host_api=None, verbose=False):
         return devices
 
 
-def printAvailableDevices(host_api=None, verbose=False):
+def print_available_devices(hostapi=None, verbose=False):
     """
     Displays information on the available audio devices.
 
     Parameters
     ----------
-    host_api : string
-        Filters the list of devices to include only the specified host_api.
+    hostapi : string
+        Filters the list of devices to include only the specified hostapi.
     verbose : Bool
         Print more information.
 
@@ -1026,10 +1026,10 @@ def printAvailableDevices(host_api=None, verbose=False):
     -------
     None
     """
-    devices = getAvailableDevices(host_api, verbose)
+    devices = getAvailableDevices(hostapi, verbose)
 
     if len(devices) == 0:
-        print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in host_api])
+        print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in hostapi])
         return None
 
     if verbose:
@@ -1060,7 +1060,8 @@ def printAvailableDevices(host_api=None, verbose=False):
 def open_device(out_device_index=None, in_device_index=None, output_channels=None):
     """
     Opens the specified input and output devices.
-    Use None for default devices.
+    If no input device is specified, none will be used. If no output device 
+    is specified, the default device will be used. 
 
     Parameters
     ----------
@@ -1068,6 +1069,13 @@ def open_device(out_device_index=None, in_device_index=None, output_channels=Non
         Index to the desired output device.
     in_device_index : int
         Index to the desired input device.
+    output_channels : int
+        The number of output channels to use. PortAudio is not always correct 
+        in reporting this number, and can sometimes return values like 128. 
+        This is often not a problem, but because of the way mix_mat works, it 
+        is important for Medussa to have the correct value. Thus, Medussa 
+        sets output_channels to 2 by default. If your device has more 
+        channels, set the value here or in dev.output_channels. 
 
     Returns
     -------
@@ -1083,8 +1091,24 @@ def open_device(out_device_index=None, in_device_index=None, output_channels=Non
 
 def open_default_device(output_channels=None):
     """
-    This differs from `open_device()` (with no arguments) only in
-    that a default output device is also opened.
+    Opens the specified input and output devices.
+    Use None for default devices.
+
+    Parameters
+    ----------
+    output_channels : int
+        The number of output channels to use. PortAudio is not always correct 
+        in reporting this number, and can sometimes return values like 128. 
+        This is often not a problem, but because of the way mix_mat works, it 
+        is important for Medussa to have the correct value. Thus, Medussa 
+        sets output_channels to 2 by default. If your device has more 
+        channels, set the value here or in dev.output_channels. 
+
+    Returns
+    -------
+    d : Device object
+        Object representing the specified devices.
+    
     """
     out_di = pa.Pa_GetDefaultOutputDevice()
     in_di = pa.Pa_GetDefaultInputDevice()
@@ -1141,7 +1165,7 @@ def terminate():
     return True
 
 
-def playarr(arr, fs, channel=1):
+def play_arr(arr, fs, channel=1):
     """
     Plays an array on the default device with blocking, Matlab-style.
 
@@ -1163,7 +1187,7 @@ def playarr(arr, fs, channel=1):
         sleep(.01)
 
 
-def playfile(filename):
+def play_file(filename):
     """
     Plays a soundfile on the default device with blocking, Matlab-style.
 
@@ -1186,9 +1210,9 @@ def playfile(filename):
         sleep(.01)
 
 
-def readfile(finpath):
+def read_file(finpath):
     """
-    Read any libsndfile-compatible sound file into an ndarray.
+    Read a sound file with any libsndfile-compatible format into an ndarray.
 
     Parameters
     ----------
@@ -1218,10 +1242,31 @@ def readfile(finpath):
 
     return (arr, float(fs))
 
-def writefile(foutpath, arr, fs,
+
+def write_file(file_name, arr, fs,
               format=(sndfile.formats.SF_FORMAT_WAV[0] | sndfile.formats.SF_FORMAT_PCM_16[0]),
               frames=None):
+    """
+    Writes an ndarray to a sound file with any libsndfile-compatible format.
 
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to write to. 
+    arr : ndarray
+        The array of data to write.
+    fs : int
+        The sampling frequency.
+    format : int
+        TODO: add description, and some examples
+    frames : int
+        The number of frames to write.
+
+    Returns
+    -------
+    frames_written : int
+        The number of frames that were written to the file.
+    """
     if frames == None:
         frames = arr.shape[0]
 
@@ -1233,7 +1278,7 @@ def writefile(foutpath, arr, fs,
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
 
-    frames_written = cmedussa.writefile_helper(foutpath,
+    frames_written = cmedussa.writefile_helper(file_name,
                                                byref(finfo),
                                                _arr,
                                                format,
@@ -1241,7 +1286,12 @@ def writefile(foutpath, arr, fs,
 
     return frames_written
 
-def writewav(foutpath, arr, fs, bits='s16', frames=None):
+
+def write_wav(file_name, arr, fs, bits='s16', frames=None):
+    """Convenience function to write a wavefile. 
+    
+    
+    """
     majformat = sndfile.formats.SF_FORMAT_WAV[0]
 
     subformat = {8: sndfile.formats.SF_FORMAT_PCM_S8[0],
@@ -1256,4 +1306,4 @@ def writewav(foutpath, arr, fs, bits='s16', frames=None):
 
     endformat = majformat | subformat[bits]
 
-    return writefile(foutpath, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, format=endformat, frames=frames)
