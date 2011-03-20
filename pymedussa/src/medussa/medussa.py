@@ -1029,32 +1029,32 @@ def print_available_devices(hostapi=None, verbose=False):
     devices = getAvailableDevices(hostapi, verbose)
 
     if len(devices) == 0:
-        print "No devices found for given hostApi(s):", ",".join([HostApiTypeAliases[x] for x in hostapi])
+        print("No devices found for given hostApi(s): %s" % ",".join([HostApiTypeAliases[x] for x in hostapi]))
         return None
 
     if verbose:
         for i,di in enumerate(devices):
-            print "index:", i
-            print " structVersion", di.structVersion
-            print " name", di.name
-            print " hostApi:", PaHostApiTypeId.from_int[di.hostApi]
-            print " maxInputChannels:", di.maxInputChannels
-            print " maxOutputChannels:", di.maxOutputChannels
-            print " defaultLowInputLatency", di.defaultLowInputLatency
-            print " defaultLowOutputLatency", di.defaultLowOutputLatency
-            print " defaultHighInputLatency", di.defaultHighInputLatency
-            print " defaultHighOutputLatency", di.defaultHighOutputLatency
-            print " defaultSampleRate", di.defaultSampleRate
-            print ""
+            print("index: %s" %  i)
+            print(" structVersion: %s" % di.structVersion)
+            print(" name: %s" % di.name)
+            print(" hostApi: %s" % PaHostApiTypeId.from_int[di.hostApi])
+            print(" maxInputChannels: %s" % di.maxInputChannels)
+            print(" maxOutputChannels: %s" % di.maxOutputChannels)
+            print(" defaultLowInputLatency: %s" % di.defaultLowInputLatency)
+            print(" defaultLowOutputLatency: %s" % di.defaultLowOutputLatency)
+            print(" defaultHighInputLatency: %s" % di.defaultHighInputLatency)
+            print(" defaultHighOutputLatency: %s" % di.defaultHighOutputLatency)
+            print(" defaultSampleRate: %s" % di.defaultSampleRate)
+            print("")
     else:
         for i,di in enumerate(devices):
-            print "index:", i
-            print " name", di.name
-            print " hostApi:", PaHostApiTypeId.from_int[di.hostApi]
-            print " maxInputChannels:", di.maxInputChannels
-            print " maxOutputChannels:", di.maxOutputChannels
-            print " defaultSampleRate", di.defaultSampleRate
-            print ""
+            print("index: %s" % i)
+            print(" name: %s" % di.name)
+            print(" hostApi: %s" % PaHostApiTypeId.from_int[di.hostApi])
+            print(" maxInputChannels: %s" % di.maxInputChannels)
+            print(" maxOutputChannels: %s" % di.maxOutputChannels)
+            print(" defaultSampleRate: %s" % di.defaultSampleRate)
+            print("")
 
 
 def open_device(out_device_index=None, in_device_index=None, output_channels=None):
@@ -1091,8 +1091,7 @@ def open_device(out_device_index=None, in_device_index=None, output_channels=Non
 
 def open_default_device(output_channels=None):
     """
-    Opens the specified input and output devices.
-    Use None for default devices.
+    Opens the default input and output devices.
 
     Parameters
     ----------
@@ -1187,7 +1186,7 @@ def play_arr(arr, fs, channel=1):
         sleep(.01)
 
 
-def play_file(filename):
+def play_file(file_name):
     """
     Plays a soundfile on the default device with blocking, Matlab-style.
 
@@ -1204,15 +1203,15 @@ def play_file(filename):
     None
     """
     d = open_default_device()
-    s = d.open_file(filename)
+    s = d.open_file(file_name)
     s.play()
     while s.is_playing():
         sleep(.01)
 
 
-def read_file(finpath):
+def read_file(file_name):
     """
-    Read a sound file with any libsndfile-compatible format into an ndarray.
+    Reads a sound file with any libsndfile-compatible format into an ndarray.
 
     Parameters
     ----------
@@ -1223,7 +1222,7 @@ def read_file(finpath):
     (arr, fs) : (ndarray, float)
     """
     finfo = sndfile.SF_INFO(0,0,0,0,0,0)
-    fin = sndfile.csndfile.sf_open(finpath, sndfile.SFM_READ, byref(finfo))
+    fin = sndfile.csndfile.sf_open(file_name, sndfile.SFM_READ, byref(finfo))
 
     fs = finfo.samplerate
 
