@@ -20,10 +20,10 @@ x,fs = medussa.read_file("test/clean.wav")
 d = medussa.open_device()
 
 sa = d.open_array(x,fs)
-#sf = d.open_file("test/clean.wav")
-#st = d.create_tone(400,fs)
-#sw = d.create_white(fs)
-#sp = d.create_pink(fs)
+sf = d.open_file("test/clean.wav")
+st = d.create_tone(400,fs)
+sw = d.create_white(fs)
+sp = d.create_pink(fs)
 
 
 def sweep_right(s, delta=0.001, steps=500):

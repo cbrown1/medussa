@@ -4,7 +4,11 @@ EXPORTS
 	callback_sndfile_read
 	callback_tone
 	callback_white
+	callback_pink
 	open_stream
 	start_streams
 	rk_seed
 	rk_randomseed
+	initialize_pink_noise
+	readfile_helper
+	writefile_helper
