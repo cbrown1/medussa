@@ -2,7 +2,7 @@ ROOTDIR = ../..
 LIBDIR = $(ROOTDIR)/lib
 INCLUDEDIR = $(ROOTDIR)/include
 SRCDIR = $(ROOTDIR)/src
-FLAGS = -Wall -I/usr/include/python2.6 -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
+override FLAGS += -Wall -L/usr/lib -L/usr/local/lib -lportaudio -lsndfile
 
 CC = gcc
 
