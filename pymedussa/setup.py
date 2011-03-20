@@ -4,6 +4,8 @@ import platform
 from distutils.sysconfig import get_python_lib
 from os.path import join
 
+pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
+
 medussa_package = ['medussa']
 medussa_package_dir = 'src/medussa'
 medussa_package_data = ['*.py']
@@ -17,8 +19,8 @@ if platform.system() == "Windows":
 	medussa_data_files.append('lib/libsndfile-1.dll')
 	medussa_data_files_path = join(get_python_lib(prefix=''), 'medussa')
 else:
-	medussa_data_files.append('lib/libmedussa.so')
-	medussa_data_files_path = 'lib'
+	medussa_data_files.append('lib/py%s/libmedussa.so' % pyver)
+	medussa_data_files_path = join(get_python_lib(), 'medussa')
 
 setup(name='medussa',
 	version='1.0',

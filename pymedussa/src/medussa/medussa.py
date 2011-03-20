@@ -5,7 +5,7 @@ import numpy as np
 from time import sleep
 import atexit
 import rkit
-from os.path import exists
+from os.path import exists, join
 import inspect
 from pink import Pink_noise_t
 
@@ -15,7 +15,7 @@ if platform.system() == "Windows":
     if not exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
-    libname = "/usr/local/lib/libmedussa.so"
+    libname = join(get_python_lib(), 'medussa', 'libmedussa.so')
 else:
     libname = find_library("medussa")
     if libname == None:
