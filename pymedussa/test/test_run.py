@@ -1,25 +1,25 @@
 import medussa
 import numpy as np
-#from pal import signal
 from time import sleep
 import sys
 
 from medussa.sndfile import formats
 
 fs = 44100.0
-x,fs = medussa.readfile("test/clean.wav")
+x,fs = medussa.read_file("test/clean.wav")
 #x,fs = medussa.readfile("test/speech-noise-tone.wav")
 
-#y = medussa.writewav("test/clean2.wav", x, fs)
+#y = medussa.write_wav("test/clean2.wav", x, fs, bits='u8')
+#y = medussa.write_ogg("test/clean2.ogg", x, fs)
+#y = medussa.write_flac("test/clean2.flac", x, fs, bits=16)
 #flac16 = formats.SF_FORMAT_FLAC[0] | formats.SF_FORMAT_PCM_16[0]
 #oggv = formats.SF_FORMAT_OGG[0] | formats.SF_FORMAT_VORBIS[0]
 #y = medussa.writefile("test/clean2.ogg", x, fs, format=oggv)
 #print y
 
-#d = medussa.open_device(output_channels=2)
-#d = medussa.open_device()
+d = medussa.open_device()
 
-#sa = d.open_array(x,fs)
+sa = d.open_array(x,fs)
 #sf = d.open_file("test/clean.wav")
 #st = d.create_tone(400,fs)
 #sw = d.create_white(fs)

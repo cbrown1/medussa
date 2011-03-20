@@ -172,7 +172,7 @@ class Device(object):
     out_name = None
     out_hostapi = None
 
-    output_channels = None
+    out_channels = None
 
     @property    
     def in_index(self):
@@ -229,13 +229,13 @@ class Device(object):
     def out_index(self):
         del self._out_index
 
-    def __init__(self, in_index=None, out_index=None, output_channels=None):
+    def __init__(self, in_index=None, out_index=None, out_channels=None):
         if in_index != None:
             self.in_index = in_index
         if out_index != None:
             self.out_index = out_index
-        if output_channels != None:
-            self.output_channels = output_channels
+        if out_channels != None:
+            self.out_channels = out_channels
 
 
     def create_tone(self, tone_freq, fs):
@@ -454,8 +454,11 @@ class Stream(object):
         """
         Stops playback of the stream (Playback cursor is reset to zero).
         """
-        err = pa.Pa_StopStream(self.stream_ptr)
-        ERROR_CHECK(err)
+        if pa.Pa_IsStreamStopped(self.stream_ptr):
+            return
+        else:
+            err = pa.Pa_StopStream(self.stream_ptr)
+            ERROR_CHECK(err)
 
     def pa_time(self):
         """
@@ -488,8 +491,11 @@ class Stream(object):
         """
         Pauses playback of the stream (Playback cursor is not reset).
         """
-        err = pa.Pa_StopStream(self.stream_ptr)
-        ERROR_CHECK(err)
+        if pa.Pa_IsStreamStopped(self.stream_ptr):
+            return
+        else:
+            err = pa.Pa_StopStream(self.stream_ptr)
+            ERROR_CHECK(err)
 
     def is_playing(self):
         """
@@ -544,11 +550,11 @@ class ToneStream(Stream):
         self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
-            if self.device.output_channels == None:
-                output_channels = self.device.out_device_info.maxOutputChannels
+            if self.device.out_channels == None:
+                out_channels = self.device.out_device_info.maxOutputChannels
             else:
-                output_channels = self.device.output_channels
-            self.mix_mat = np.ones((output_channels,1))
+                out_channels = self.device.out_channels
+            self.mix_mat = np.ones((out_channels,1))
         else:
             self.mix_mat = mix_mat
 
@@ -599,11 +605,11 @@ class WhiteStream(Stream):
         self.white_user_data = WhiteUserData()
 
         if mix_mat == None:
-            if self.device.output_channels == None:
-                output_channels = self.device.out_device_info.maxOutputChannels
+            if self.device.out_channels == None:
+                out_channels = self.device.out_device_info.maxOutputChannels
             else:
-                output_channels = self.device.output_channels
-            self.mix_mat = np.ones((output_channels,1))
+                out_channels = self.device.out_channels
+            self.mix_mat = np.ones((out_channels,1))
         else:
             self.mix_mat = mix_mat
 
@@ -642,11 +648,11 @@ class PinkStream(Stream):
         self.pink_user_data = PinkUserData()
 
         if mix_mat == None:
-            if self.device.output_channels == None:
-                output_channels = self.device.out_device_info.maxOutputChannels
+            if self.device.out_channels == None:
+                out_channels = self.device.out_device_info.maxOutputChannels
             else:
-                output_channels = self.device.output_channels
-            self.mix_mat = np.ones((output_channels,1))
+                out_channels = self.device.out_channels
+            self.mix_mat = np.ones((out_channels,1))
         else:
             self.mix_mat = mix_mat
 
@@ -812,19 +818,19 @@ class ArrayStream(FiniteStream):
         self.frames = self.arr.shape[0]
         self.duration = self.frames / float(self.fs) * 1000
 
-        output_channels = self.device.output_channels
+        out_channels = self.device.out_channels
 
         self.mix_mat = np.resize(self.mix_mat,
-                                 (output_channels, self.mix_mat.shape[1]))
+                                 (out_channels, self.mix_mat.shape[1]))
 
-        if output_channels > self.mix_mat.shape[1]:
+        if out_channels > self.mix_mat.shape[1]:
             # zero out extra rows which, by default, are just repeated in memory
             self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
 
         self.mute_mat = self.mix_mat * 0.0
 
         self.out_param = PaStreamParameters(self.device.out_index,
-                                            output_channels,
+                                            out_channels,
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
@@ -916,10 +922,10 @@ class SndfileStream(FiniteStream):
         self.fs = self.finfo.samplerate
 
         # set actual device output channels
-        if self.device.output_channels == None:
-            output_channels = self.device.out_device_info.maxOutputChannels
+        if self.device.out_channels == None:
+            out_channels = self.device.out_device_info.maxOutputChannels
         else:
-            output_channels = self.device.output_channels
+            out_channels = self.device.out_channels
 
         # set signal length
         self.frames = self.finfo.frames
@@ -930,16 +936,16 @@ class SndfileStream(FiniteStream):
         else:
             self.mix_mat = mix_mat
         self.mix_mat = np.resize(self.mix_mat,
-                                 (output_channels, self.mix_mat.shape[1]))
+                                 (out_channels, self.mix_mat.shape[1]))
 
-        if output_channels > self.mix_mat.shape[1]:
+        if out_channels > self.mix_mat.shape[1]:
             # zero out extra rows which, by default, are just repeated in memory
             self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  
 
         self.mute_mat = self.mix_mat * 0.0
 
         self.out_param = PaStreamParameters(self.device.out_index,
-                                            output_channels,
+                                            out_channels,
                                             paFloat32,
                                             self.device.out_device_info.defaultLowInputLatency,
                                             None)
@@ -1057,7 +1063,7 @@ def print_available_devices(hostapi=None, verbose=False):
             print("")
 
 
-def open_device(out_device_index=None, in_device_index=None, output_channels=None):
+def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     """
     Opens the specified input and output devices.
     If no input device is specified, none will be used. If no output device 
@@ -1069,13 +1075,13 @@ def open_device(out_device_index=None, in_device_index=None, output_channels=Non
         Index to the desired output device.
     in_device_index : int
         Index to the desired input device.
-    output_channels : int
+    out_channels : int
         The number of output channels to use. PortAudio is not always correct 
         in reporting this number, and can sometimes return values like 128. 
         This is often not a problem, but because of the way mix_mat works, it 
         is important for Medussa to have the correct value. Thus, Medussa 
-        sets output_channels to 2 by default. If your device has more 
-        channels, set the value here or in dev.output_channels. 
+        sets out_channels to 2 by default. If your device has more 
+        channels, set the value here or in dev.out_channels.
 
     Returns
     -------
@@ -1085,23 +1091,23 @@ def open_device(out_device_index=None, in_device_index=None, output_channels=Non
     if out_device_index == None:
         out_device_index = pa.Pa_GetDefaultOutputDevice()
 
-    d = Device(in_device_index, out_device_index, output_channels)
+    d = Device(in_device_index, out_device_index, out_channels)
     return d
 
 
-def open_default_device(output_channels=None):
+def open_default_device(out_channels=2):
     """
     Opens the default input and output devices.
 
     Parameters
     ----------
-    output_channels : int
+    out_channels : int
         The number of output channels to use. PortAudio is not always correct 
         in reporting this number, and can sometimes return values like 128. 
         This is often not a problem, but because of the way mix_mat works, it 
         is important for Medussa to have the correct value. Thus, Medussa 
-        sets output_channels to 2 by default. If your device has more 
-        channels, set the value here or in dev.output_channels. 
+        sets out_channels to 2 by default. If your device has more 
+        channels, set the value here or in dev.out_channels. 
 
     Returns
     -------
@@ -1112,7 +1118,7 @@ def open_default_device(output_channels=None):
     out_di = pa.Pa_GetDefaultOutputDevice()
     in_di = pa.Pa_GetDefaultInputDevice()
 
-    d = Device(in_di, out_di, output_channels)
+    d = Device(in_di, out_di, out_channels)
     return d
 
 
@@ -1287,22 +1293,51 @@ def write_file(file_name, arr, fs,
 
 
 def write_wav(file_name, arr, fs, bits='s16', frames=None):
-    """Convenience function to write a wavefile. 
-    
-    
+    """
+    Convenience function to write a wavefile. 
     """
     majformat = sndfile.formats.SF_FORMAT_WAV[0]
 
-    subformat = {8: sndfile.formats.SF_FORMAT_PCM_S8[0],
+    subformat = {8: sndfile.formats.SF_FORMAT_PCM_U8[0],
                  16: sndfile.formats.SF_FORMAT_PCM_16[0],
                  24: sndfile.formats.SF_FORMAT_PCM_24[0],
                  32: sndfile.formats.SF_FORMAT_PCM_32[0],
-                 's8': sndfile.formats.SF_FORMAT_PCM_S8[0],
                  's16': sndfile.formats.SF_FORMAT_PCM_16[0],
                  's24': sndfile.formats.SF_FORMAT_PCM_24[0],
                  's32': sndfile.formats.SF_FORMAT_PCM_32[0],
                  'u8': sndfile.formats.SF_FORMAT_PCM_U8[0]}
 
     endformat = majformat | subformat[bits]
+
+    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+
+
+def write_flac(file_name, arr, fs, bits='s16', frames=None):
+    """
+    Convenience function to write a FLAC audio file. 
+    """
+    majformat = sndfile.formats.SF_FORMAT_FLAC[0]
+
+    subformat = {8: sndfile.formats.SF_FORMAT_PCM_S8[0],
+                 16: sndfile.formats.SF_FORMAT_PCM_16[0],
+                 24: sndfile.formats.SF_FORMAT_PCM_24[0],
+                 's8': sndfile.formats.SF_FORMAT_PCM_S8[0],
+                 's16': sndfile.formats.SF_FORMAT_PCM_16[0],
+                 's24': sndfile.formats.SF_FORMAT_PCM_24[0]}
+
+    endformat = majformat | subformat[bits]
+
+    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+
+
+def write_ogg(file_name, arr, fs, frames=None):
+    """
+    Convenience function to write an Ogg Vorbis audio file. 
+    """
+    majformat = sndfile.formats.SF_FORMAT_OGG[0]
+
+    subformat = sndfile.formats.SF_FORMAT_VORBIS[0]
+
+    endformat = majformat | subformat
 
     return write_file(file_name, arr, fs, format=endformat, frames=frames)

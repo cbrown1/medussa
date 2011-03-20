@@ -10,12 +10,12 @@
  control, you can access the port audio library directly. Sweet!
  """
 
-#from medussa import playarr, playfile, cmedussa, Device, ContigArrayHandle, ArrayStream, ToneData, ToneStream, SndfileStream, SndfileData, generateHostApiInfo, generateDeviceInfo, printAvailableDevices, start_streams, open_device, open_default_device, init, terminate
-from medussa import (play_arr, play_file, cmedussa, Device, ToneStream, 
-                    ArrayStream, SndfileStream, generate_hostapi_info, 
-                    generate_device_info, print_available_devices, 
-                    start_streams, open_device, open_default_device, init, 
-                    terminate, read_file, write_file, write_wav)
+from medussa import (play_arr, play_file, cmedussa, Device, ToneStream,
+                     ArrayStream, SndfileStream, generate_hostapi_info,
+                     generate_device_info, print_available_devices, 
+                     start_streams, open_device, open_default_device, init, 
+                     terminate, read_file,
+                     write_file, write_wav, write_flac, write_ogg)
 from portaudio import pa, ERROR_CHECK
 
 __version__ = "1.0"
