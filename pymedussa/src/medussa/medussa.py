@@ -238,7 +238,7 @@ class Device(object):
             self.out_channels = out_channels
 
 
-    def create_tone(self, tone_freq, fs):
+    def create_tone(self, tone_freq, fs=None):
         """
         Returns a stream object representing a pure tone.
 
@@ -247,47 +247,53 @@ class Device(object):
         tone_freq : int
             The frequency, in Hz, of the tone.
         fs : int
-            The sampling frequency.
+            The sampling frequency. Don't specify for the device's default.
 
         Returns
         -------
         s : Stream object
             The stream object.
         """
+        if fs is None:
+            fs = 44100. #self.out_device_info.defaultSampleRate
         s = ToneStream(self, fs, None, tone_freq)
         return s
 
-    def create_white(self, fs):
+    def create_white(self, fs=None):
         """
         Returns a stream object representing Gaussian/white noise.
 
         Parameters
         ----------
         fs : int
-            The sampling frequency.
+            The sampling frequency. Don't specify for the device's default.
 
         Returns
         -------
         s : Stream object
             The stream object.
         """
+        if fs is None:
+            fs = 44100 #self.out_device_info.defaultSampleRate
         s = WhiteStream(self, fs, None)
         return s
 
-    def create_pink(self, fs):
+    def create_pink(self, fs=None):
         """
         Returns a stream object representing pink noise.
 
         Parameters
         ----------
         fs : int
-            The sampling frequency.
+            The sampling frequency. Don't specify for the device's default.
 
         Returns
         -------
         s : Stream object
             The stream object.
         """
+        if fs is None:
+            fs = 44100 #self.out_device_info.defaultSampleRate
         s = PinkStream(self, fs, None)
         return s
 
@@ -330,7 +336,7 @@ class Device(object):
 
 class Stream(object):
     """
-    Maximally-generic stream class.
+    Generic stream class.
     """
     # device : PaDevice
     device = None
@@ -579,7 +585,7 @@ class ToneStream(Stream):
 
 class WhiteStream(Stream):
     """
-    Stream object representing white noise.
+    Stream object representing Gaussian white noise, which has a flat spectrum.
     """
     rk_state = None
     white_user_data = None
@@ -636,7 +642,7 @@ class WhiteStream(Stream):
 
 class PinkStream(Stream):
     """
-    Stream object representing pink noise.
+    Stream object representing pink noise, which has equal energy per octave.
     """
     pink_user_data = None
 
@@ -1079,9 +1085,13 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
         The number of output channels to use. PortAudio is not always correct
         in reporting this number, and can sometimes return values like 128.
         This is often not a problem, but because of the way mix_mat works, it
-        is important for Medussa to have the correct value. Thus, Medussa
-        sets out_channels to 2 by default. If your device has more
-        channels, set the value here or in dev.out_channels.
+        is important for Medussa to have the correct value. Thus, you have 3
+        options (you can always change it later by modifying the property
+        dev.out_channels):
+
+         - Don't specify out_channels. Medussa will set it to 2
+         - Specify `None`. Medussa will use the PortAudio value
+         - Specify a number. Medussa will use that number
 
     Returns
     -------
