@@ -174,7 +174,7 @@ class Device(object):
 
     out_channels = None
 
-    @property    
+    @property
     def in_index(self):
         return self._in_index
 
@@ -877,7 +877,7 @@ class SndfileStream(FiniteStream):
             self.sndfile_user_data.fin = val
             self._fin = val
         else:
-            raise RuntimeError("`%s` attribute is immutable." % (name))        
+            raise RuntimeError("`%s` attribute is immutable." % (name))
 
     @fin.deleter
     def fin(self):
@@ -940,7 +940,7 @@ class SndfileStream(FiniteStream):
 
         if out_channels > self.mix_mat.shape[1]:
             # zero out extra rows which, by default, are just repeated in memory
-            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0  
+            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
 
         self.mute_mat = self.mix_mat * 0.0
 
@@ -954,7 +954,7 @@ class SndfileStream(FiniteStream):
         self.user_data = ctypes.addressof(self.sndfile_user_data)
 
     def __del__(self):
-        pa.Pa_CloseStream(self.stream_ptr)
+        #pa.Pa_CloseStream(self.stream_ptr)
         sndfile.csndfile.sf_close(c_void_p(self.fin))
 
 def generate_hostapi_info():
@@ -1066,8 +1066,8 @@ def print_available_devices(hostapi=None, verbose=False):
 def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     """
     Opens the specified input and output devices.
-    If no input device is specified, none will be used. If no output device 
-    is specified, the default device will be used. 
+    If no input device is specified, none will be used. If no output device
+    is specified, the default device will be used.
 
     Parameters
     ----------
@@ -1076,11 +1076,11 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     in_device_index : int
         Index to the desired input device.
     out_channels : int
-        The number of output channels to use. PortAudio is not always correct 
-        in reporting this number, and can sometimes return values like 128. 
-        This is often not a problem, but because of the way mix_mat works, it 
-        is important for Medussa to have the correct value. Thus, Medussa 
-        sets out_channels to 2 by default. If your device has more 
+        The number of output channels to use. PortAudio is not always correct
+        in reporting this number, and can sometimes return values like 128.
+        This is often not a problem, but because of the way mix_mat works, it
+        is important for Medussa to have the correct value. Thus, Medussa
+        sets out_channels to 2 by default. If your device has more
         channels, set the value here or in dev.out_channels.
 
     Returns
@@ -1102,18 +1102,18 @@ def open_default_device(out_channels=2):
     Parameters
     ----------
     out_channels : int
-        The number of output channels to use. PortAudio is not always correct 
-        in reporting this number, and can sometimes return values like 128. 
-        This is often not a problem, but because of the way mix_mat works, it 
-        is important for Medussa to have the correct value. Thus, Medussa 
-        sets out_channels to 2 by default. If your device has more 
-        channels, set the value here or in dev.out_channels. 
+        The number of output channels to use. PortAudio is not always correct
+        in reporting this number, and can sometimes return values like 128.
+        This is often not a problem, but because of the way mix_mat works, it
+        is important for Medussa to have the correct value. Thus, Medussa
+        sets out_channels to 2 by default. If your device has more
+        channels, set the value here or in dev.out_channels.
 
     Returns
     -------
     d : Device object
         Object representing the specified devices.
-    
+
     """
     out_di = pa.Pa_GetDefaultOutputDevice()
     in_di = pa.Pa_GetDefaultInputDevice()
@@ -1257,7 +1257,7 @@ def write_file(file_name, arr, fs,
     Parameters
     ----------
     file_name : str
-        The name of the file to write to. 
+        The name of the file to write to.
     arr : ndarray
         The array of data to write.
     fs : int
@@ -1294,7 +1294,7 @@ def write_file(file_name, arr, fs,
 
 def write_wav(file_name, arr, fs, bits='s16', frames=None):
     """
-    Convenience function to write a wavefile. 
+    Convenience function to write a wavefile.
     """
     majformat = sndfile.formats.SF_FORMAT_WAV[0]
 
@@ -1314,7 +1314,7 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 
 def write_flac(file_name, arr, fs, bits='s16', frames=None):
     """
-    Convenience function to write a FLAC audio file. 
+    Convenience function to write a FLAC audio file.
     """
     majformat = sndfile.formats.SF_FORMAT_FLAC[0]
 
@@ -1332,7 +1332,7 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 
 def write_ogg(file_name, arr, fs, frames=None):
     """
-    Convenience function to write an Ogg Vorbis audio file. 
+    Convenience function to write an Ogg Vorbis audio file.
     """
     majformat = sndfile.formats.SF_FORMAT_OGG[0]
 
