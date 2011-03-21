@@ -160,7 +160,10 @@ class PinkUserData(ctypes.Structure):
 
 class Device(object):
     """
-    Audio device object.
+    Medussa object representing an audio device.
+    
+    Contains methods to create various streams, and information about the 
+    hardware device it represents.
     """
     _in_index = None
     in_device_info = None
@@ -240,7 +243,7 @@ class Device(object):
 
     def create_tone(self, tone_freq, fs=None):
         """
-        Returns a stream object representing a pure tone.
+        Returns a Medussa stream object representing a pure tone.
 
         Parameters
         ----------
@@ -255,13 +258,13 @@ class Device(object):
             The stream object.
         """
         if fs is None:
-            fs = 44100. #self.out_device_info.defaultSampleRate
+            fs = self.out_device_info.defaultSampleRate
         s = ToneStream(self, fs, None, tone_freq)
         return s
 
     def create_white(self, fs=None):
         """
-        Returns a stream object representing Gaussian/white noise.
+        Returns a Medussa stream object representing Gaussian/white noise.
 
         Parameters
         ----------
@@ -274,13 +277,13 @@ class Device(object):
             The stream object.
         """
         if fs is None:
-            fs = 44100 #self.out_device_info.defaultSampleRate
+            fs = self.out_device_info.defaultSampleRate
         s = WhiteStream(self, fs, None)
         return s
 
     def create_pink(self, fs=None):
         """
-        Returns a stream object representing pink noise.
+        Returns a Medussa stream object representing pink noise.
 
         Parameters
         ----------
@@ -293,13 +296,13 @@ class Device(object):
             The stream object.
         """
         if fs is None:
-            fs = 44100 #self.out_device_info.defaultSampleRate
+            fs = self.out_device_info.defaultSampleRate
         s = PinkStream(self, fs, None)
         return s
 
     def open_array(self, arr, fs):
         """
-        Returns a stream object representing an ndarray.
+        Returns a Medussa stream object representing an ndarray.
 
         Parameters
         ----------
@@ -318,7 +321,7 @@ class Device(object):
 
     def open_file(self, file_name):
         """
-        Returns a stream object representing a soundfile on disk.
+        Returns a Medussa stream object representing a soundfile on disk.
 
         Parameters
         ----------
@@ -513,7 +516,9 @@ class Stream(object):
 
     def mute(self):
         """
-        Mutes the stream. Mix matrix is unaffected.
+        Mutes or unmutes the stream. 
+        
+        Mix matrix is unaffected. Playback will continue while stream is muted.
         """
         # simply swaps the mix matrix with a zero matrix of same shape, or back
         self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
@@ -729,6 +734,7 @@ class FiniteStream(Stream):
     def time(self, pos=None, posunit="ms"):
         """
         Gets or sets the current cursor position.
+        
         If `pos` is `None`, returns the current cursor position in ms.
         Otherwise, sets the cursor position to `pos`, as deterimined by
         the argument to `posunit`.
@@ -776,6 +782,8 @@ class FiniteStream(Stream):
 class ArrayStream(FiniteStream):
     """
     Stream object representing a NumPy array.
+    
+    You can use medussa.read_file to load soundfiles into NumPy arrays.
     """
     _arr = None
     array_user_data = None
@@ -849,6 +857,9 @@ class ArrayStream(FiniteStream):
 class SndfileStream(FiniteStream):
     """
     Stream object representing a sound file on disk.
+    
+    The audio data are not loaded into memory, but rather are streamed from 
+    disk. 
     """
     fin = None
     finpath = None
