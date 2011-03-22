@@ -6,13 +6,14 @@ if [ -z "$PYVER" ]; then
   PYVER="${PYMAJ}.${PYMIN}"
 fi
 
-SITEPACKAGES=`python${PYVER} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
+#SITEPACKAGES=`python${PYVER} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
 
 make clean
-make PYVER=${PYVER} FLAGS="-I/usr/include/python${PYVER} -I${SITEPACKAGES}/numpy/core/include/"
+make FLAGS="-I/usr/include/python${PYVER} -I/usr/lib/python${PYVER}/site-packages/numpy/core/include/"
 if [ $? -eq 0 ] ; then
-  mkdir ../../../pymedussa/lib/py${PYVER}
-  cp libmedussa.so ../../../pymedussa/lib/py${PYVER}
+  mkdir ./py${PYVER}
+  cp libmedussa.so ./py${PYVER}
+  make clean
 else
   echo "Nope!"
 fi

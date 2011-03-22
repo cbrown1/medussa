@@ -41,6 +41,7 @@ clean:
 	rm medussa_matrix.o
 	rm medussa_callbacks.o
 	rm medussa.o
+	rm pink.o
 	rm libmedussa.so.1.0.1
 	rm libmedussa.so.1
 	rm libmedussa.so

@@ -10,6 +10,9 @@ if [ "$pyver" == "" ]; then
 	echo "Usage: package_linux.sh pyver # where pyver ~= 2.7";
 	exit
 fi
+cd ./lib/build/linux
+./build.sh $pyver
+cd ../../..
 pybin="python${pyver}";
 
 # Get metadata
@@ -76,6 +79,8 @@ cd ..
 ## Copy documentation
 #mkdir -p deb/usr/share/doc/$package
 #cp ../docs/* deb/usr/share/doc/$package
+
+#python setup.py bdist_rpm --python ${pybin} --force-arch=${architecture} --binary-only --dist-dir=dist/rpm
 
 # Make deb package
 deb="${section}-${package}_${ver}_py${pyver}_${architecture}.deb"
