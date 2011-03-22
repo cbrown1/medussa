@@ -161,8 +161,8 @@ class PinkUserData(ctypes.Structure):
 class Device(object):
     """
     Medussa object representing an audio device.
-    
-    Contains methods to create various streams, and information about the 
+
+    Contains methods to create various streams, and information about the
     hardware device it represents.
     """
     _in_index = None
@@ -516,8 +516,8 @@ class Stream(object):
 
     def mute(self):
         """
-        Mutes or unmutes the stream. 
-        
+        Mutes or unmutes the stream.
+
         Mix matrix is unaffected. Playback will continue while stream is muted.
         """
         # simply swaps the mix matrix with a zero matrix of same shape, or back
@@ -672,7 +672,7 @@ class PinkStream(Stream):
 
         self.pn = Pink_noise_t()
         self.pink_user_data.pn = ctypes.addressof(self.pn)
-        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 4)
+        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 24)
 
         self.pa_fpb = 1024
 
@@ -734,7 +734,7 @@ class FiniteStream(Stream):
     def time(self, pos=None, posunit="ms"):
         """
         Gets or sets the current cursor position.
-        
+
         If `pos` is `None`, returns the current cursor position in ms.
         Otherwise, sets the cursor position to `pos`, as deterimined by
         the argument to `posunit`.
@@ -782,7 +782,7 @@ class FiniteStream(Stream):
 class ArrayStream(FiniteStream):
     """
     Stream object representing a NumPy array.
-    
+
     You can use medussa.read_file to load soundfiles into NumPy arrays.
     """
     _arr = None
@@ -857,9 +857,9 @@ class ArrayStream(FiniteStream):
 class SndfileStream(FiniteStream):
     """
     Stream object representing a sound file on disk.
-    
-    The audio data are not loaded into memory, but rather are streamed from 
-    disk. 
+
+    The audio data are not loaded into memory, but rather are streamed from
+    disk.
     """
     fin = None
     finpath = None
