@@ -11,20 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\medussa_matrix.c" />
-    <ClCompile Include="..\..\src\medussa_callbacks.c" />
-    <ClCompile Include="..\..\src\medussa.c" />
-    <ClCompile Include="..\..\src\medussa_types.c" />
-    <ClCompile Include="..\..\src\pink.c" />
-    <ClCompile Include="..\..\src\randomkit.c" />
+    <ClCompile Include="..\..\..\src\medussa.c" />
+    <ClCompile Include="..\..\..\src\medussa_callbacks.c" />
+    <ClCompile Include="..\..\..\src\medussa_matrix.c" />
+    <ClCompile Include="..\..\..\src\medussa_types.c" />
+    <ClCompile Include="..\..\..\src\pink.c" />
+    <ClCompile Include="..\..\..\src\randomkit.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\medussa_matrix.h" />
-    <ClInclude Include="..\..\src\medussa_callbacks.h" />
-    <ClInclude Include="..\..\src\medussa.h" />
-    <ClInclude Include="..\..\src\medussa_types.h" />
-    <ClInclude Include="..\..\src\pink.h" />
-    <ClInclude Include="..\..\src\randomkit.h" />
+    <ClInclude Include="..\..\..\src\medussa.h" />
+    <ClInclude Include="..\..\..\src\medussa_callbacks.h" />
+    <ClInclude Include="..\..\..\src\medussa_matrix.h" />
+    <ClInclude Include="..\..\..\src\medussa_types.h" />
+    <ClInclude Include="..\..\..\src\pink.h" />
+    <ClInclude Include="..\..\..\src\randomkit.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="medussa.def" />
@@ -64,8 +64,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\include;C:\Python27\Lib\site-packages\numpy\core\include;C:\Python27\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\..\lib;C:\Python27\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\..\include;C:\Python27\Lib\site-packages\numpy\core\include;C:\Python27\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\..\lib;C:\Python27\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

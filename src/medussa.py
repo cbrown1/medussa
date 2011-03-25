@@ -760,7 +760,7 @@ class PinkStream(Stream):
 
         self.pn = Pink_noise_t()
         self.pink_user_data.pn = ctypes.addressof(self.pn)
-        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 4)
+        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 24)
 
         self.pa_fpb = 1024
 
