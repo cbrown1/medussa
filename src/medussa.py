@@ -8,6 +8,10 @@ import rkit
 from os.path import exists, join
 import inspect
 from pink import Pink_noise_t
+import platform
+
+pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
+
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
@@ -15,7 +19,8 @@ if platform.system() == "Windows":
     if not exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
-    libname = join(get_python_lib(), 'medussa', 'libmedussa.so')
+    libname = '/usr/local/lib/python%s/site-packages/medussa/libmedussa.so' % pyver
+    #libname = join(get_python_lib(), 'medussa', 'libmedussa.so')
 else:
     libname = find_library("medussa")
     if libname == None:
@@ -161,8 +166,8 @@ class PinkUserData(ctypes.Structure):
 class Device(object):
     """
     Medussa object representing an audio device.
-    
-    Contains methods to create various streams, and information about the 
+
+    Contains methods to create various streams, and information about the
     hardware device it represents.
     """
     _in_index = None
@@ -471,11 +476,11 @@ class Stream(object):
 
     def pa_time(self):
         """
-        Returns the portaudio time.
+        Returns the portaudio time, which is in seconds.
         """
         t = pa.Pa_GetStreamTime(self.stream_ptr)
         if t:
-            return t.value
+            return t
         else:
             raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
@@ -516,8 +521,8 @@ class Stream(object):
 
     def mute(self):
         """
-        Mutes or unmutes the stream. 
-        
+        Mutes or unmutes the stream.
+
         Mix matrix is unaffected. Playback will continue while stream is muted.
         """
         # simply swaps the mix matrix with a zero matrix of same shape, or back
@@ -530,6 +535,35 @@ class Stream(object):
 class ToneStream(Stream):
     """
     Stream object representing a pure tone.
+
+    Methods
+    -------
+    play
+        Starts playback of the stream.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
+    pause
+        Pauses playback of the stream (Playback cursor is not reset).
+    mute
+        Mutes or unmutes the stream.
+        Mix matrix is unaffected. Playback will continue while stream is muted.
+    is_playing
+        Boolean indicating whether the stream is currently playing.
+
+    Properties
+    ----------
+    tone_freq
+        Frequency, in Hz, of the tone.
+    fs
+        Sampling frequency, in Hz.
+    mix_mat
+        A NumPy array that acts as a mixer. The number of columns corresponds
+        to the number of input channels (in the case of a tonestream, 1),
+        and the number of rows corresponds to the number of output channels,
+        which is hardware specific, and can be get/set with dev.out_channels.
+        The values of the mix_mat are are floats between 0. and 1., and are
+        used to specify the playback level of each `input` channel on each
+        `output` channel.
     """
     tone_freq = None
     t = None
@@ -591,6 +625,33 @@ class ToneStream(Stream):
 class WhiteStream(Stream):
     """
     Stream object representing Gaussian white noise, which has a flat spectrum.
+
+    Methods
+    -------
+    play
+        Starts playback of the stream.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
+    pause
+        Pauses playback of the stream (Playback cursor is not reset).
+    mute
+        Mutes or unmutes the stream.
+        Mix matrix is unaffected. Playback will continue while stream is muted.
+    is_playing
+        Boolean indicating whether the stream is currently playing.
+
+    Properties
+    ----------
+    fs
+        Sampling frequency, in Hz.
+    mix_mat
+        A NumPy array that acts as a mixer. The number of columns corresponds
+        to the number of input channels (in the case of a whitestream, 1),
+        and the number of rows corresponds to the number of output channels,
+        which is hardware specific, and can be get/set with dev.out_channels.
+        The values of the mix_mat are are floats between 0. and 1., and are
+        used to specify the playback level of each `input` channel on each
+        `output` channel.
     """
     rk_state = None
     white_user_data = None
@@ -648,6 +709,33 @@ class WhiteStream(Stream):
 class PinkStream(Stream):
     """
     Stream object representing pink noise, which has equal energy per octave.
+
+    Methods
+    -------
+    play
+        Starts playback of the stream.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
+    pause
+        Pauses playback of the stream (Playback cursor is not reset).
+    mute
+        Mutes or unmutes the stream.
+        Mix matrix is unaffected. Playback will continue while stream is muted.
+    is_playing
+        Boolean indicating whether the stream is currently playing.
+
+    Properties
+    ----------
+    fs
+        Sampling frequency, in Hz.
+    mix_mat
+        A NumPy array that acts as a mixer. The number of columns corresponds
+        to the number of input channels (in the case of a pinkstream, 1),
+        and the number of rows corresponds to the number of output channels,
+        which is hardware specific, and can be get/set with dev.out_channels.
+        The values of the mix_mat are are floats between 0. and 1., and are
+        used to specify the playback level of each `input` channel on each
+        `output` channel.
     """
     pink_user_data = None
 
@@ -734,7 +822,7 @@ class FiniteStream(Stream):
     def time(self, pos=None, posunit="ms"):
         """
         Gets or sets the current cursor position.
-        
+
         If `pos` is `None`, returns the current cursor position in ms.
         Otherwise, sets the cursor position to `pos`, as deterimined by
         the argument to `posunit`.
@@ -782,7 +870,7 @@ class FiniteStream(Stream):
 class ArrayStream(FiniteStream):
     """
     Stream object representing a NumPy array.
-    
+
     You can use medussa.read_file to load soundfiles into NumPy arrays.
     """
     _arr = None
@@ -857,9 +945,9 @@ class ArrayStream(FiniteStream):
 class SndfileStream(FiniteStream):
     """
     Stream object representing a sound file on disk.
-    
-    The audio data are not loaded into memory, but rather are streamed from 
-    disk. 
+
+    The audio data are not loaded into memory, but rather are streamed from
+    disk.
     """
     fin = None
     finpath = None
@@ -1316,6 +1404,26 @@ def write_file(file_name, arr, fs,
 def write_wav(file_name, arr, fs, bits='s16', frames=None):
     """
     Convenience function to write a wavefile.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to write to.
+    arr : ndarray
+        The array of data to write.
+    fs : int
+        The sampling frequency.
+    bits : int
+        The bit depth. For wavefiles, libsndfile can handle 8, 16, 24, or 32 bits.
+        You can also use a string to specify either signed 16-, 24- or 32-bit
+        integers ('s16', 's24', 's32'), or unsigned 8-bit integers ('u8').
+    frames : int
+        The number of frames to write.
+
+    Returns
+    -------
+    frames_written : int
+        The number of frames that were written to the file.
     """
     majformat = sndfile.formats.SF_FORMAT_WAV[0]
 
@@ -1336,6 +1444,26 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 def write_flac(file_name, arr, fs, bits='s16', frames=None):
     """
     Convenience function to write a FLAC audio file.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to write to.
+    arr : ndarray
+        The array of data to write.
+    fs : int
+        The sampling frequency.
+    bits : int
+        The bit depth. For flac files, libsndfile can handle 8, 16, or 24 bits.
+        You can also use a string to specify signed 8- 16-, or 24-bit
+        integers ('s8', 's16', 's24').
+    frames : int
+        The number of frames to write.
+
+    Returns
+    -------
+    frames_written : int
+        The number of frames that were written to the file.
     """
     majformat = sndfile.formats.SF_FORMAT_FLAC[0]
 
@@ -1354,7 +1482,27 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 def write_ogg(file_name, arr, fs, frames=None):
     """
     Convenience function to write an Ogg Vorbis audio file.
-    """
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to write to.
+    arr : ndarray
+        The array of data to write.
+    fs : int
+        The sampling frequency.
+    frames : int
+        The number of frames to write.
+
+    Returns
+    -------
+    frames_written : int
+        The number of frames that were written to the file.
+
+    Notes
+    -----
+    Bit depth is not specified with the Vorbis format, but rather is variable.
+  """
     majformat = sndfile.formats.SF_FORMAT_OGG[0]
 
     subformat = sndfile.formats.SF_FORMAT_VORBIS[0]
