@@ -270,6 +270,31 @@ class Device(object):
     def out_index(self):
         del self._out_index
 
+    @property
+    def child_streams(self):
+        """
+        Returns a generator that yields each Stream instance that depends on
+        this Device instance.
+        """
+        return (s for s in Stream.instances() if s.device == self)
+
+    @property
+    def out_channels(self):
+        return self._out_channels
+
+    @out_channels.setter
+    def out_channels(self, val):
+        for s in self.child_streams:
+            if s.mix_mat.shape[0] < val:
+                m = s.mix_mat.shape[0]
+                n = s.mix_mat.shape[1]
+                x = np.zeros((val,n))
+                x[:m,:n] = s.mix_mat
+                s.mix_mat = x
+            else:
+                s.mix_mat = s.mix_mat[:val]
+        self._out_channels = val
+
     def __init__(self, in_index=None, out_index=None, out_channels=None):
         if in_index != None:
             self.in_index = in_index
@@ -450,6 +475,7 @@ class Stream(object):
         self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
         self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
         self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
+        self.mute_mat = self.mix_mat * 0.0
 
     @mix_mat.deleter
     def mix_mat(self):
@@ -481,8 +507,6 @@ class Stream(object):
     @pa_fpb.deleter
     def pa_fpb(self):
         del self.stream_user_data.pa_fpb
-
-
 
     def open(self):
         self.stream_ptr = cmedussa.open_stream(py_object(self),
@@ -1015,7 +1039,7 @@ class ArrayStream(FiniteStream):
 
     @arr.setter
     def arr(self, val):
-        if not arr.dtype == np.dtype('double'):
+        if not val.dtype == np.dtype('double'):
             raise TypeError('Array must have `double` dtype.')
         self._arr = np.ascontiguousarray(val)
         self.array_user_data.ndarr = self._arr.ctypes.data_as(POINTER(c_double))
