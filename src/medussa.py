@@ -31,8 +31,8 @@ else:
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
 
-device_instances = set()
-stream_instances = set()
+device_instances = lambda: list(Device.instances())
+stream_instances = lambda: list(Stream.instances())
 
 
 @atexit.register
@@ -1181,7 +1181,8 @@ class SndfileStream(FiniteStream):
         # Only permit assignment to `finfo` attribute if we are in `__init__`
         if inspect.stack()[1][3] == "__init__":
             self._finfo = val
-            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val), POINTER(sndfile.SF_INFO))
+            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val),
+                                                       POINTER(sndfile.SF_INFO))
 #            self.sndfile_user_data.finfo = ctypes.addressof(self.finfo)
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
