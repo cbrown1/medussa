@@ -1,10 +1,18 @@
+# -*- coding: utf-8 -*-
+
 import platform
+pyver = platform.python_version_tuple()[0]
+if pyver == "2":
+    from sndfile_formats import formats
+else:
+    from .sndfile_formats import formats
+
+
 from ctypes.util import find_library
 from distutils.sysconfig import get_python_lib
 from os.path import exists
 from ctypes import *
 
-import sndfile_formats as formats
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
@@ -44,6 +52,6 @@ SFM_WRITE = c_int(0x20)
 SFM_RDWR  = c_int(0x30)
 
 # set argument and return types for relevant `libsndfile' functions
-#csndfile.sf_seek.restype = 
+#csndfile.sf_seek.restype =
 csndfile.sf_seek.argtypes = [c_void_p, c_uint, c_int]
 

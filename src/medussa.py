@@ -6,16 +6,17 @@ if pyver == "2":
     from portaudio import *
     from sndfile import SF_INFO, csndfile, SFM_READ, formats
     from pink import Pink_noise_t
+    from rkit import Rk_state
 else:
     from .portaudio import *
     from .sndfile import SF_INFO, csndfile, SFM_READ, formats
     from .pink import Pink_noise_t
+    from .rkit import Rk_state
 
 import time
 import os
 import numpy as np
 import atexit
-import rkit
 import inspect
 import platform
 import weakref
@@ -775,7 +776,7 @@ class WhiteStream(Stream):
         self.fs = fs
 
         # Initialize this class' attributes
-        self.rk_state = rkit.Rk_state()
+        self.rk_state = Rk_state()
         cmedussa.rk_randomseed(byref(self.rk_state))
 
         # Find a smart way to determine this value,
