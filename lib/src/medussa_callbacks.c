@@ -129,7 +129,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     fud  = (finite_user_data *)  sfud->parent;
     stud = (stream_user_data *)  fud->parent;
 
-
     // Begin attribute acquisition
     out_param = stud->out_param;
     finfo = sfud->finfo;

@@ -9,6 +9,7 @@ from os.path import exists, join
 import inspect
 from pink import Pink_noise_t
 import platform
+import weakref
 
 pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
 
@@ -30,6 +31,9 @@ else:
 
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
+
+device_instances = lambda: list(Device.instances())
+stream_instances = lambda: list(Stream.instances())
 
 
 @atexit.register
@@ -198,17 +202,19 @@ class Device(object):
         The index of the output device, as reported by Port Audio.
 
     """
-    _in_index = None
-    in_device_info = None
-    in_name = None
-    in_hostapi = None
 
-    out_index = None
-    out_device_info = None
-    out_name = None
-    out_hostapi = None
+    _instances = set()
 
-    out_channels = None
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def in_index(self):
@@ -265,6 +271,31 @@ class Device(object):
     def out_index(self):
         del self._out_index
 
+    @property
+    def child_streams(self):
+        """
+        Returns a generator that yields each Stream instance that depends on
+        this Device instance.
+        """
+        return (s for s in Stream.instances() if s.device == self)
+
+    @property
+    def out_channels(self):
+        return self._out_channels
+
+    @out_channels.setter
+    def out_channels(self, val):
+        for s in self.child_streams:
+            if s.mix_mat.shape[0] < val:
+                m = s.mix_mat.shape[0]
+                n = s.mix_mat.shape[1]
+                x = np.zeros((val,n))
+                x[:m,:n] = s.mix_mat
+                s.mix_mat = x
+            else:
+                s.mix_mat = s.mix_mat[:val]
+        self._out_channels = val
+
     def __init__(self, in_index=None, out_index=None, out_channels=None):
         if in_index != None:
             self.in_index = in_index
@@ -272,6 +303,8 @@ class Device(object):
             self.out_index = out_index
         if out_channels != None:
             self.out_channels = out_channels
+
+        self._instances.add(weakref.ref(self))
 
 
     def create_tone(self, tone_freq, fs=None):
@@ -374,22 +407,18 @@ class Stream(object):
     """
     Generic stream class.
     """
-    # device : PaDevice
-    device = None
+    _instances = set()
 
-    # Attributes for `Pa_OpenStream()`
-    stream_ptr = None
-    in_param = None
-    out_param = None
-    fs = None
-
-    # Mixing matrix for computing output
-    _mix_mat = None
-    _mute_mat = None
-#    pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
-
-    # structs for the callbacks
-    stream_user_data = None
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def stream(self):
@@ -447,6 +476,7 @@ class Stream(object):
         self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
         self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
         self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
+        self.mute_mat = self.mix_mat * 0.0
 
     @mix_mat.deleter
     def mix_mat(self):
@@ -478,8 +508,6 @@ class Stream(object):
     @pa_fpb.deleter
     def pa_fpb(self):
         del self.stream_user_data.pa_fpb
-
-
 
     def open(self):
         self.stream_ptr = cmedussa.open_stream(py_object(self),
@@ -548,6 +576,11 @@ class Stream(object):
         # simply swaps the mix matrix with a zero matrix of same shape, or back
         self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
 
+    def __init__(self):
+        self.stream_ptr = None
+        self.stream_user_data = StreamUserData()
+        self._instances.add(weakref.ref(self))
+
     def __del__(self):
         pa.Pa_CloseStream(self.stream_ptr)
 
@@ -585,9 +618,18 @@ class ToneStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    tone_freq = None
-    t = None
-    tone_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def tone_freq(self):
@@ -607,11 +649,12 @@ class ToneStream(Stream):
 
 
     def __init__(self, device, fs, mix_mat, tone_freq):
+        super(ToneStream, self).__init__()
+
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
@@ -641,6 +684,10 @@ class ToneStream(Stream):
                                             None)
         self.tone_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.tone_user_data)
+
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
 class WhiteStream(Stream):
     """
@@ -673,8 +720,18 @@ class WhiteStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    rk_state = None
-    white_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def rk_state(self):
@@ -690,10 +747,11 @@ class WhiteStream(Stream):
         del self._rk_state
 
     def __init__(self, device, fs, mix_mat):
+        super(WhiteStream, self).__init__()
+
         self.callback_ptr = cmedussa.callback_white
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.white_user_data = WhiteUserData()
 
         if mix_mat == None:
@@ -724,6 +782,9 @@ class WhiteStream(Stream):
 
         self.white_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.white_user_data)
+
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
 
 
 class PinkStream(Stream):
@@ -757,13 +818,25 @@ class PinkStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    pink_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     def __init__(self, device, fs, mix_mat):
+        super(PinkStream, self).__init__()
+
         self.callback_ptr = cmedussa.callback_pink
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.pink_user_data = PinkUserData()
 
         if mix_mat == None:
@@ -793,19 +866,26 @@ class PinkStream(Stream):
         self.pink_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.pink_user_data)
 
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
 class FiniteStream(Stream):
     """
     Generic stream object used to derive sndfilestream and arraystream objects.
     """
-    loop = None
-    pa_fpb = 1024  # This lets us avoid `malloc` in the callback
-    cursor = 0
+    _instances = set()
 
-    frames = None # Total length of the signal in frames
-    duration = None # Total length of the signal in milliseconds
-
-    finite_user_data = None
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def loop(self):
@@ -838,6 +918,13 @@ class FiniteStream(Stream):
     @duration.setter
     def duration(self, val):
         self.finite_user_data.duration = val
+
+    def __init__(self):
+        super(FiniteStream, self).__init__()
+        self.finite_user_data = FiniteUserData()
+        self.pa_fpb = 1024
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
 
     def time(self, pos=None, units="ms"):
         """
@@ -888,7 +975,7 @@ class FiniteStream(Stream):
             raise RuntimeError("Bad argument to `units`")
 
     def stop(self):
-        super(FiniteStream, self).stop()
+        super(Stream, self).stop()
         self.cursor = 0
 
 class ArrayStream(FiniteStream):
@@ -934,8 +1021,18 @@ class ArrayStream(FiniteStream):
         The array of audio data.
 
     """
-    _arr = None
-    array_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def arr(self):
@@ -943,6 +1040,8 @@ class ArrayStream(FiniteStream):
 
     @arr.setter
     def arr(self, val):
+        if not val.dtype == np.dtype('double'):
+            raise TypeError('Array must have `double` dtype.')
         self._arr = np.ascontiguousarray(val)
         self.array_user_data.ndarr = self._arr.ctypes.data_as(POINTER(c_double))
         self.array_user_data.ndarr_0 = val.shape[0]
@@ -953,11 +1052,11 @@ class ArrayStream(FiniteStream):
         del self._arr
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
+        super(ArrayStream, self).__init__()
+
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
-        self.stream_user_data = StreamUserData()
-        self.finite_user_data = FiniteUserData()
         self.array_user_data = ArrayUserData()
 
         # Initialize `Stream` attributes
@@ -1001,6 +1100,10 @@ class ArrayStream(FiniteStream):
         self.array_user_data.parent = ctypes.addressof(self.finite_user_data)
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.array_user_data)
+
+        self._instances.add(weakref.ref(self))
+        FiniteStream._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
 
 
 class SndfileStream(FiniteStream):
@@ -1047,10 +1150,19 @@ class SndfileStream(FiniteStream):
         The path to the sound file.
 
     """
-    fin = None
-    file_name = None
-    finfo = None
-    sndfile_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
+
 
     @property
     def file_name(self):
@@ -1095,19 +1207,21 @@ class SndfileStream(FiniteStream):
         # Only permit assignment to `finfo` attribute if we are in `__init__`
         if inspect.stack()[1][3] == "__init__":
             self._finfo = val
-            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val), POINTER(sndfile.SF_INFO))
+            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val),
+                                                       POINTER(sndfile.SF_INFO))
 #            self.sndfile_user_data.finfo = ctypes.addressof(self.finfo)
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
     def __init__(self, device, mix_mat, file_name, loop=False):
+        super(SndfileStream, self).__init__()
+
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
 
-        self.stream_user_data = StreamUserData()
-        self.finite_user_data = FiniteUserData()
         self.sndfile_user_data = SndfileUserData()
+
 
         # Initialize `FiniteStream` attributes
         self.loop = loop
@@ -1155,6 +1269,11 @@ class SndfileStream(FiniteStream):
         self.sndfile_user_data.parent = ctypes.addressof(self.finite_user_data)
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.sndfile_user_data)
+
+        self._instances.add(weakref.ref(self))
+        FiniteStream._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
     def __del__(self):
         #pa.Pa_CloseStream(self.stream_ptr)
@@ -1479,6 +1598,9 @@ def write_file(file_name, arr, fs,
     frames_written : int
         The number of frames that were written to the file.
     """
+    if not arr.dtype == np.dtype('double'):
+        raise TypeError('Array must have `double` dtype.')
+
     if frames == None:
         frames = arr.shape[0]
 
