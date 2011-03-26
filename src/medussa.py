@@ -1,27 +1,35 @@
 # -*- coding: utf-8 -*-
-from portaudio import *
-import sndfile
+
+import platform
+pyver = platform.python_version_tuple()[0]
+if pyver == "2":
+    from portaudio import *
+    from sndfile import SF_INFO, csndfile, SFM_READ, formats
+    from pink import Pink_noise_t
+else:
+    from .portaudio import *
+    from .sndfile import SF_INFO, csndfile, SFM_READ, formats
+    from .pink import Pink_noise_t
+
+import time
+import os
 import numpy as np
-from time import sleep
 import atexit
 import rkit
-from os.path import exists, join
 import inspect
-from pink import Pink_noise_t
 import platform
 import weakref
 
 pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
 
-
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = join(get_python_lib(), 'medussa', 'medussa.dll')
-    if not exists(libname):
+    libname = os.path.join(get_python_lib(), 'medussa', 'medussa.dll')
+    if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
-    libname = join(get_python_lib(prefix='/usr/local'), 'medussa', 'libmedussa.so')
-    if not exists(libname):
+    libname = os.path.join(get_python_lib(prefix='/usr/local'), 'medussa', 'libmedussa.so')
+    if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 else:
     libname = find_library("medussa")
@@ -122,7 +130,7 @@ class SndfileUserData(ctypes.Structure):
                 ("self",    py_object),
                 ("fin",     c_void_p),
                 ("file_name", c_char_p),
-                ("finfo",   POINTER(sndfile.SF_INFO)))
+                ("finfo",   POINTER(SF_INFO)))
 
 class ToneUserData(ctypes.Structure):
     """
@@ -1208,7 +1216,7 @@ class SndfileStream(FiniteStream):
         if inspect.stack()[1][3] == "__init__":
             self._finfo = val
             self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val),
-                                                       POINTER(sndfile.SF_INFO))
+                                                       POINTER(SF_INFO))
 #            self.sndfile_user_data.finfo = ctypes.addressof(self.finfo)
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
@@ -1230,9 +1238,9 @@ class SndfileStream(FiniteStream):
 
         # Initialize this class' attributes
         self.file_name = file_name
-        self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
-        self.fin = sndfile.csndfile.sf_open(file_name,
-                                            sndfile.SFM_READ,
+        self.finfo = SF_INFO(0,0,0,0,0,0)
+        self.fin = csndfile.sf_open(file_name,
+                                            SFM_READ,
                                             byref(self.finfo))
 
         # set sampling frequency
@@ -1277,7 +1285,7 @@ class SndfileStream(FiniteStream):
 
     def __del__(self):
         #pa.Pa_CloseStream(self.stream_ptr)
-        sndfile.csndfile.sf_close(c_void_p(self.fin))
+        csndfile.sf_close(c_void_p(self.fin))
 
 def generate_hostapi_info():
     HostApiInfoPointer = POINTER(PaHostApiInfo)
@@ -1515,7 +1523,7 @@ def play_arr(arr, fs, channel=1):
     s = d.open_array(arr, fs)
     s.play()
     while s.is_playing():
-        sleep(.01)
+        time.sleep(.01)
 
 
 def play_file(file_name):
@@ -1538,7 +1546,7 @@ def play_file(file_name):
     s = d.open_file(file_name)
     s.play()
     while s.is_playing():
-        sleep(.01)
+        time.sleep(.01)
 
 
 def read_file(file_name):
@@ -1553,8 +1561,8 @@ def read_file(file_name):
     -------
     (arr, fs) : (ndarray, float)
     """
-    finfo = sndfile.SF_INFO(0,0,0,0,0,0)
-    fin = sndfile.csndfile.sf_open(file_name, sndfile.SFM_READ, byref(finfo))
+    finfo = SF_INFO(0,0,0,0,0,0)
+    fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
 
     fs = finfo.samplerate
 
@@ -1563,7 +1571,7 @@ def read_file(file_name):
 
     frames_read = cmedussa.readfile_helper(fin, byref(buff), finfo.frames)
 
-    err = sndfile.csndfile.sf_close(c_void_p(fin))
+    err = csndfile.sf_close(c_void_p(fin))
 
     arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
 
@@ -1575,7 +1583,7 @@ def read_file(file_name):
 
 
 def write_file(file_name, arr, fs,
-              format=(sndfile.formats.SF_FORMAT_WAV[0] | sndfile.formats.SF_FORMAT_PCM_16[0]),
+              format=(formats.SF_FORMAT_WAV[0] | formats.SF_FORMAT_PCM_16[0]),
               frames=None):
     """
     Writes an ndarray to a sound file with any libsndfile-compatible format.
@@ -1604,7 +1612,7 @@ def write_file(file_name, arr, fs,
     if frames == None:
         frames = arr.shape[0]
 
-    finfo = sndfile.SF_INFO(0,0,0,0,0,0)
+    finfo = SF_INFO(0,0,0,0,0,0)
     finfo.samplerate = int(fs)
     finfo.channels = arr.shape[1]
     finfo.format = c_int(format)
@@ -1645,16 +1653,16 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
     frames_written : int
         The number of frames that were written to the file.
     """
-    majformat = sndfile.formats.SF_FORMAT_WAV[0]
+    majformat = formats.SF_FORMAT_WAV[0]
 
-    subformat = {8: sndfile.formats.SF_FORMAT_PCM_U8[0],
-                 16: sndfile.formats.SF_FORMAT_PCM_16[0],
-                 24: sndfile.formats.SF_FORMAT_PCM_24[0],
-                 32: sndfile.formats.SF_FORMAT_PCM_32[0],
-                 's16': sndfile.formats.SF_FORMAT_PCM_16[0],
-                 's24': sndfile.formats.SF_FORMAT_PCM_24[0],
-                 's32': sndfile.formats.SF_FORMAT_PCM_32[0],
-                 'u8': sndfile.formats.SF_FORMAT_PCM_U8[0]}
+    subformat = {8: formats.SF_FORMAT_PCM_U8[0],
+                 16: formats.SF_FORMAT_PCM_16[0],
+                 24: formats.SF_FORMAT_PCM_24[0],
+                 32: formats.SF_FORMAT_PCM_32[0],
+                 's16': formats.SF_FORMAT_PCM_16[0],
+                 's24': formats.SF_FORMAT_PCM_24[0],
+                 's32': formats.SF_FORMAT_PCM_32[0],
+                 'u8': formats.SF_FORMAT_PCM_U8[0]}
 
     endformat = majformat | subformat[bits]
 
@@ -1685,14 +1693,14 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
     frames_written : int
         The number of frames that were written to the file.
     """
-    majformat = sndfile.formats.SF_FORMAT_FLAC[0]
+    majformat = formats.SF_FORMAT_FLAC[0]
 
-    subformat = {8: sndfile.formats.SF_FORMAT_PCM_S8[0],
-                 16: sndfile.formats.SF_FORMAT_PCM_16[0],
-                 24: sndfile.formats.SF_FORMAT_PCM_24[0],
-                 's8': sndfile.formats.SF_FORMAT_PCM_S8[0],
-                 's16': sndfile.formats.SF_FORMAT_PCM_16[0],
-                 's24': sndfile.formats.SF_FORMAT_PCM_24[0]}
+    subformat = {8: formats.SF_FORMAT_PCM_S8[0],
+                 16: formats.SF_FORMAT_PCM_16[0],
+                 24: formats.SF_FORMAT_PCM_24[0],
+                 's8': formats.SF_FORMAT_PCM_S8[0],
+                 's16': formats.SF_FORMAT_PCM_16[0],
+                 's24': formats.SF_FORMAT_PCM_24[0]}
 
     endformat = majformat | subformat[bits]
 
@@ -1723,9 +1731,9 @@ def write_ogg(file_name, arr, fs, frames=None):
     -----
     Bit depth is not specified with the Vorbis format, but rather is variable.
   """
-    majformat = sndfile.formats.SF_FORMAT_OGG[0]
+    majformat = formats.SF_FORMAT_OGG[0]
 
-    subformat = sndfile.formats.SF_FORMAT_VORBIS[0]
+    subformat = formats.SF_FORMAT_VORBIS[0]
 
     endformat = majformat | subformat
 
