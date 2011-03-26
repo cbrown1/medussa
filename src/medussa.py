@@ -12,6 +12,7 @@ else:
     from .sndfile import SF_INFO, csndfile, SFM_READ, formats
     from .pink import Pink_noise_t
     from .rkit import Rk_state
+    xrange = range
 
 import time
 import os

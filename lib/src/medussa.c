@@ -1,5 +1,8 @@
 #include "medussa.h"
 
+#if PY_MAJOR_VERSION >= 3
+  #define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
+#endif
 
 PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParameters *spout, PaStreamCallback *callback_ptr)
 {
@@ -42,7 +45,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         return NULL;
     }
 
-    // `PaStream *stream` from `Stream.stream_ptr` 
+    // `PaStream *stream` from `Stream.stream_ptr`
     if (PyObject_HasAttrString(self, "stream_ptr")) {
         attr = PyObject_GetAttrString(self, "stream_ptr");
         if (attr == NULL) {
@@ -102,7 +105,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
                         fpb,
                         paNoFlag,
                         callback_ptr,
-                        user_data);  
+                        user_data);
     ERROR_CHECK;
 
     // Return the new integer value of the mutated `PaStream *` back to Python
