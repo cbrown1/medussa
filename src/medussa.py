@@ -663,6 +663,7 @@ class ToneStream(Stream):
         self._instances.add(weakref.ref(self))
         Stream._instances.add(weakref.ref(self))
 
+
 class WhiteStream(Stream):
     """
     Stream object representing Gaussian white noise, which has a flat spectrum.
@@ -1014,6 +1015,8 @@ class ArrayStream(FiniteStream):
 
     @arr.setter
     def arr(self, val):
+        if not arr.dtype == np.dtype('double'):
+            raise TypeError('Array must have `double` dtype.')
         self._arr = np.ascontiguousarray(val)
         self.array_user_data.ndarr = self._arr.ctypes.data_as(POINTER(c_double))
         self.array_user_data.ndarr_0 = val.shape[0]
@@ -1029,8 +1032,6 @@ class ArrayStream(FiniteStream):
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
-        #self.stream_user_data = StreamUserData()
-        #self.finite_user_data = FiniteUserData()
         self.array_user_data = ArrayUserData()
 
         # Initialize `Stream` attributes
@@ -1572,6 +1573,9 @@ def write_file(file_name, arr, fs,
     frames_written : int
         The number of frames that were written to the file.
     """
+    if not arr.dtype == np.dtype('double'):
+        raise TypeError('Array must have `double` dtype.')
+
     if frames == None:
         frames = arr.shape[0]
 
