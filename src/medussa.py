@@ -193,6 +193,13 @@ class Device(object):
         The number of output channels. Port Audio does not always set this
         value correctly, so it is set to 2 by default. If the output device
         actually has more channels, you can set this prior to creating streams.
+    out_name
+        The name of the output device, as reported by Port Audio.
+    out_hostapi
+        The host API of the output device, as reported by Port Audio.
+    out_index
+        The index of the output device, as reported by Port Audio.
+
     """
 
     _instances = set()
@@ -820,19 +827,18 @@ class FiniteStream(Stream):
         super(FiniteStream, self).__init__()
         self.finite_user_data = FiniteUserData()
 
-    def time(self, pos=None, posunit="ms"):
+    def time(self, pos=None, units="ms"):
         """
-        Gets or sets the current cursor position.
+        Gets or sets the current playback cursor position.
 
         If `pos` is `None`, returns the current cursor position in ms.
-        Otherwise, sets the cursor position to `pos`, as deterimined by
-        the argument to `posunit`.
+        Otherwise, sets the cursor position to `pos`, in the units specified.
 
         Parameters
         ----------
         pos : numeric
             The position to set the cursor to.
-        posunit : string
+        units : string
             The units of pos. May be of value:
             "ms": assume `pos` is of type `float` [default]
             "sec": `assume `pos` is of type float`
@@ -841,28 +847,33 @@ class FiniteStream(Stream):
         Returns
         -------
         pos : numeric
-            The current position of the cursor. This value is returned if
-            no input `pos` is specified.
+            The current position of the cursor. This value is returned only
+            if no input `pos` is specified.
         """
         if pos == None:
-            return self.cursor / self.fs * 1000.0
-        elif posunit == "ms":
+            if units == "ms":
+                return self.cursor / self.fs * 1000.0
+            elif units == "sec":
+                return self.cursor / self.fs
+            elif units == "frames":
+                return self.cursor
+        elif units == "ms":
             newcursor = int(pos / 1000.0 * self.fs)
             if not (newcursor < self.frames):
                 raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
             self.cursor = int(pos / 1000.0 * self.fs)
-        elif posunit == "sec":
+        elif units == "sec":
             newcursor = int(pos * self.fs)
             if not (newcursor < self.frames):
                 raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
             self.cursor = int(pos * self.fs)
-        elif posunit == "frames":
+        elif units == "frames":
             assert isinstance(pos, int)
             if not (pos < self.frames):
                 raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
             self.cursor = pos
         else:
-            raise RuntimeError("Bad argument to `posunit`")
+            raise RuntimeError("Bad argument to `units`")
 
     def stop(self):
         super(Stream, self).stop()
@@ -888,7 +899,7 @@ class ArrayStream(FiniteStream):
     is_playing
         Boolean indicating whether the stream is currently playing.
     time
-        Gets or sets the current cursor position.
+        Gets or sets the current playback cursor position.
 
     Properties
     ----------
@@ -1000,6 +1011,8 @@ class SndfileStream(FiniteStream):
         Mix matrix is unaffected. Playback will continue while stream is muted.
     is_playing
         Boolean indicating whether the stream is currently playing.
+    time
+        Gets or sets the current playback cursor position.
 
     Properties
     ----------

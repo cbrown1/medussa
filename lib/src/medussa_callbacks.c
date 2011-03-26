@@ -125,13 +125,9 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     PaStreamParameters *out_param;
     double *mix_mat;
 
-    printf("DEBUG, sndfile callback 1\n");
-
     sfud = (sndfile_user_data *) user_data;
     fud  = (finite_user_data *)  sfud->parent;
     stud = (stream_user_data *)  fud->parent;
-
-    printf("DEBUG, sndfile callback 2\n");
 
     // Begin attribute acquisition
     out_param = stud->out_param;
@@ -144,8 +140,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     fin = sfud->fin;
     frame_size = finfo->channels;
     // End attribute acquisition
-
-    printf("DEBUG, sndfile callback 3\n");
 
     buf_out = (float *) pa_buf_out;
     if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }

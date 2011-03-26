@@ -21,6 +21,8 @@ open_default_device
     Returns an object representing the default sound device.
 print_available_devices
     Prints a list of available sound devices, with info.
+start_streams
+    Tries to start playback of specified streams as synchronously as possible.
 read_file
     Reads a soundfile from disk into a NumPy array.
 write_file
