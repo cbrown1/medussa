@@ -9,6 +9,7 @@ from os.path import exists, join
 import inspect
 from pink import Pink_noise_t
 import platform
+import weakref
 
 pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
 
@@ -29,6 +30,9 @@ else:
 
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
+
+device_instances = set()
+stream_instances = set()
 
 
 @atexit.register
@@ -190,17 +194,19 @@ class Device(object):
         value correctly, so it is set to 2 by default. If the output device
         actually has more channels, you can set this prior to creating streams.
     """
-    _in_index = None
-    in_device_info = None
-    in_name = None
-    in_hostapi = None
 
-    out_index = None
-    out_device_info = None
-    out_name = None
-    out_hostapi = None
+    _instances = set()
 
-    out_channels = None
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def in_index(self):
@@ -264,6 +270,8 @@ class Device(object):
             self.out_index = out_index
         if out_channels != None:
             self.out_channels = out_channels
+
+        self._instances.add(weakref.ref(self))
 
 
     def create_tone(self, tone_freq, fs=None):
@@ -366,22 +374,6 @@ class Stream(object):
     """
     Generic stream class.
     """
-    # device : PaDevice
-    device = None
-
-    # Attributes for `Pa_OpenStream()`
-    stream_ptr = None
-    in_param = None
-    out_param = None
-    fs = None
-
-    # Mixing matrix for computing output
-    _mix_mat = None
-    _mute_mat = None
-#    pa_fpb = 0 # `paFramesPerBufferUnspecified' == 0
-
-    # structs for the callbacks
-    stream_user_data = None
 
     @property
     def stream(self):
@@ -540,6 +532,10 @@ class Stream(object):
         # simply swaps the mix matrix with a zero matrix of same shape, or back
         self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
 
+    def __init__(self):
+        self.stream_ptr = None
+        self.stream_user_data = StreamUserData()
+
     def __del__(self):
         pa.Pa_CloseStream(self.stream_ptr)
 
@@ -577,9 +573,6 @@ class ToneStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    tone_freq = None
-    t = None
-    tone_user_data = None
 
     @property
     def tone_freq(self):
@@ -599,11 +592,12 @@ class ToneStream(Stream):
 
 
     def __init__(self, device, fs, mix_mat, tone_freq):
+        super(ToneStream, self).__init__()
+
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_tone
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.tone_user_data = ToneUserData()
 
         if mix_mat == None:
@@ -665,8 +659,6 @@ class WhiteStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    rk_state = None
-    white_user_data = None
 
     @property
     def rk_state(self):
@@ -682,10 +674,11 @@ class WhiteStream(Stream):
         del self._rk_state
 
     def __init__(self, device, fs, mix_mat):
+        super(WhiteStream, self).__init__()
+
         self.callback_ptr = cmedussa.callback_white
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.white_user_data = WhiteUserData()
 
         if mix_mat == None:
@@ -749,13 +742,13 @@ class PinkStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
-    pink_user_data = None
 
     def __init__(self, device, fs, mix_mat):
+        super(PinkStream, self).__init__()
+
         self.callback_ptr = cmedussa.callback_pink
         self.device = device
 
-        self.stream_user_data = StreamUserData()
         self.pink_user_data = PinkUserData()
 
         if mix_mat == None:
@@ -790,14 +783,6 @@ class FiniteStream(Stream):
     """
     Generic stream object used to derive sndfilestream and arraystream objects.
     """
-    loop = None
-    pa_fpb = 1024  # This lets us avoid `malloc` in the callback
-    cursor = 0
-
-    frames = None # Total length of the signal in frames
-    duration = None # Total length of the signal in milliseconds
-
-    finite_user_data = None
 
     @property
     def loop(self):
@@ -830,6 +815,10 @@ class FiniteStream(Stream):
     @duration.setter
     def duration(self, val):
         self.finite_user_data.duration = val
+
+    def __init__(self):
+        super(FiniteStream, self).__init__()
+        self.finite_user_data = FiniteUserData()
 
     def time(self, pos=None, posunit="ms"):
         """
@@ -876,7 +865,7 @@ class FiniteStream(Stream):
             raise RuntimeError("Bad argument to `posunit`")
 
     def stop(self):
-        super(FiniteStream, self).stop()
+        super(Stream, self).stop()
         self.cursor = 0
 
 class ArrayStream(FiniteStream):
@@ -922,8 +911,6 @@ class ArrayStream(FiniteStream):
         The array of audio data.
 
     """
-    _arr = None
-    array_user_data = None
 
     @property
     def arr(self):
@@ -941,11 +928,13 @@ class ArrayStream(FiniteStream):
         del self._arr
 
     def __init__(self, device, fs, mix_mat, arr, loop=False):
+        super(ArrayStream, self).__init__()
+
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
-        self.stream_user_data = StreamUserData()
-        self.finite_user_data = FiniteUserData()
+        #self.stream_user_data = StreamUserData()
+        #self.finite_user_data = FiniteUserData()
         self.array_user_data = ArrayUserData()
 
         # Initialize `Stream` attributes
@@ -1033,10 +1022,10 @@ class SndfileStream(FiniteStream):
         The path to the sound file.
 
     """
-    fin = None
-    file_name = None
-    finfo = None
-    sndfile_user_data = None
+    #fin = None
+    #file_name = None
+    #finfo = None
+    #sndfile_user_data = None
 
     @property
     def file_name(self):
@@ -1087,13 +1076,17 @@ class SndfileStream(FiniteStream):
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
     def __init__(self, device, mix_mat, file_name, loop=False):
+        super(SndfileStream, self).__init__()
+
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
 
-        self.stream_user_data = StreamUserData()
-        self.finite_user_data = FiniteUserData()
+        #self.stream_user_data = StreamUserData()
+        #self.finite_user_data = FiniteUserData()
         self.sndfile_user_data = SndfileUserData()
+
+        #self.stream_ptr = None
 
         # Initialize `FiniteStream` attributes
         self.loop = loop

@@ -41,12 +41,15 @@ __pa_version__
 
 """
 
-from medussa import (play_arr, play_file, cmedussa, Device, ToneStream,
+from medussa import (play_arr, play_file, cmedussa,
+                     Device, Stream, FiniteStream,
+                     ToneStream, WhiteStream, PinkStream,
                      ArrayStream, SndfileStream, generate_hostapi_info,
                      generate_device_info, print_available_devices,
                      start_streams, open_device, open_default_device, init,
                      terminate, read_file,
-                     write_file, write_wav, write_flac, write_ogg)
+                     write_file, write_wav, write_flac, write_ogg,
+                     device_instances, stream_instances)
 from portaudio import pa, ERROR_CHECK
 
 __version__ = "1.0"
