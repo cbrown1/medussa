@@ -9,7 +9,13 @@ fi
 #SITEPACKAGES=`python${PYVER} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
 
 make clean
-make FLAGS="-I/usr/include/python${PYVER} -I/usr/lib/python${PYVER}/site-packages/numpy/core/include/"
+
+numpyIncludeDirectory=/usr/lib/python${PYVER}/site-packages/numpy/core/include/
+if [ ! -d "$numpyIncludeDirectory" ]; then
+    numpyIncludeDirectory=/usr/local/lib/python${PYVER}/site-packages/numpy/core/include/
+fi
+
+make FLAGS="-I/usr/include/python${PYVER} -I$numpyIncludeDirectory"
 if [ $? -eq 0 ] ; then
   mkdir ./py${PYVER}
   cp libmedussa.so ./py${PYVER}
