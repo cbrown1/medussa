@@ -15,12 +15,13 @@ pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_t
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medussa\\medussa.dll"
+    libname = join(get_python_lib(), 'medussa', 'medussa.dll')
     if not exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
-    libname = '/usr/local/lib/python%s/site-packages/medussa/libmedussa.so' % pyver
-    #libname = join(get_python_lib(), 'medussa', 'libmedussa.so')
+    libname = join(get_python_lib(prefix='/usr/local'), 'medussa', 'libmedussa.so')
+    if not exists(libname):
+        raise RuntimeError("Unable to locate library: " + libname)
 else:
     libname = find_library("medussa")
     if libname == None:

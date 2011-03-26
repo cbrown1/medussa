@@ -6,7 +6,8 @@ if [ "$pyver" == "" ]; then
 	exit
 fi
 
-sudo rm /usr/local/lib/libmedussa.so
-sudo rm -r /usr/local/lib/python${pyver}/dist-packages/medussa
+installdir=$(python${pyver} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(prefix='/usr/local')")
 
-sudo python${pyver} setup.py install
+sudo rm -r ${installdir}/medussa
+sudo rm ${installdir}/medussa-*.egg-info
+sudo python${pyver} setup.py install --prefix='/usr/local'

@@ -10,9 +10,12 @@ if [ "$pyver" == "" ]; then
 	echo "Usage: package_linux.sh pyver # where pyver ~= 2.7";
 	exit
 fi
+
+# Build lib
 cd ./lib/build/linux
 ./build.sh $pyver
 cd ../../..
+
 pybin="python${pyver}";
 
 # Get metadata

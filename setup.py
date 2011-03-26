@@ -20,7 +20,7 @@ if platform.system() == "Windows":
 	medussa_data_files_path = join(get_python_lib(prefix=''), 'medussa')
 else:
 	medussa_data_files.append('lib/build/linux/py%s/libmedussa.so' % pyver)
-	medussa_data_files_path = '/usr/local/lib/python%s/site-packages/medussa' % pyver
+	medussa_data_files_path = join(get_python_lib(prefix='/usr/local'), 'medussa')
 
 setup(name='medussa',
 	version='1.0',
