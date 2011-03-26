@@ -826,6 +826,7 @@ class FiniteStream(Stream):
     def __init__(self):
         super(FiniteStream, self).__init__()
         self.finite_user_data = FiniteUserData()
+        self.pa_fpb = 1024
 
     def time(self, pos=None, units="ms"):
         """
