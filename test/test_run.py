@@ -25,6 +25,7 @@ sf = d.open_file("test/clean.wav")
 st = d.create_tone(400,fs)
 sw = d.create_white(fs)
 sp = d.create_pink(fs)
+sp2 = dd.create_pink(fs)
 
 
 def sweep_right(s, delta=0.001, steps=500):

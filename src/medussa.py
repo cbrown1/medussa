@@ -381,6 +381,18 @@ class Stream(object):
     """
     Generic stream class.
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def stream(self):
@@ -542,6 +554,7 @@ class Stream(object):
     def __init__(self):
         self.stream_ptr = None
         self.stream_user_data = StreamUserData()
+        self._instances.add(weakref.ref(self))
 
     def __del__(self):
         pa.Pa_CloseStream(self.stream_ptr)
@@ -580,6 +593,18 @@ class ToneStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def tone_freq(self):
@@ -635,6 +660,9 @@ class ToneStream(Stream):
         self.tone_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.tone_user_data)
 
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 class WhiteStream(Stream):
     """
     Stream object representing Gaussian white noise, which has a flat spectrum.
@@ -666,6 +694,18 @@ class WhiteStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def rk_state(self):
@@ -717,6 +757,9 @@ class WhiteStream(Stream):
         self.white_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.white_user_data)
 
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
 class PinkStream(Stream):
     """
@@ -749,6 +792,18 @@ class PinkStream(Stream):
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     def __init__(self, device, fs, mix_mat):
         super(PinkStream, self).__init__()
@@ -785,11 +840,26 @@ class PinkStream(Stream):
         self.pink_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.pink_user_data)
 
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
 class FiniteStream(Stream):
     """
     Generic stream object used to derive sndfilestream and arraystream objects.
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def loop(self):
@@ -827,6 +897,8 @@ class FiniteStream(Stream):
         super(FiniteStream, self).__init__()
         self.finite_user_data = FiniteUserData()
         self.pa_fpb = 1024
+        self._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
 
     def time(self, pos=None, units="ms"):
         """
@@ -923,6 +995,18 @@ class ArrayStream(FiniteStream):
         The array of audio data.
 
     """
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
 
     @property
     def arr(self):
@@ -991,6 +1075,10 @@ class ArrayStream(FiniteStream):
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.array_user_data)
 
+        self._instances.add(weakref.ref(self))
+        FiniteStream._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
 class SndfileStream(FiniteStream):
     """
@@ -1036,10 +1124,19 @@ class SndfileStream(FiniteStream):
         The path to the sound file.
 
     """
-    #fin = None
-    #file_name = None
-    #finfo = None
-    #sndfile_user_data = None
+    _instances = set()
+
+    @classmethod
+    def instances(cls):
+        dead = set()
+        for ref in cls._instances:
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        cls._instances -= dead
+
 
     @property
     def file_name(self):
@@ -1096,11 +1193,8 @@ class SndfileStream(FiniteStream):
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
 
-        #self.stream_user_data = StreamUserData()
-        #self.finite_user_data = FiniteUserData()
         self.sndfile_user_data = SndfileUserData()
 
-        #self.stream_ptr = None
 
         # Initialize `FiniteStream` attributes
         self.loop = loop
@@ -1148,6 +1242,11 @@ class SndfileStream(FiniteStream):
         self.sndfile_user_data.parent = ctypes.addressof(self.finite_user_data)
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.sndfile_user_data)
+
+        self._instances.add(weakref.ref(self))
+        FiniteStream._instances.add(weakref.ref(self))
+        Stream._instances.add(weakref.ref(self))
+
 
     def __del__(self):
         #pa.Pa_CloseStream(self.stream_ptr)
