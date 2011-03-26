@@ -108,7 +108,7 @@ class SndfileUserData(ctypes.Structure):
         PyObject *self;
 
         SNDFILE *fin;
-        char    *finpath;
+        char    *file_name;
         SF_INFO *finfo;
     };
 
@@ -116,7 +116,7 @@ class SndfileUserData(ctypes.Structure):
     _fields_ = (("parent",  c_void_p),
                 ("self",    py_object),
                 ("fin",     c_void_p),
-                ("finpath", c_char_p),
+                ("file_name", c_char_p),
                 ("finfo",   POINTER(sndfile.SF_INFO)))
 
 class ToneUserData(ctypes.Structure):
@@ -169,6 +169,26 @@ class Device(object):
 
     Contains methods to create various streams, and information about the
     hardware device it represents.
+
+    Methods
+    -------
+    create_pink
+        Creates a stream representing pink noise.
+    create_white
+        Creates a stream representing white noise.
+    create_tone
+        Creates a stream representing a pure tone.
+    open_array
+        Creates a stream representing a NumPy array.
+    open_file
+        Creates a stream representing a sound file on disk.
+
+    Properties
+    ----------
+    out_channels
+        The number of output channels. Port Audio does not always set this
+        value correctly, so it is set to 2 by default. If the output device
+        actually has more channels, you can set this prior to creating streams.
     """
     _in_index = None
     in_device_info = None
@@ -248,7 +268,7 @@ class Device(object):
 
     def create_tone(self, tone_freq, fs=None):
         """
-        Returns a Medussa stream object representing a pure tone.
+        Returns a stream object representing a pure tone.
 
         Parameters
         ----------
@@ -269,7 +289,7 @@ class Device(object):
 
     def create_white(self, fs=None):
         """
-        Returns a Medussa stream object representing Gaussian/white noise.
+        Returns a stream object representing Gaussian/white noise.
 
         Parameters
         ----------
@@ -288,7 +308,7 @@ class Device(object):
 
     def create_pink(self, fs=None):
         """
-        Returns a Medussa stream object representing pink noise.
+        Returns a stream object representing pink noise.
 
         Parameters
         ----------
@@ -307,7 +327,7 @@ class Device(object):
 
     def open_array(self, arr, fs):
         """
-        Returns a Medussa stream object representing an ndarray.
+        Returns a stream object representing an ndarray.
 
         Parameters
         ----------
@@ -326,7 +346,7 @@ class Device(object):
 
     def open_file(self, file_name):
         """
-        Returns a Medussa stream object representing a soundfile on disk.
+        Returns a stream object representing a soundfile on disk.
 
         Parameters
         ----------
@@ -490,15 +510,7 @@ class Stream(object):
         """
         if (self.stream_ptr == None):
             self.open()
-            self.start()
-        elif self.is_playing():
-            self.pause()
-            err = pa.Pa_CloseStream(self.stream_ptr)
-            ERROR_CHECK(err)
-            self.open()
-            self.start()
-        else:
-            self.open()
+        if not self.is_playing():
             self.start()
 
     def pause(self):
@@ -558,12 +570,12 @@ class ToneStream(Stream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of input channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of output channels,
-        which is hardware specific, and can be get/set with dev.out_channels.
-        The values of the mix_mat are are floats between 0. and 1., and are
-        used to specify the playback level of each `input` channel on each
-        `output` channel.
+        to the number of source channels (in the case of a tonestream, 1),
+        and the number of rows corresponds to the number of device output
+        channels, which is hardware specific, and can be get/set with
+        dev.out_channels. The values of the mix_mat are floats between 0.
+        and 1., and are used to specify the playback level of each source
+        channel on each output channel.
     """
     tone_freq = None
     t = None
@@ -646,12 +658,12 @@ class WhiteStream(Stream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of input channels (in the case of a whitestream, 1),
-        and the number of rows corresponds to the number of output channels,
-        which is hardware specific, and can be get/set with dev.out_channels.
-        The values of the mix_mat are are floats between 0. and 1., and are
-        used to specify the playback level of each `input` channel on each
-        `output` channel.
+        to the number of source channels (in the case of a whitestream, 1),
+        and the number of rows corresponds to the number of device output
+        channels, which is hardware specific, and can be get/set with
+        dev.out_channels. The values of the mix_mat are floats between 0.
+        and 1., and are used to specify the playback level of each source
+        channel on each output channel.
     """
     rk_state = None
     white_user_data = None
@@ -730,12 +742,12 @@ class PinkStream(Stream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of input channels (in the case of a pinkstream, 1),
-        and the number of rows corresponds to the number of output channels,
-        which is hardware specific, and can be get/set with dev.out_channels.
-        The values of the mix_mat are are floats between 0. and 1., and are
-        used to specify the playback level of each `input` channel on each
-        `output` channel.
+        to the number of source channels (in the case of a pinkstream, 1),
+        and the number of rows corresponds to the number of device output
+        channels, which is hardware specific, and can be get/set with
+        dev.out_channels. The values of the mix_mat are floats between 0.
+        and 1., and are used to specify the playback level of each source
+        channel on each output channel.
     """
     pink_user_data = None
 
@@ -872,6 +884,43 @@ class ArrayStream(FiniteStream):
     Stream object representing a NumPy array.
 
     You can use medussa.read_file to load soundfiles into NumPy arrays.
+
+    Methods
+    -------
+    play
+        Starts playback of the stream.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
+    pause
+        Pauses playback of the stream (Playback cursor is not reset).
+    mute
+        Mutes or unmutes the stream.
+        Mix matrix is unaffected. Playback will continue while stream is muted.
+    is_playing
+        Boolean indicating whether the stream is currently playing.
+    time
+        Gets or sets the current cursor position.
+
+    Properties
+    ----------
+    fs
+        Sampling frequency, in Hz.
+    mix_mat
+        A NumPy array that acts as a mixer. The number of columns corresponds
+        to the number of source channels (in the case of an arraystream, the
+        number of `columns` in the array), and the number of rows corresponds
+        to the number of device output channels, which is hardware specific,
+        and can be get/set with dev.out_channels. The values of the mix_mat
+        are floats between 0. and 1., and are used to specify the playback
+        level of each source channel on each output channel.
+    loop
+        Gets or sets whether the stream will continue playing from the
+        beginning when it reaches the end.
+    frames
+        The number of frames (samples per source channel).
+    arr
+        The array of audio data.
+
     """
     _arr = None
     array_user_data = None
@@ -948,28 +997,63 @@ class SndfileStream(FiniteStream):
 
     The audio data are not loaded into memory, but rather are streamed from
     disk.
+
+    Methods
+    -------
+    play
+        Starts playback of the stream.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
+    pause
+        Pauses playback of the stream (Playback cursor is not reset).
+    mute
+        Mutes or unmutes the stream.
+        Mix matrix is unaffected. Playback will continue while stream is muted.
+    is_playing
+        Boolean indicating whether the stream is currently playing.
+
+    Properties
+    ----------
+    fs
+        Sampling frequency, in Hz.
+    mix_mat
+        A NumPy array that acts as a mixer. The number of columns corresponds
+        to the number of source channels (in the case of an sndfilestream, a
+        stereo soundfile has 2), and the number of rows corresponds to the
+        number of device output channels, which is hardware specific, and
+        can be get/set with dev.out_channels. The values of the mix_mat are
+        floats between 0. and 1., and are used to specify the playback level
+        of each source channel on each output channel.
+    loop
+        Gets or sets whether the stream will continue playing from the
+        beginning when it reaches the end.
+    frames
+        The number of frames (samples per source channel).
+    file_name
+        The path to the sound file.
+
     """
     fin = None
-    finpath = None
+    file_name = None
     finfo = None
     sndfile_user_data = None
 
     @property
-    def finpath(self):
-        return self._finpath
+    def file_name(self):
+        return self._file_name
 
-    @finpath.setter
-    def finpath(self, val):
-        # Only permit assignment to `finpath` attribute if we are in `__init__`
+    @file_name.setter
+    def file_name(self, val):
+        # Only permit assignment to file_name attribute if we are in `__init__`
         if inspect.stack()[1][3] == "__init__":
-            self.sndfile_user_data.finpath = c_char_p(val)
-            self._finpath = val
+            self.sndfile_user_data.file_name = c_char_p(val)
+            self._file_name = val
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
-    @finpath.deleter
-    def finpath(self):
-        del self._finpath
+    @file_name.deleter
+    def file_name(self):
+        del self._file_name
 
     @property
     def fin(self):
@@ -1002,7 +1086,7 @@ class SndfileStream(FiniteStream):
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
-    def __init__(self, device, mix_mat, finpath, loop=False):
+    def __init__(self, device, mix_mat, file_name, loop=False):
         # Initialize `Stream` attributes
         self.callback_ptr = cmedussa.callback_sndfile_read
         self.device = device
@@ -1017,9 +1101,9 @@ class SndfileStream(FiniteStream):
         self.cursor = 0
 
         # Initialize this class' attributes
-        self.finpath = finpath
+        self.file_name = file_name
         self.finfo = sndfile.SF_INFO(0,0,0,0,0,0)
-        self.fin = sndfile.csndfile.sf_open(finpath,
+        self.fin = sndfile.csndfile.sf_open(file_name,
                                             sndfile.SFM_READ,
                                             byref(self.finfo))
 
@@ -1086,7 +1170,7 @@ def generate_device_info():
         yield di
 
 
-def getAvailableDevices(hostapi=None, verbose=False):
+def get_available_devices(hostapi=None, verbose=False):
     """
     Returns a list containing information on the available audio devices.
 
@@ -1137,7 +1221,7 @@ def print_available_devices(hostapi=None, verbose=False):
     -------
     None
     """
-    devices = getAvailableDevices(hostapi, verbose)
+    devices = get_available_devices(hostapi, verbose)
 
     if len(devices) == 0:
         print("No devices found for given hostApi(s): %s" % ",".join([HostApiTypeAliases[x] for x in hostapi]))
