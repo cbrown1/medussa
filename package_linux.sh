@@ -45,6 +45,16 @@ ${pybin} setup.py clean
 # Build
 ${pybin} setup.py build
 
+####
+## Make rpm
+#TODO: Add the custom description
+rm -r ./dist/py${pyver}
+mkdir ./dist/py${pyver}
+sudo ${pybin} setup.py bdist_rpm --fix-python --force-arch="i386" --group="python" --binary-only --dist-dir="./dist/py${pyver}"
+
+####
+## Make deb
+
 # Fake install
 ${pybin} setup.py install --root dist/deb
 cd dist

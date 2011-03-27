@@ -22,9 +22,10 @@ else:
 	medussa_data_files.append('lib/build/linux/py%s/libmedussa.so' % pyver)
 	medussa_data_files_path = join(get_python_lib(prefix='/usr/local'), 'medussa')
 
+#TODO: Pull version, author, etc., from imported medussa
 setup(name='medussa',
 	version='1.0',
-	description='Medussa: A cross-platform high-level audio library',
+	description='Medussa: A cross-platform high-level audio library for Python',
 	author='Christopher A. Brown, Joseph K. Ranweiler',
 	author_email='c-b /at/ asu.edu',
 	maintainer = 'Christopher Brown',
@@ -39,7 +40,7 @@ setup(name='medussa',
 	license = 'GPL',
 	platforms = 'Win32, Linux',
 	long_description="""\
- Medussa is a cross-platform, high-performance, high-level audio library
+ Medussa is a cross-platform high-level audio library for Python
  based on Port Audio and libsndfile. You can play NumPy arrays, stream
  sound files from disk, or create pure tones or 'on-line' white or pink
  noise. There are high-level functions like playarr (similar to matlab's

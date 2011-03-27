@@ -67,8 +67,25 @@ else:
                         device_instances, stream_instances)
     from .portaudio import pa, ERROR_CHECK
 
+__package_name__ = "medussa"
 __version__ = "1.0"
 __pa_version__ = "%s, Release %d" % (pa.Pa_GetVersionText(), pa.Pa_GetVersion())
+__author__ = 'Christopher A. Brown, Joseph K. Ranweiler'
+__author_email__ = 'c-b /at/ asu.edu'
+__url__ ='http://www.medussa.us'
+__description__ = 'Medussa: A cross-platform high-level audio library for Python'
+__long_description__ = """\
+ Medussa is a cross-platform high-level audio library for Python
+ based on Port Audio and libsndfile. You can play NumPy arrays, stream
+ sound files from disk, or create pure tones or 'on-line' white or pink
+ noise. There are high-level functions like playarr (similar to matlab's
+ wavplay). You can also access specific host api's or devices, create
+ streams as needed, and control them all asynchronously. Or for the most
+ control, you can access the port audio library directly. Sweet!
+
+ """,
+
+
 
 err = pa.Pa_Initialize()
 try:
