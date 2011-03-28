@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
-
+import time
+import os
+import numpy as np
+import atexit
+import inspect
+import weakref
 import platform
-pyver = platform.python_version_tuple()[0]
-if pyver == "2":
+
+pyver_major = platform.python_version_tuple()[0]
+if pyver_major == "2":
     from portaudio import *
     from sndfile import SF_INFO, csndfile, SFM_READ, formats
     from pink import Pink_noise_t
@@ -13,13 +19,6 @@ else:
     from .pink import Pink_noise_t
     from .rkit import Rk_state
     xrange = range
-
-import time
-import os
-import numpy as np
-import atexit
-import inspect
-import weakref
 
 pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
 
@@ -1564,7 +1563,11 @@ def read_file(file_name):
     (arr, fs) : (ndarray, float)
     """
     finfo = SF_INFO(0,0,0,0,0,0)
-    fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
+    #fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
+    if pyver_major == '3':
+        fin = csndfile.sf_open(bytes(file_name, 'utf-8'), SFM_READ, byref(finfo))
+    else:
+        fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
 
     fs = finfo.samplerate
 
@@ -1732,7 +1735,7 @@ def write_ogg(file_name, arr, fs, frames=None):
     Notes
     -----
     Bit depth is not specified with the Vorbis format, but rather is variable.
-  """
+    """
     majformat = formats.SF_FORMAT_OGG[0]
 
     subformat = formats.SF_FORMAT_VORBIS[0]
