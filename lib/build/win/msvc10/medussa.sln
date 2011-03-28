@@ -5,17 +5,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "medussa", "medusa.vcxproj",
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Release 2.6|Win32 = Release 2.6|Win32
-		Release 2.7|Win32 = Release 2.7|Win32
-		Release 3.2|Win32 = Release 3.2|Win32
+		Release Py2.6|Win32 = Release Py2.6|Win32
+		Release Py2.7|Win32 = Release Py2.7|Win32
+		Release Py3.1|Win32 = Release Py3.1|Win32
+		Release Py3.2|Win32 = Release Py3.2|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 2.6|Win32.ActiveCfg = Release 2.6|Win32
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 2.6|Win32.Build.0 = Release 2.6|Win32
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 2.7|Win32.ActiveCfg = Release 2.7|Win32
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 2.7|Win32.Build.0 = Release 2.7|Win32
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 3.2|Win32.ActiveCfg = Release 3.2|Win32
-		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release 3.2|Win32.Build.0 = Release 3.2|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py2.6|Win32.ActiveCfg = Release Py2.6|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py2.6|Win32.Build.0 = Release Py2.6|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py2.7|Win32.ActiveCfg = Release Py2.7|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py2.7|Win32.Build.0 = Release Py2.7|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py3.1|Win32.ActiveCfg = Release Py3.1|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py3.1|Win32.Build.0 = Release Py3.1|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py3.2|Win32.ActiveCfg = Release Py3.2|Win32
+		{27B13A7E-22B2-40ED-A30D-DB88BAC3673D}.Release Py3.2|Win32.Build.0 = Release Py3.2|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
