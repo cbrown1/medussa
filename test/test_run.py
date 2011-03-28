@@ -20,6 +20,7 @@ x,fs = medussa.read_file("test/clean.wav")
 d = medussa.open_device()
 dd = medussa.open_device()
 
+sleep(1)
 sa = d.open_array(x,fs)
 sf = d.open_file("test/clean.wav")
 st = d.create_tone(400,fs)

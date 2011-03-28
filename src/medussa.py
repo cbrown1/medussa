@@ -986,8 +986,7 @@ class FiniteStream(Stream):
             raise RuntimeError("Bad argument to `units`")
 
     def stop(self):
-        #super(FiniteStream, self).stop()
-        self.stop()
+        super(FiniteStream, self).stop()
         self.cursor = 0
 
 class ArrayStream(FiniteStream):
