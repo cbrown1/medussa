@@ -6,8 +6,8 @@ import sys
 from medussa.sndfile import formats
 
 fs = 44100.0
-#x,fs = medussa.read_file("test/clean.wav")
-x,fs = medussa.read_file("test/speech-noise-tone.wav")
+x,fs = medussa.read_file("test/clean.wav")
+#x,fs = medussa.read_file("test/speech-noise-tone.wav")
 
 #y = medussa.write_wav("test/clean2.wav", x, fs, bits='u8')
 #y = medussa.write_ogg("test/clean2.ogg", x, fs)

@@ -556,6 +556,7 @@ class Stream(object):
         """
         if (self.stream_ptr == None):
             self.open()
+        self.pause()
         if not self.is_playing():
             self.start()
 
@@ -985,7 +986,8 @@ class FiniteStream(Stream):
             raise RuntimeError("Bad argument to `units`")
 
     def stop(self):
-        super(Stream, self).stop()
+        #super(FiniteStream, self).stop()
+        self.stop()
         self.cursor = 0
 
 class ArrayStream(FiniteStream):
