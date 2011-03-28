@@ -19,7 +19,6 @@ import os
 import numpy as np
 import atexit
 import inspect
-import platform
 import weakref
 
 pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
