@@ -1175,14 +1175,21 @@ class SndfileStream(FiniteStream):
 
     @property
     def file_name(self):
-        return self._file_name
+        if pyver_major == '3':
+            return self._file_name.decode('utf-8')
+        else:
+            return self._file_name
 
     @file_name.setter
     def file_name(self, val):
         # Only permit assignment to file_name attribute if we are in `__init__`
         if inspect.stack()[1][3] == "__init__":
-            self.sndfile_user_data.file_name = c_char_p(val)
-            self._file_name = val
+            if pyver_major == '3':
+                self.sndfile_user_data.file_name = c_char_p(bytes(val, 'utf-8'))
+                self._file_name = bytes(val, 'utf-8')
+            else:
+                self.sndfile_user_data.file_name = c_char_p(val)
+                self._file_name = val
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
@@ -1240,9 +1247,14 @@ class SndfileStream(FiniteStream):
         # Initialize this class' attributes
         self.file_name = file_name
         self.finfo = SF_INFO(0,0,0,0,0,0)
-        self.fin = csndfile.sf_open(file_name,
-                                            SFM_READ,
-                                            byref(self.finfo))
+        if pyver_major == '3':
+            self.fin = csndfile.sf_open(bytes(file_name, 'utf-8'),
+                                        SFM_READ,
+                                        byref(self.finfo))
+        else:
+            self.fin = csndfile.sf_open(file_name,
+                                        SFM_READ,
+                                        byref(self.finfo))
 
         # set sampling frequency
         self.fs = self.finfo.samplerate
