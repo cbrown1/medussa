@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <PythonRoot26>C:\Python26</PythonRoot26>
+    <PythonRoot27>C:\Python27</PythonRoot27>
+    <PythonRoot31>C:\Python31</PythonRoot31>
+    <PythonRoot32>C:\Python32</PythonRoot32>
+    <PythonRoot>$(PythonRoot27)</PythonRoot>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="PythonRoot26">
+      <Value>$(PythonRoot26)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonRoot27">
+      <Value>$(PythonRoot27)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonRoot31">
+      <Value>$(PythonRoot31)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonRoot32">
+      <Value>$(PythonRoot32)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonRoot">
+      <Value>$(PythonRoot)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
