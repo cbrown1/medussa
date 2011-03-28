@@ -28,6 +28,8 @@ sw = d.create_white(fs)
 sp = d.create_pink(fs)
 sp2 = dd.create_pink(fs)
 
+medussa.write_wav('test/clean2.wav', x, fs)
+
 
 def sweep_right(s, delta=0.001, steps=500):
     s.play()

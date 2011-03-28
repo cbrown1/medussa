@@ -1637,11 +1637,18 @@ def write_file(file_name, arr, fs,
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
 
-    frames_written = cmedussa.writefile_helper(file_name,
-                                               byref(finfo),
-                                               _arr,
-                                               format,
-                                               frames)
+    if pyver_major == '3':
+        frames_written = cmedussa.writefile_helper(bytes(file_name, 'utf-8'),
+                                                   byref(finfo),
+                                                   _arr,
+                                                   format,
+                                                   frames)
+    else:
+        frames_written = cmedussa.writefile_helper(file_name,
+                                                   byref(finfo),
+                                                   _arr,
+                                                   format,
+                                                   frames)
 
     return frames_written
 
