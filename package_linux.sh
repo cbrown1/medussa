@@ -1,8 +1,10 @@
 #!/bin/bash
 
+set -e
+
 # deb-specific variables. Set as needed
 architecture="i386"; #"all"; #"i386"; #'amd64'
-dependencies=", libportaudio2, libsndfile1" # Use '' for none. prepend each with a comma.
+dependencies=", libportaudio2, libsndfile1, python-numpy" # Use '' for none. prepend each with a comma.
 section='python';  # Most python packages seem to go here
 
 pyver=$1
@@ -22,10 +24,10 @@ pybin="python${pyver}";
 ver=$(${pybin} setup.py --version);
 package=$(${pybin} setup.py --name);
 required="${pybin} (>=${pyver})${dependencies}"
-req=$(${pybin} setup.py --requires);    # Look for python-specific requires
-if [ -n "$req" ]; then                  # prepend with 'python-' and add to list
-	required=$(echo "${required}, python-${req}" | sed -n '1h;2,$H;${g;s/\n/, python-/g;p}');
-fi
+#req=$(${pybin} setup.py --requires);    # Look for python-specific requires
+#if [ -n "$req" ]; then                  # prepend with 'python-' and add to list
+#	required=$(echo "${required}, python-${req}" | sed -n '1h;2,$H;${g;s/\n/, python-/g;p}');
+#fi
 author=$(${pybin} setup.py --author);
 authoremail=$(${pybin} setup.py --author-email);
 maintainer=$(${pybin} setup.py --maintainer);
@@ -37,23 +39,27 @@ description=$(echo -e "${sdescription}\n${ldescription}"); # Add url to end of d
 if [ "$url" != "UNKNOWN" ]; then
 	description=$(echo -e "${description}\n .\n ${url}");
 fi
+
+base="${section}-${package}_${ver}_py${pyver}_${architecture}"
+debname="${base}.deb"
+rpmname="${base}.rpm"
+
 # Clean
-rm -r build
+#rm -r build
 #rm ./docs/*~
 ${pybin} setup.py clean
 
 # Build
 ${pybin} setup.py build
 
-####
-## Make rpm
+##
+# Create rpm [broken]
 #TODO: Add the custom description
-rm -r ./dist/py${pyver}
-mkdir ./dist/py${pyver}
-sudo ${pybin} setup.py bdist_rpm --fix-python --force-arch="i386" --group="python" --binary-only --dist-dir="./dist/py${pyver}"
+#${pybin} setup.py bdist_rpm --fix-python --force-arch=${architecture} --group="python" --binary-only --dist-dir="./dist/${rpmname}"
+
 
 ####
-## Make deb
+## Create deb
 
 # Fake install
 ${pybin} setup.py install --root dist/deb
@@ -93,18 +99,14 @@ cd ..
 #mkdir -p deb/usr/share/doc/$package
 #cp ../docs/* deb/usr/share/doc/$package
 
-#python setup.py bdist_rpm --python ${pybin} --force-arch=${architecture} --binary-only --dist-dir=dist/rpm
+dpkg-deb -b deb ${debname}
 
-# Make deb package
-deb="${section}-${package}_${ver}_py${pyver}_${architecture}.deb"
-dpkg-deb -b deb ${deb}
-
-rm -r deb
+#rm -r deb
 cd ..
 
 # Clean
-rm -r build
-rm -r ${package}.egg-info
+#rm -r build
+#rm -r ${package}.egg-info
 
 # Make source & egg distributions
 #python setup.py sdist --formats zip,gztar
