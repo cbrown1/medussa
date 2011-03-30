@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 pyver=$1
 if [ "$pyver" == "" ]; then
 	echo "Usage: reinstall_linux.sh pyver # where pyver ~= 2.7";
