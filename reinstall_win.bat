@@ -5,7 +5,6 @@ if %ver%.==. goto NoArg
 set maj=%ver:~0,-2%
 set min=%ver:~2%
 
-
 REM uninstalling
 msiexec /uninstall dist\medussa-1.0.win32-py%ver%.msi /qn
 
