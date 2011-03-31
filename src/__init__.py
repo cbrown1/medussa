@@ -3,7 +3,7 @@
 import platform
 pyver = platform.python_version_tuple()[0]
 if pyver == "2":
-    from medussa import (play_arr, play_file, cmedussa,
+    from medussa import (play_array, play_file, cmedussa,
                         Device, Stream, FiniteStream,
                         ToneStream, WhiteStream, PinkStream,
                         ArrayStream, SndfileStream, generate_hostapi_info,
@@ -14,7 +14,7 @@ if pyver == "2":
                         device_instances, stream_instances)
     from portaudio import pa, ERROR_CHECK
 else:
-    from .medussa import (play_arr, play_file, cmedussa,
+    from .medussa import (play_array, play_file, cmedussa,
                         Device, Stream, FiniteStream,
                         ToneStream, WhiteStream, PinkStream,
                         ArrayStream, SndfileStream, generate_hostapi_info,

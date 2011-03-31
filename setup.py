@@ -44,7 +44,7 @@ setup(name=docs.package_name,
 	keywords = docs.keywords,
 	license = docs.license,
 	platforms = docs.platforms,
-	long_description=docs.long_description,
+	long_description = "%s%s" % (docs.long_description, docs.url),
 	classifiers=[
 		"License :: OSI Approved :: GNU General Public License (GPL)",
 		"Programming Language :: Python",
