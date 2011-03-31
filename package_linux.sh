@@ -4,7 +4,7 @@ set -e
 
 # deb-specific variables. Set as needed
 architecture="i386"; #"all"; #"i386"; #'amd64'
-dependencies=", libportaudio2, libsndfile1, python-numpy" # Use '' for none. prepend each with a comma.
+dependencies="libportaudio2, libsndfile1, python-numpy (>= 1.2)" # Use '' for none. delimit with a comma.
 section='python';  # Most python packages seem to go here
 
 pyver=$1
@@ -23,7 +23,7 @@ pybin="python${pyver}";
 # Get metadata
 ver=$(${pybin} setup.py --version);
 package=$(${pybin} setup.py --name);
-required="${pybin} (>=${pyver})${dependencies}"
+required="${pybin} (= ${pyver}), ${dependencies}"
 #req=$(${pybin} setup.py --requires);    # Look for python-specific requires
 #if [ -n "$req" ]; then                  # prepend with 'python-' and add to list
 #	required=$(echo "${required}, python-${req}" | sed -n '1h;2,$H;${g;s/\n/, python-/g;p}');
@@ -35,9 +35,9 @@ maintaineremail=$(${pybin} setup.py --maintainer-email);
 sdescription=$(${pybin} setup.py --description);      # Build deb description from py short desc
 ldescription=$(${pybin} setup.py --long-description); # and py long desc
 url=$(${pybin} setup.py --url);
-description=$(echo -e "${sdescription}\n${ldescription}"); # Add url to end of desc if present
+description=$(echo -e "${ldescription}"); # Add url to end of desc if present
 if [ "$url" != "UNKNOWN" ]; then
-	description=$(echo -e "${description}\n .\n ${url}");
+    description=$(echo -e "${description}\n .\n ${url}");
 fi
 
 base="${section}-${package}_${ver}_py${pyver}_${architecture}"
@@ -101,7 +101,7 @@ cd ..
 
 dpkg-deb -b deb ${debname}
 
-#rm -r deb
+rm -r deb
 cd ..
 
 # Clean

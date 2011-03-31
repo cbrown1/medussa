@@ -26,9 +26,10 @@ else:
     from .portaudio import pa, ERROR_CHECK
 
 import docs
-__doc__ = "%s%s" % (docs.long_description, docs.members)
+__doc__ = "%s\n\n%s" % (docs.long_description, docs.members)
 __package_name__ = docs.package_name
 __version__ = docs.version
+__description__ = docs.short_description
 __author__ = docs.author
 __author_email__ = docs.author_email
 __url__ = docs.url
