@@ -209,6 +209,11 @@ class Device(object):
     out_index
         The index of the output device, as reported by Port Audio.
 
+    Notes
+    -----
+    There is currently no support for recording. We plan to add this feature
+    in a future release.
+
     """
 
     _instances = set()
@@ -330,7 +335,7 @@ class Device(object):
         -------
         s : Stream object
             The stream object.
-            
+
         """
         if fs is None:
             fs = self.out_device_info.defaultSampleRate
@@ -350,7 +355,7 @@ class Device(object):
         -------
         s : Stream object
             The stream object.
-            
+
         """
         if fs is None:
             fs = self.out_device_info.defaultSampleRate
@@ -370,7 +375,7 @@ class Device(object):
         -------
         s : Stream object
             The stream object.
-            
+
         """
         if fs is None:
             fs = self.out_device_info.defaultSampleRate
@@ -392,7 +397,7 @@ class Device(object):
         -------
         s : Stream object
             The stream object.
-            
+
         """
         s = ArrayStream(self, fs, None, arr)
         return s
@@ -410,7 +415,7 @@ class Device(object):
         -------
         s : Stream object
             The stream object.
-            
+
         """
         s = SndfileStream(self, None, file_name)
         return s
@@ -601,7 +606,7 @@ class Stream(object):
 
 class ToneStream(Stream):
     """
-    Stream object representing a pure tone.
+    Medussa stream object representing a pure tone.
 
     Methods
     -------
@@ -631,7 +636,7 @@ class ToneStream(Stream):
         dev.out_channels. The values of the mix_mat are floats between 0.
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
-        
+
     """
     _instances = set()
 
@@ -706,7 +711,7 @@ class ToneStream(Stream):
 
 class WhiteStream(Stream):
     """
-    Stream object representing Gaussian white noise, which has a flat spectrum.
+    Medussa stream object representing Gaussian white noise, which has a flat spectrum.
 
     Methods
     -------
@@ -734,7 +739,7 @@ class WhiteStream(Stream):
         dev.out_channels. The values of the mix_mat are floats between 0.
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
-        
+
     """
     _instances = set()
 
@@ -805,7 +810,7 @@ class WhiteStream(Stream):
 
 class PinkStream(Stream):
     """
-    Stream object representing pink noise, which has equal energy per octave.
+    Medussa stream object representing pink noise, which has equal energy per octave.
 
     Methods
     -------
@@ -833,7 +838,7 @@ class PinkStream(Stream):
         dev.out_channels. The values of the mix_mat are floats between 0.
         and 1., and are used to specify the playback level of each source
         channel on each output channel.
-        
+
     """
     _instances = set()
 
@@ -965,7 +970,7 @@ class FiniteStream(Stream):
         pos : numeric
             The current position of the cursor. This value is returned only
             if no input `pos` is specified.
-            
+
         """
         if pos == None:
             if units == "ms":
@@ -998,7 +1003,7 @@ class FiniteStream(Stream):
 
 class ArrayStream(FiniteStream):
     """
-    Stream object representing a NumPy array.
+    Medussa stream object representing a NumPy array.
 
     You can use medussa.read_file to load soundfiles into NumPy arrays.
 
@@ -1126,7 +1131,7 @@ class ArrayStream(FiniteStream):
 
 class SndfileStream(FiniteStream):
     """
-    Stream object representing a sound file on disk.
+    Medussa stream object representing a sound file on disk.
 
     Methods
     -------
@@ -1163,7 +1168,7 @@ class SndfileStream(FiniteStream):
         The number of frames (samples per source channel).
     file_name
         The path to the sound file.
-    
+
     Notes
     -----
     The audio data are not loaded into memory, but rather are streamed from
@@ -1350,7 +1355,7 @@ def get_available_devices(hostapi=None, verbose=False):
     -------
     devices : list
         The list of devices.
-        
+
     """
     # If necessary, wrap `hostapi` in a list so it is iterable
     if isinstance(hostapi, str):
@@ -1386,7 +1391,7 @@ def print_available_devices(hostapi=None, verbose=False):
     Returns
     -------
     None
-    
+
     """
     devices = get_available_devices(hostapi, verbose)
 
@@ -1447,7 +1452,7 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     -------
     d : Device object
         Object representing the specified devices.
-        
+
     """
     if out_device_index == None:
         out_device_index = pa.Pa_GetDefaultOutputDevice()
@@ -1495,7 +1500,7 @@ def start_streams(streams, open_streams=False, normalize=False):
     Returns
     -------
     None
-    
+
     """
     if open_streams:
         [s.open() for s in streams]
@@ -1546,7 +1551,7 @@ def play_array(arr, fs, channel=1):
     Returns
     -------
     None
-    
+
     """
     d = open_device()
     s = d.open_array(arr, fs)
@@ -1567,12 +1572,12 @@ def play_file(file_name):
     Returns
     -------
     None
-    
+
     Notes
     -----
     Use with care! Long soundfiles will cause the interpreter to lock for a
     correspondingly long time!
-    
+
     """
     d = open_device()
     s = d.open_file(file_name)
@@ -1592,13 +1597,13 @@ def read_file(file_name):
     Returns
     -------
     (arr, fs) : (ndarray, float)
-    
+
     Notes
     -----
-    The file IO functions in Medussa are intended to be extremely light 
-    wrappers to libsndfile, and not a full python implementation of its API. 
-    For that, you want scikits.audiolab. 
-    
+    The file IO functions in Medussa are intended to be extremely light
+    wrappers to libsndfile, and not a full python implementation of its API.
+    For that, you want scikits.audiolab.
+
     """
     finfo = SF_INFO(0,0,0,0,0,0)
     #fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
@@ -1648,13 +1653,13 @@ def write_file(file_name, arr, fs,
     -------
     frames_written : int
         The number of frames that were written to the file.
-    
+
     Notes
     -----
-    The file IO functions in Medussa are intended to be extremely light 
-    wrappers to libsndfile, and not a full python implementation of its API. 
-    For that, you want scikits.audiolab. 
-    
+    The file IO functions in Medussa are intended to be extremely light
+    wrappers to libsndfile, and not a full python implementation of its API.
+    For that, you want scikits.audiolab.
+
     """
     if not arr.dtype == np.dtype('double'):
         raise TypeError('Array must have `double` dtype.')
@@ -1709,13 +1714,13 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
     -------
     frames_written : int
         The number of frames that were written to the file.
-    
+
     Notes
     -----
-    The file IO functions in Medussa are intended to be extremely light 
-    wrappers to libsndfile, and not a full python implementation of its API. 
-    For that, you want scikits.audiolab. 
-    
+    The file IO functions in Medussa are intended to be extremely light
+    wrappers to libsndfile, and not a full python implementation of its API.
+    For that, you want scikits.audiolab.
+
     """
     majformat = formats.SF_FORMAT_WAV[0]
 
@@ -1756,13 +1761,13 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
     -------
     frames_written : int
         The number of frames that were written to the file.
-    
+
     Notes
     -----
-    The file IO functions in Medussa are intended to be extremely light 
-    wrappers to libsndfile, and not a full python implementation of its API. 
-    For that, you want scikits.audiolab. 
-    
+    The file IO functions in Medussa are intended to be extremely light
+    wrappers to libsndfile, and not a full python implementation of its API.
+    For that, you want scikits.audiolab.
+
     """
     majformat = formats.SF_FORMAT_FLAC[0]
 
@@ -1801,11 +1806,11 @@ def write_ogg(file_name, arr, fs, frames=None):
     Notes
     -----
     Bit depth is not specified with the Vorbis format, but rather is variable.
-    
-    The file IO functions in Medussa are intended to be extremely light 
-    wrappers to libsndfile, and not a full python implementation of its API. 
-    For that, you want scikits.audiolab. 
-    
+
+    The file IO functions in Medussa are intended to be extremely light
+    wrappers to libsndfile, and not a full python implementation of its API.
+    For that, you want scikits.audiolab.
+
     """
     majformat = formats.SF_FORMAT_OGG[0]
 

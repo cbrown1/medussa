@@ -12,6 +12,8 @@ if pyver == "2":
                         terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
                         device_instances, stream_instances)
+    from docs import (package_name, version, url, author, author_email,
+                        members, short_description, long_description)
     from portaudio import pa, ERROR_CHECK
 else:
     from .medussa import (play_array, play_file, cmedussa,
@@ -23,16 +25,17 @@ else:
                         terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
                         device_instances, stream_instances)
+    from .docs import (package_name, version, url, author, author_email,
+                        members, short_description, long_description)
     from .portaudio import pa, ERROR_CHECK
 
-import docs
-__doc__ = "%s\n\n%s" % (docs.long_description, docs.members)
-__package_name__ = docs.package_name
-__version__ = docs.version
-__description__ = docs.short_description
-__author__ = docs.author
-__author_email__ = docs.author_email
-__url__ = docs.url
+__doc__ = "%s\n\n%s" % (long_description, members)
+__package_name__ = package_name
+__version__ = version
+__description__ = short_description
+__author__ = author
+__author_email__ = author_email
+__url__ = url
 __pa_version__ = "%s, Release %d" % (pa.Pa_GetVersionText(), pa.Pa_GetVersion())
 
 err = pa.Pa_Initialize()

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 package_name = "medussa"
 version = "1.0"
 author = "Christopher A. Brown, Joseph K. Ranweiler"
@@ -7,7 +8,7 @@ author_email = "c-b /at/ asu.edu"
 maintainer = 'Christopher Brown'
 maintainer_email = 'c-b /at/ asu.edu'
 url = "http://www.medussa.us"
-keywords = 'sound audio wavplay'
+keywords = 'sound audio signal wavplay'
 license = 'GPL'
 platforms = 'Win32, Linux'
 short_description = "Medussa: A cross-platform high-level audio library for Python"
@@ -52,5 +53,32 @@ members = """\
     The Medussa library version.
  __pa_version__
     The Port Audio library version.
+
+ Notes
+ -----
+ We have had some trouble with Port Audio on linux with respect to audio
+ devices. There are two potential problems we are aware of.
+
+ The first one has to do with the default audio device. We had been using
+ the function Pa_GetDefaultOutputDevice when needed, but we experience
+ mixer trouble on several machines we tested. We finally realized that that
+ function was always returning the device whose index is 0, which is not
+ always the system default device. So Medussa look for a device whose name
+ is 'default' and use that, otherwise, use 0. The bottom line is that if you
+ have trouble playing streams on the default device, look at what others are
+ available, and try some. You might have better results with another one.
+
+ The second problem is with the number of output channels, which is not
+ always reported accurately by Port Audio. This seems to occur most
+ frequently with the default device, although we have not confirmed this.
+ On several machines we have tested, the maximum number of output channels
+ is reported to be 32, or sometimes 128, when the actual value is 2. Thus,
+ because we cannot trust this value, we have decided to set the device
+ property out_channels to 2 (always), but we have made it settable, so
+ if your device actually has more than 2 channels, you can set it. But
+ again, you will have to do this manually.
+
+ As of this release, there is no support for recording. We plan to add this
+ in a future release.
 
 """
