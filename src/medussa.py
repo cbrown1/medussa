@@ -10,12 +10,12 @@ import platform
 pyver_major = platform.python_version_tuple()[0]
 if pyver_major == "2":
     from portaudio import *
-    from sndfile import SF_INFO, csndfile, SFM_READ, formats
+    from sndfile import SF_INFO, csndfile, SFM_READ, sf_formats, sf_format_descriptions
     from pink import Pink_noise_t
     from rkit import Rk_state
 else:
     from .portaudio import *
-    from .sndfile import SF_INFO, csndfile, SFM_READ, formats
+    from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats, sf_format_descriptions
     from .pink import Pink_noise_t
     from .rkit import Rk_state
     xrange = range
@@ -952,13 +952,12 @@ class FiniteStream(Stream):
         """
         Gets or sets the current playback cursor position.
 
-        If `pos` is `None`, returns the current cursor position in ms.
-        Otherwise, sets the cursor position to `pos`, in the units specified.
-
         Parameters
         ----------
         pos : numeric
-            The position to set the cursor to.
+            The cursor cursor position. If `pos` is `None`, the function
+            returns the current position. Otherwise, the current cursor
+            position will be set to `pos`.
         units : string
             The units of pos. May be of value:
             "ms": assume `pos` is of type `float` [default]
@@ -1427,8 +1426,9 @@ def print_available_devices(hostapi=None, verbose=False):
 def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     """
     Opens the specified input and output devices.
-    If no input device is specified, none will be used. If no output device
-    is specified, the default device will be used.
+    If no output device is specified, the default device will be used. If no
+    input device is specified, none will be used.
+
 
     Parameters
     ----------
@@ -1439,10 +1439,10 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
         in reporting this number, and can sometimes return values like 128.
-        This is often not a problem, but because of the way mix_mat works, it
-        is important for Medussa to have the correct value. Thus, you have 3
-        options (you can always change it later by modifying the property
-        dev.out_channels):
+        In other contexts, this is often not a problem. But because of the way
+        mix_mat works, it is important for Medussa to have the correct value.
+        Thus, you have 3 options (you can always change it later by modifying
+        the property dev.out_channels):
 
          - Don't specify out_channels. Medussa will set it to 2
          - Specify `None`. Medussa will use the PortAudio value
@@ -1470,10 +1470,14 @@ def open_default_device(out_channels=2):
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
         in reporting this number, and can sometimes return values like 128.
-        This is often not a problem, but because of the way mix_mat works, it
-        is important for Medussa to have the correct value. Thus, Medussa
-        sets out_channels to 2 by default. If your device has more
-        channels, set the value here or in dev.out_channels.
+        In other contexts, this is often not a problem. But because of the way
+        mix_mat works, it is important for Medussa to have the correct value.
+        Thus, you have 3 options (you can always change it later by modifying
+        the property dev.out_channels):
+
+         - Don't specify out_channels. Medussa will set it to 2
+         - Specify `None`. Medussa will use the PortAudio value
+         - Specify a number. Medussa will use that number
 
     Returns
     -------
@@ -1537,7 +1541,7 @@ def terminate():
     return True
 
 
-def play_array(arr, fs, channel=1):
+def play_array(arr, fs, dev=None):
     """
     Plays an array on the default device with blocking, Matlab-style.
 
@@ -1553,14 +1557,14 @@ def play_array(arr, fs, channel=1):
     None
 
     """
-    d = open_device()
+    d = open_device(dev)
     s = d.open_array(arr, fs)
     s.play()
     while s.is_playing():
         time.sleep(.01)
 
 
-def play_file(file_name):
+def play_file(file_name, dev=None):
     """
     Plays a soundfile on the default device with blocking, Matlab-style.
 
@@ -1579,7 +1583,7 @@ def play_file(file_name):
     correspondingly long time!
 
     """
-    d = open_device()
+    d = open_device(dev)
     s = d.open_file(file_name)
     s.play()
     while s.is_playing():
@@ -1631,7 +1635,7 @@ def read_file(file_name):
 
 
 def write_file(file_name, arr, fs,
-              format=(formats.SF_FORMAT_WAV[0] | formats.SF_FORMAT_PCM_16[0]),
+              format=(sf_formats.SF_FORMAT_WAV | sf_formats.SF_FORMAT_PCM_16),
               frames=None):
     """
     Writes an ndarray to a sound file with any libsndfile-compatible format.
@@ -1722,16 +1726,16 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = formats.SF_FORMAT_WAV[0]
+    majformat = sf_formats.SF_FORMAT_WAV
 
-    subformat = {8: formats.SF_FORMAT_PCM_U8[0],
-                 16: formats.SF_FORMAT_PCM_16[0],
-                 24: formats.SF_FORMAT_PCM_24[0],
-                 32: formats.SF_FORMAT_PCM_32[0],
-                 's16': formats.SF_FORMAT_PCM_16[0],
-                 's24': formats.SF_FORMAT_PCM_24[0],
-                 's32': formats.SF_FORMAT_PCM_32[0],
-                 'u8': formats.SF_FORMAT_PCM_U8[0]}
+    subformat = {8: sf_formats.SF_FORMAT_PCM_U8,
+                 16: sf_formats.SF_FORMAT_PCM_16,
+                 24: sf_formats.SF_FORMAT_PCM_24,
+                 32: sf_formats.SF_FORMAT_PCM_32,
+                 's16': sf_formats.SF_FORMAT_PCM_16,
+                 's24': sf_formats.SF_FORMAT_PCM_24,
+                 's32': sf_formats.SF_FORMAT_PCM_32,
+                 'u8': sf_formats.SF_FORMAT_PCM_U8}
 
     endformat = majformat | subformat[bits]
 
@@ -1769,14 +1773,14 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = formats.SF_FORMAT_FLAC[0]
+    majformat = sf_formats.SF_FORMAT_FLAC
 
-    subformat = {8: formats.SF_FORMAT_PCM_S8[0],
-                 16: formats.SF_FORMAT_PCM_16[0],
-                 24: formats.SF_FORMAT_PCM_24[0],
-                 's8': formats.SF_FORMAT_PCM_S8[0],
-                 's16': formats.SF_FORMAT_PCM_16[0],
-                 's24': formats.SF_FORMAT_PCM_24[0]}
+    subformat = {8: sf_formats.SF_FORMAT_PCM_S8,
+                 16: sf_formats.SF_FORMAT_PCM_16,
+                 24: sf_formats.SF_FORMAT_PCM_24,
+                 's8': sf_formats.SF_FORMAT_PCM_S8,
+                 's16': sf_formats.SF_FORMAT_PCM_16,
+                 's24': sf_formats.SF_FORMAT_PCM_24}
 
     endformat = majformat | subformat[bits]
 
@@ -1812,9 +1816,9 @@ def write_ogg(file_name, arr, fs, frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = formats.SF_FORMAT_OGG[0]
+    majformat = sf_formats.SF_FORMAT_OGG
 
-    subformat = formats.SF_FORMAT_VORBIS[0]
+    subformat = sf_formats.SF_FORMAT_VORBIS
 
     endformat = majformat | subformat
 

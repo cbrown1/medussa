@@ -9,7 +9,7 @@ if pyver == "2":
                         ArrayStream, SndfileStream, generate_hostapi_info,
                         generate_device_info, print_available_devices,
                         start_streams, open_device, open_default_device, init,
-                        terminate, read_file,
+                        sf_formats, sf_format_descriptions, terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
                         device_instances, stream_instances)
     from docs import (package_name, version, url, author, author_email,
@@ -22,7 +22,7 @@ else:
                         ArrayStream, SndfileStream, generate_hostapi_info,
                         generate_device_info, print_available_devices,
                         start_streams, open_device, open_default_device, init,
-                        terminate, read_file,
+                        sf_formats, sf_format_descriptions, terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
                         device_instances, stream_instances)
     from .docs import (package_name, version, url, author, author_email,
