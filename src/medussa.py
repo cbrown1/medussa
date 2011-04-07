@@ -1321,7 +1321,10 @@ def get_default_output_device_index():
         return pa.Pa_GetDefaultOutputDevice()
     else:
         i,d = devices[0]
-        return i
+        if d.maxOutputChannels > 0:
+            return i
+        else:
+            return pa.Pa_GetDefaultOutputDevice()
 
 
 def get_default_input_device_index():
