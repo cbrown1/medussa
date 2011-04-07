@@ -3,7 +3,6 @@ import numpy as np
 from time import sleep
 import sys
 
-from medussa.sndfile import formats
 
 fs = 44100.0
 x,fs = medussa.read_file("test/clean.wav")

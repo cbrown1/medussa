@@ -11,7 +11,9 @@ if pyver == "2":
                         start_streams, open_device, open_default_device, init,
                         sf_formats, sf_format_descriptions, terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
-                        device_instances, stream_instances)
+                        device_instances, stream_instances,
+                        get_default_output_device_index,
+                        get_default_input_device_index)
     from docs import (package_name, version, url, author, author_email,
                         members, short_description, long_description)
     from portaudio import pa, ERROR_CHECK
@@ -24,7 +26,9 @@ else:
                         start_streams, open_device, open_default_device, init,
                         sf_formats, sf_format_descriptions, terminate, read_file,
                         write_file, write_wav, write_flac, write_ogg,
-                        device_instances, stream_instances)
+                        device_instances, stream_instances,
+                        get_default_output_device_index,
+                        get_default_input_device_index)
     from .docs import (package_name, version, url, author, author_email,
                         members, short_description, long_description)
     from .portaudio import pa, ERROR_CHECK

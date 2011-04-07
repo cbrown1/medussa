@@ -564,8 +564,7 @@ class Stream(object):
         """
         if (self.stream_ptr == None):
             self.open()
-        self.pause()
-        if not self.is_playing():
+        if not self.is_playing():# or pa.Pa_IsStreamStopped(self.stream_ptr):
             self.start()
 
     def pause(self):
@@ -1315,6 +1314,28 @@ class SndfileStream(FiniteStream):
         #pa.Pa_CloseStream(self.stream_ptr)
         csndfile.sf_close(c_void_p(self.fin))
 
+
+def get_default_output_device_index():
+    devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
+    if devices == []:
+        return pa.Pa_GetDefaultOutputDevice()
+    else:
+        i,d = devices[0]
+        return i
+
+
+def get_default_input_device_index():
+    devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
+    if devices == []:
+        return pa.Pa_GetDefaultInputDevice()
+    else:
+        i,d = devices[0]
+        if d.maxInputChannels > 0:
+            return i
+        else:
+            return pa.Pa_GetDefaultInputDevice()
+
+
 def generate_hostapi_info():
     HostApiInfoPointer = POINTER(PaHostApiInfo)
     api_count = pa.Pa_GetHostApiCount()
@@ -1455,7 +1476,7 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
 
     """
     if out_device_index == None:
-        out_device_index = pa.Pa_GetDefaultOutputDevice()
+        out_device_index = get_default_output_device_index()
 
     d = Device(in_device_index, out_device_index, out_channels)
     return d
@@ -1485,8 +1506,8 @@ def open_default_device(out_channels=2):
         Object representing the specified devices.
 
     """
-    out_di = pa.Pa_GetDefaultOutputDevice()
-    in_di = pa.Pa_GetDefaultInputDevice()
+    out_di = get_default_output_device_index()
+    in_di = pet_default_input_device_index()
 
     d = Device(in_di, out_di, out_channels)
     return d
