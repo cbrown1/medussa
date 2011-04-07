@@ -564,7 +564,7 @@ class Stream(object):
         """
         if (self.stream_ptr == None):
             self.open()
-        if not self.is_playing():# or pa.Pa_IsStreamStopped(self.stream_ptr):
+        if not self.is_playing():
             self.start()
 
     def pause(self):
@@ -939,6 +939,31 @@ class FiniteStream(Stream):
     @duration.setter
     def duration(self, val):
         self.finite_user_data.duration = val
+
+    def stop(self):
+        """
+        Stops playback of the stream (Playback cursor is reset to zero).
+        """
+        if pa.Pa_IsStreamStopped(self.stream_ptr):
+            self.cursor = 0
+            return
+        else:
+            err = pa.Pa_StopStream(self.stream_ptr)
+            self.cursor = 0
+            ERROR_CHECK(err)
+
+    def play(self):
+        """
+        Starts playback of the stream.
+        """
+        if (self.stream_ptr == None):
+            self.open()
+        if not self.is_playing():
+            if self.cursor == 0 and not pa.Pa_IsStreamStopped(self.stream_ptr):
+                pa.Pa_StopStream(self.stream_ptr)
+                self.start()
+            else:
+                self.start()
 
     def __init__(self):
         super(FiniteStream, self).__init__()
