@@ -1,0 +1,83 @@
+﻿Build started 9/7/2010 1:48:05 PM.
+Project "C:\dev\builds\portaudio\build\msvc10\portaudio.vcxproj" on node 2 (rebuild target(s)).
+_PrepareForClean:
+  Deleting file "Win32\Release\portaudio.lastbuildstate".
+InitializeBuildStatus:
+  Creating "Win32\Release\portaudio.unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I..\..\src\common /I..\..\include /I.\ /I..\..\src\os\win /Zi /nologo /W3 /WX- /O2 /Ob1 /Oy /D WIN32 /D NDEBUG /D _USRDLL /D PA_ENABLE_DEBUG_OUTPUT /D _CRT_SECURE_NO_DEPRECATE /D PAWIN_USE_WDMKS_DEVICE_INFO /D PA_ASIO /D _VC80_UPGRADE=0x0600 /D _WINDLL /GF /Gm- /EHsc /MT /GS /Gy /fp:fast /Zc:wchar_t /Zc:forScope /Fo"Win32\Release\\" /Fd"Win32\Release\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\src\common\pa_allocation.c ..\..\src\common\pa_converters.c ..\..\src\common\pa_cpuload.c ..\..\src\common\pa_debugprint.c ..\..\src\common\pa_dither.c ..\..\src\common\pa_front.c ..\..\src\common\pa_process.c ..\..\src\common\pa_skeleton.c ..\..\src\common\pa_stream.c ..\..\src\common\pa_trace.c ..\..\src\hostapi\dsound\pa_win_ds.c ..\..\src\hostapi\dsound\pa_win_ds_dynlink.c ..\..\src\hostapi\wmme\pa_win_wmme.c ..\..\src\os\win\pa_win_hostapis.c ..\..\src\os\win\pa_win_util.c ..\..\src\os\win\pa_win_waveformat.c ..\..\src\os\win\pa_win_wdmks_utils.c ..\..\src\os\win\pa_x86_plain_converters.c
+  pa_allocation.c
+  pa_converters.c
+  pa_cpuload.c
+  pa_debugprint.c
+  pa_dither.c
+  pa_front.c
+  pa_process.c
+  pa_skeleton.c
+  pa_stream.c
+  pa_trace.c
+  pa_win_ds.c
+  pa_win_ds_dynlink.c
+  pa_win_wmme.c
+  pa_win_hostapis.c
+  pa_win_util.c
+  pa_win_waveformat.c
+  pa_win_wdmks_utils.c
+..\..\src\os\win\pa_win_wdmks_utils.c(219): warning C4018: '<' : signed/unsigned mismatch
+  pa_x86_plain_converters.c
+  Generating Code...
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I..\..\src\hostapi\asio\ASIOSDK\host /I..\..\src\hostapi\asio\ASIOSDK\host\pc /I..\..\src\hostapi\asio\ASIOSDK\common /I..\..\src\common /I..\..\include /I.\ /I..\..\src\os\win /Zi /nologo /W3 /WX- /O2 /Ob1 /Oy /D WIN32 /D NDEBUG /D _USRDLL /D PA_ENABLE_DEBUG_OUTPUT /D _CRT_SECURE_NO_DEPRECATE /D PAWIN_USE_WDMKS_DEVICE_INFO /D PA_ASIO /D _VC80_UPGRADE=0x0600 /D _WINDLL /GF /Gm- /EHsc /MT /GS /Gy /fp:fast /Zc:wchar_t /Zc:forScope /Fo"Win32\Release\\" /Fd"Win32\Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\src\hostapi\asio\pa_asio.cpp ..\..\src\hostapi\asio\ASIOSDK\common\asio.cpp ..\..\src\hostapi\asio\ASIOSDK\host\ASIOConvertSamples.cpp ..\..\src\hostapi\asio\ASIOSDK\host\asiodrivers.cpp ..\..\src\hostapi\asio\ASIOSDK\host\pc\asiolist.cpp ..\..\src\hostapi\asio\ASIOSDK\common\combase.cpp ..\..\src\hostapi\asio\ASIOSDK\common\debugmessage.cpp ..\..\src\hostapi\asio\ASIOSDK\common\register.cpp
+  pa_asio.cpp
+  asio.cpp
+  ASIOConvertSamples.cpp
+  asiodrivers.cpp
+  asiolist.cpp
+  combase.cpp
+  debugmessage.cpp
+  register.cpp
+  Generating Code...
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I..\..\src\common /I..\..\include /I.\ /I..\..\src\os\win /Zi /nologo /W3 /WX- /O2 /Ob1 /Oy /D WIN32 /D NDEBUG /D _USRDLL /D PA_ENABLE_DEBUG_OUTPUT /D _CRT_SECURE_NO_DEPRECATE /D PAWIN_USE_WDMKS_DEVICE_INFO /D PA_ASIO /D _VC80_UPGRADE=0x0600 /D _WINDLL /GF /Gm- /EHsc /MT /GS /Gy /fp:fast /Zc:wchar_t /Zc:forScope /Fo"Win32\Release\\" /Fd"Win32\Release\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\src\hostapi\wasapi\pa_win_wasapi.cpp
+  pa_win_wasapi.cpp
+..\..\src\hostapi\wasapi\pa_win_wasapi.cpp(514): warning C4995: 'sprintf': name was marked as #pragma deprecated
+C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\Microsoft.CppBuild.targets(990,5): warning MSB8012: TargetPath(C:\dev\builds\portaudio\build\msvc10\Win32\Release\portaudio.dll) does not match the Linker's OutputFile property value (C:\dev\builds\portaudio\build\msvc10\Win32\Release\portaudio_x86.dll). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\Microsoft.CppBuild.targets(992,5): warning MSB8012: TargetName(portaudio) does not match the Linker's OutputFile property value (portaudio_x86). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+Link:
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"Win32\Release\portaudio_x86.dll" /INCREMENTAL:NO /NOLOGO ksuser.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:".\portaudio.def" /MANIFEST /ManifestFile:"Win32\Release\portaudio.dll.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /PDB:"Win32\Release\portaudio_x86.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"Win32\Release\portaudio_x86.lib" /MACHINE:X86 /DLL Win32\Release\pa_allocation.obj
+  Win32\Release\pa_converters.obj
+  Win32\Release\pa_cpuload.obj
+  Win32\Release\pa_debugprint.obj
+  Win32\Release\pa_dither.obj
+  Win32\Release\pa_front.obj
+  Win32\Release\pa_process.obj
+  Win32\Release\pa_skeleton.obj
+  Win32\Release\pa_stream.obj
+  Win32\Release\pa_trace.obj
+  Win32\Release\pa_asio.obj
+  Win32\Release\asio.obj
+  Win32\Release\ASIOConvertSamples.obj
+  Win32\Release\asiodrivers.obj
+  Win32\Release\asiolist.obj
+  Win32\Release\combase.obj
+  Win32\Release\debugmessage.obj
+  Win32\Release\register.obj
+  Win32\Release\pa_win_ds.obj
+  Win32\Release\pa_win_ds_dynlink.obj
+  Win32\Release\pa_win_wmme.obj
+  Win32\Release\pa_win_wasapi.obj
+  Win32\Release\pa_win_hostapis.obj
+  Win32\Release\pa_win_util.obj
+  Win32\Release\pa_win_waveformat.obj
+  Win32\Release\pa_win_wdmks_utils.obj
+  Win32\Release\pa_x86_plain_converters.obj
+     Creating library Win32\Release\portaudio_x86.lib and object Win32\Release\portaudio_x86.exp
+  portaudio.vcxproj -> C:\dev\builds\portaudio\build\msvc10\Win32\Release\portaudio.dll
+Manifest:
+  c:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"Win32\Release\portaudio_x86.dll;#2" /manifest Win32\Release\portaudio.dll.intermediate.manifest
+FinalizeBuildStatus:
+  Deleting file "Win32\Release\portaudio.unsuccessfulbuild".
+  Touching "Win32\Release\portaudio.lastbuildstate".
+Done Building Project "C:\dev\builds\portaudio\build\msvc10\portaudio.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:13.29
