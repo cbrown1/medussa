@@ -1,0 +1,48 @@
+﻿Build started 4/8/2011 1:50:54 AM.
+Project "C:\devel\medussa-dev\lib\build\win\msvc10\medusa.vcxproj" on node 2 (build target(s)).
+InitializeBuildStatus:
+  Creating "Release Py2.6\medussa.unsuccessfulbuild" because "AlwaysCreate" was specified.
+ClCompile:
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _WINDOWS /D _USRDLL /D MEDUSA_EXPORTS /D _WINDLL /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release Py2.6\\" /Fd"Release Py2.6\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\..\src\medussa.c ..\..\..\src\medussa_callbacks.c ..\..\..\src\medussa_matrix.c ..\..\..\src\medussa_types.c ..\..\..\src\pink.c ..\..\..\src\randomkit.c
+  medussa.c
+..\..\..\src\medussa.c(129): warning C4244: '=' : conversion from 'sf_count_t' to 'int', possible loss of data
+..\..\..\src\medussa.c(132): warning C4244: '=' : conversion from 'sf_count_t' to 'int', possible loss of data
+..\..\..\src\medussa.c(150): warning C4244: '=' : conversion from 'sf_count_t' to 'int', possible loss of data
+  medussa_callbacks.c
+..\..\..\src\medussa_callbacks.c(63): warning C4018: '<=' : signed/unsigned mismatch
+..\..\..\src\medussa_callbacks.c(83): warning C4018: '<' : signed/unsigned mismatch
+..\..\..\src\medussa_callbacks.c(278): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+..\..\..\src\medussa_callbacks.c(301): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+..\..\..\src\medussa_callbacks.c(333): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+..\..\..\src\medussa_callbacks.c(357): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+  medussa_matrix.c
+  medussa_types.c
+  pink.c
+  randomkit.c
+..\..\..\src\randomkit.c(196): warning C4996: '_ftime64': This function or variable may be unsafe. Consider using _ftime64_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\Program Files\Microsoft Visual Studio 10.0\VC\include\sys/timeb.h(124) : see declaration of '_ftime64'
+..\..\..\src\randomkit.c(197): warning C4244: 'function' : conversion from '__time64_t' to 'unsigned long', possible loss of data
+..\..\..\src\randomkit.c(221): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+..\..\..\src\randomkit.c(225): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+..\..\..\src\randomkit.c(228): warning C4146: unary minus operator applied to unsigned type, result still unsigned
+Link:
+  c:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.dll" /INCREMENTAL:NO /NOLOGO portaudio_x86.lib "libsndfile-1.lib" python26.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:"medussa.def" /MANIFEST /ManifestFile:"Release Py2.6\medussa.dll.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /PDB:"C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.pdb" /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.lib" /MACHINE:X86 /DLL "Release Py2.6\medussa.obj"
+  "Release Py2.6\medussa_callbacks.obj"
+  "Release Py2.6\medussa_matrix.obj"
+  "Release Py2.6\medussa_types.obj"
+  "Release Py2.6\pink.obj"
+  "Release Py2.6\randomkit.obj"
+     Creating library C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.lib and object C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.exp
+  Generating code
+  Finished generating code
+  medusa.vcxproj -> C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.dll
+Manifest:
+  c:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\devel\medussa-dev\lib\build\win\msvc10\Release Py2.6\medussa.dll;#2" /manifest "Release Py2.6\medussa.dll.intermediate.manifest"
+FinalizeBuildStatus:
+  Deleting file "Release Py2.6\medussa.unsuccessfulbuild".
+  Touching "Release Py2.6\medussa.lastbuildstate".
+Done Building Project "C:\devel\medussa-dev\lib\build\win\msvc10\medusa.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.42
