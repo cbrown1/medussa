@@ -199,9 +199,12 @@ class Device(object):
     Properties
     ----------
     out_channels
-        The number of output channels. Port Audio does not always set this
-        value correctly, so it is set to 2 by default. If the output device
-        actually has more channels, you can set this prior to creating streams.
+        The number of output channels to use. PortAudio is not always correct
+        in reporting this number, and can sometimes return spurious values like 
+        128. In other contexts, this is often not a problem. But because of the 
+        way mix_mat works, it is important for this value to not be too large. 
+        Thus, it is set to 2 by default. You can always change it later by 
+        modifying the property device.out_channels. 
     out_name
         The name of the output device, as reported by Port Audio.
     out_hostapi
@@ -1487,9 +1490,9 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
         Index to the desired input device.
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
-        in reporting this number, and can sometimes return values like 128.
-        In other contexts, this is often not a problem. But because of the way
-        mix_mat works, it is important for Medussa to have the correct value.
+        in reporting this number, and can sometimes return spurious values like 
+        128. In other contexts, this is often not a problem. But because of the 
+        way mix_mat works, it is important for this value to not be too large. 
         Thus, you have 3 options (you can always change it later by modifying
         the property dev.out_channels):
 
@@ -1518,9 +1521,9 @@ def open_default_device(out_channels=2):
     ----------
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
-        in reporting this number, and can sometimes return values like 128.
-        In other contexts, this is often not a problem. But because of the way
-        mix_mat works, it is important for Medussa to have the correct value.
+        in reporting this number, and can sometimes return spurious values like 
+        128. In other contexts, this is often not a problem. But because of the 
+        way mix_mat works, it is important for this value to not be too large. 
         Thus, you have 3 options (you can always change it later by modifying
         the property dev.out_channels):
 
