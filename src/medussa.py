@@ -1538,40 +1538,31 @@ def open_default_device(out_channels=2):
 
     """
     out_di = get_default_output_device_index()
-    in_di = pet_default_input_device_index()
+    in_di = get_default_input_device_index()
 
     d = Device(in_di, out_di, out_channels)
     return d
 
 
-def start_streams(streams, open_streams=False, normalize=False):
+def start_streams(*args):
     """
     Tries to start playback of specified streams as synchronously as possible.
 
     Parameters
     ----------
-    streams : list
-        List of stream objects.
+    streams : tuple
+        Tuple of stream objects.
 
     Returns
     -------
     None
 
     """
-    if open_streams:
-        [s.open() for s in streams]
+    [s.open() for s in args]
 
-    if normalize:
-        scale_factor = 1./(len(streams))
-        for i,x in enumerate(streams):
-            if isinstance(x, ArrayStream):
-                streams[i].cah.scale = scale_factor
-            elif isinstance(x, ToneStream):
-                streams[i].td.scale = scale_factor
-
-    num_streams = len(streams)
+    num_streams = len(args)
     STREAM_P_ARRAY_TYPE = c_void_p * num_streams  # custom-length type
-    stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_p for s in streams])
+    stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_ptr for s in args])
     cmedussa.start_streams(stream_p_array, c_int(num_streams))
 
 
