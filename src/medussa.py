@@ -221,6 +221,8 @@ class Device(object):
 
     _instances = set()
 
+    # [Culled from] http://effbot.org/pyfaq/how-do-i-get-a-list-of-all-instances-of-a-given-class.htm
+    # [License] http://effbot.org/zone/copyright.htm
     @classmethod
     def instances(cls):
         dead = set()
