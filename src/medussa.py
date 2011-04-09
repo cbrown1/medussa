@@ -684,7 +684,8 @@ class ToneStream(Stream):
                 out_channels = self.device.out_device_info.maxOutputChannels
             else:
                 out_channels = self.device.out_channels
-            self.mix_mat = np.ones((out_channels,1))
+            self.mix_mat = np.zeros((out_channels,1))
+            self.mix_mat[0,0] = 1.0
         else:
             self.mix_mat = mix_mat
 
@@ -782,7 +783,8 @@ class WhiteStream(Stream):
                 out_channels = self.device.out_device_info.maxOutputChannels
             else:
                 out_channels = self.device.out_channels
-            self.mix_mat = np.ones((out_channels,1))
+            self.mix_mat = np.zeros((out_channels,1))
+            self.mix_mat[0,0] = 1.0
         else:
             self.mix_mat = mix_mat
 
@@ -868,7 +870,8 @@ class PinkStream(Stream):
                 out_channels = self.device.out_device_info.maxOutputChannels
             else:
                 out_channels = self.device.out_channels
-            self.mix_mat = np.ones((out_channels,1))
+            self.mix_mat = np.zeros((out_channels,1))
+            self.mix_mat[0,0] = 1.0
         else:
             self.mix_mat = mix_mat
 
