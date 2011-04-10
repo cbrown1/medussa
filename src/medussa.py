@@ -1657,6 +1657,10 @@ def read_file(file_name):
     For that, you want scikits.audiolab.
 
     """
+
+    if not os.path.isfile(file_name):
+        raise IOError('File not found: %s' % file_name)
+
     finfo = SF_INFO(0,0,0,0,0,0)
     #fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
     if pyver_major == '3':
@@ -1715,6 +1719,8 @@ def write_file(file_name, arr, fs,
 
     Notes
     -----
+    Existing files will be over-written!
+
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
     For that, you want http://pypi.python.org/pypi/scikits.audiolab/
@@ -1776,6 +1782,8 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 
     Notes
     -----
+    Existing files will be over-written!
+
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
     For that, you want scikits.audiolab.
@@ -1823,6 +1831,8 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 
     Notes
     -----
+    Existing files will be over-written!
+
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
     For that, you want scikits.audiolab.
@@ -1864,6 +1874,8 @@ def write_ogg(file_name, arr, fs, frames=None):
 
     Notes
     -----
+    Existing files will be over-written!
+
     Bit depth is not specified with the Vorbis format, but rather is variable.
 
     The file IO functions in Medussa are intended to be extremely light
