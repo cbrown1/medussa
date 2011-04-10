@@ -1683,7 +1683,7 @@ def read_file(file_name):
 
 
 def write_file(file_name, arr, fs,
-              format=(sf_formats.SF_FORMAT_WAV | sf_formats.SF_FORMAT_PCM_16),
+              fmt=(sf_formats.SF_CONTAINER_WAV | sf_formats.SF_ENCODING_PCM_16),
               frames=None):
     """
     Writes an ndarray to a sound file with any libsndfile-compatible format.
@@ -1696,8 +1696,15 @@ def write_file(file_name, arr, fs,
         The array of data to write.
     fs : int
         The sampling frequency.
-    format : int
-        TODO: add description, and some examples
+    fmt : int
+        A bitwise-or combination of an SF_CONTAINER format and an SF_ENCODING format.
+        See http://www.mega-nerd.com/libsndfile/ for a relatively complete list of
+        which encoding formats can be used with which container formats.
+        Here are a few examples:
+            # a wav file with 16-bit signed integers (standard wav format):
+            fmt = sf_formats.SF_CONTAINER_WAV | sf_formats.SF_ENCODING_PCM_16
+            # a flac file with 24-bit integers
+            fmt = sf_formats.SF_CONTAINER_FLAC | sf_formats.SF_ENCODING_PCM_24
     frames : int
         The number of frames to write.
 
@@ -1710,7 +1717,7 @@ def write_file(file_name, arr, fs,
     -----
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
-    For that, you want scikits.audiolab.
+    For that, you want http://pypi.python.org/pypi/scikits.audiolab/
 
     """
     if not arr.dtype == np.dtype('double'):
@@ -1774,16 +1781,16 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = sf_formats.SF_FORMAT_WAV
+    majformat = sf_formats.SF_CONTAINER_WAV
 
-    subformat = {8: sf_formats.SF_FORMAT_PCM_U8,
-                 16: sf_formats.SF_FORMAT_PCM_16,
-                 24: sf_formats.SF_FORMAT_PCM_24,
-                 32: sf_formats.SF_FORMAT_PCM_32,
-                 's16': sf_formats.SF_FORMAT_PCM_16,
-                 's24': sf_formats.SF_FORMAT_PCM_24,
-                 's32': sf_formats.SF_FORMAT_PCM_32,
-                 'u8': sf_formats.SF_FORMAT_PCM_U8}
+    subformat = {8: sf_formats.SF_ENCODING_PCM_U8,
+                 16: sf_formats.SF_ENCODING_PCM_16,
+                 24: sf_formats.SF_ENCODING_PCM_24,
+                 32: sf_formats.SF_ENCODING_PCM_32,
+                 's16': sf_formats.SF_ENCODING_PCM_16,
+                 's24': sf_formats.SF_ENCODING_PCM_24,
+                 's32': sf_formats.SF_ENCODING_PCM_32,
+                 'u8': sf_formats.SF_ENCODING_PCM_U8}
 
     endformat = majformat | subformat[bits]
 
@@ -1821,14 +1828,14 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = sf_formats.SF_FORMAT_FLAC
+    majformat = sf_formats.SF_CONTAINER_FLAC
 
-    subformat = {8: sf_formats.SF_FORMAT_PCM_S8,
-                 16: sf_formats.SF_FORMAT_PCM_16,
-                 24: sf_formats.SF_FORMAT_PCM_24,
-                 's8': sf_formats.SF_FORMAT_PCM_S8,
-                 's16': sf_formats.SF_FORMAT_PCM_16,
-                 's24': sf_formats.SF_FORMAT_PCM_24}
+    subformat = {8: sf_formats.SF_ENCODING_PCM_S8,
+                 16: sf_formats.SF_ENCODING_PCM_16,
+                 24: sf_formats.SF_ENCODING_PCM_24,
+                 's8': sf_formats.SF_ENCODING_PCM_S8,
+                 's16': sf_formats.SF_ENCODING_PCM_16,
+                 's24': sf_formats.SF_ENCODING_PCM_24}
 
     endformat = majformat | subformat[bits]
 
@@ -1864,9 +1871,9 @@ def write_ogg(file_name, arr, fs, frames=None):
     For that, you want scikits.audiolab.
 
     """
-    majformat = sf_formats.SF_FORMAT_OGG
+    majformat = sf_formats.SF_CONTAINER_OGG
 
-    subformat = sf_formats.SF_FORMAT_VORBIS
+    subformat = sf_formats.SF_ENCODING_VORBIS
 
     endformat = majformat | subformat
 

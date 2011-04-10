@@ -78,65 +78,65 @@ class sndfile_formats():
 
         # Major formats.
 
-        self.SF_FORMAT_WAV          = 0x010000
-        self.SF_FORMAT_AIFF         = 0x020000
-        self.SF_FORMAT_AU           = 0x030000
-        self.SF_FORMAT_RAW          = 0x040000
-        self.SF_FORMAT_PAF          = 0x050000
-        self.SF_FORMAT_SVX          = 0x060000
-        self.SF_FORMAT_NIST         = 0x070000
-        self.SF_FORMAT_VOC          = 0x080000
-        self.SF_FORMAT_IRCAM        = 0x0A0000
-        self.SF_FORMAT_W64          = 0x0B0000
-        self.SF_FORMAT_MAT4         = 0x0C0000
-        self.SF_FORMAT_MAT5         = 0x0D0000
-        self.SF_FORMAT_PVF          = 0x0E0000
-        self.SF_FORMAT_XI           = 0x0F0000
-        self.SF_FORMAT_HTK          = 0x100000
-        self.SF_FORMAT_SDS          = 0x110000
-        self.SF_FORMAT_AVR          = 0x120000
-        self.SF_FORMAT_WAVEX        = 0x130000
-        self.SF_FORMAT_SD2          = 0x160000
-        self.SF_FORMAT_FLAC         = 0X170000
-        self.SF_FORMAT_CAF          = 0x180000
-        self.SF_FORMAT_WVE          = 0x190000
-        self.SF_FORMAT_OGG          = 0x200000
-        self.SF_FORMAT_MPC2K        = 0x210000
-        self.SF_FORMAT_RF64         = 0x220000
+        self.SF_CONTAINER_WAV          = 0x010000
+        self.SF_CONTAINER_AIFF         = 0x020000
+        self.SF_CONTAINER_AU           = 0x030000
+        self.SF_CONTAINER_RAW          = 0x040000
+        self.SF_CONTAINER_PAF          = 0x050000
+        self.SF_CONTAINER_SVX          = 0x060000
+        self.SF_CONTAINER_NIST         = 0x070000
+        self.SF_CONTAINER_VOC          = 0x080000
+        self.SF_CONTAINER_IRCAM        = 0x0A0000
+        self.SF_CONTAINER_W64          = 0x0B0000
+        self.SF_CONTAINER_MAT4         = 0x0C0000
+        self.SF_CONTAINER_MAT5         = 0x0D0000
+        self.SF_CONTAINER_PVF          = 0x0E0000
+        self.SF_CONTAINER_XI           = 0x0F0000
+        self.SF_CONTAINER_HTK          = 0x100000
+        self.SF_CONTAINER_SDS          = 0x110000
+        self.SF_CONTAINER_AVR          = 0x120000
+        self.SF_CONTAINER_WAVEX        = 0x130000
+        self.SF_CONTAINER_SD2          = 0x160000
+        self.SF_CONTAINER_FLAC         = 0X170000
+        self.SF_CONTAINER_CAF          = 0x180000
+        self.SF_CONTAINER_WVE          = 0x190000
+        self.SF_CONTAINER_OGG          = 0x200000
+        self.SF_CONTAINER_MPC2K        = 0x210000
+        self.SF_CONTAINER_RF64         = 0x220000
 
         # Subtypes from here on.
 
-        self.SF_FORMAT_PCM_S8       = 0x0001
-        self.SF_FORMAT_PCM_16       = 0x0002
-        self.SF_FORMAT_PCM_24       = 0x0003
-        self.SF_FORMAT_PCM_32       = 0x0004
+        self.SF_ENCODING_PCM_S8       = 0x0001
+        self.SF_ENCODING_PCM_16       = 0x0002
+        self.SF_ENCODING_PCM_24       = 0x0003
+        self.SF_ENCODING_PCM_32       = 0x0004
 
-        self.SF_FORMAT_PCM_U8       = 0x0005
+        self.SF_ENCODING_PCM_U8       = 0x0005
 
-        self.SF_FORMAT_FLOAT        = 0x0006
-        self.SF_FORMAT_DOUBLE       = 0x0007
+        self.SF_ENCODING_FLOAT        = 0x0006
+        self.SF_ENCODING_DOUBLE       = 0x0007
 
-        self.SF_FORMAT_ULAW         = 0x0010
-        self.SF_FORMAT_ALAW         = 0x0011
-        self.SF_FORMAT_IMA_ADPCM    = 0x0012
-        self.SF_FORMAT_MS_ADPCM     = 0x0013
+        self.SF_ENCODING_ULAW         = 0x0010
+        self.SF_ENCODING_ALAW         = 0x0011
+        self.SF_ENCODING_IMA_ADPCM    = 0x0012
+        self.SF_ENCODING_MS_ADPCM     = 0x0013
 
-        self.SF_FORMAT_GSM610       = 0x0020
-        self.SF_FORMAT_VOX_ADPCM    = 0x0021
+        self.SF_ENCODING_GSM610       = 0x0020
+        self.SF_ENCODING_VOX_ADPCM    = 0x0021
 
-        self.SF_FORMAT_G721_32      = 0x0030
-        self.SF_FORMAT_G723_24      = 0x0031
-        self.SF_FORMAT_G723_40      = 0x0032
+        self.SF_ENCODING_G721_32      = 0x0030
+        self.SF_ENCODING_G723_24      = 0x0031
+        self.SF_ENCODING_G723_40      = 0x0032
 
-        self.SF_FORMAT_DWVW_12      = 0x0040
-        self.SF_FORMAT_DWVW_16      = 0x0041
-        self.SF_FORMAT_DWVW_24      = 0x0042
-        self.SF_FORMAT_DWVW_N       = 0x0043
+        self.SF_ENCODING_DWVW_12      = 0x0040
+        self.SF_ENCODING_DWVW_16      = 0x0041
+        self.SF_ENCODING_DWVW_24      = 0x0042
+        self.SF_ENCODING_DWVW_N       = 0x0043
 
-        self.SF_FORMAT_DPCM_8       = 0x0050
-        self.SF_FORMAT_DPCM_16      = 0x0051
+        self.SF_ENCODING_DPCM_8       = 0x0050
+        self.SF_ENCODING_DPCM_16      = 0x0051
 
-        self.SF_FORMAT_VORBIS       = 0x0060
+        self.SF_ENCODING_VORBIS       = 0x0060
 
     def get_sf_container(self, sf_format):
         for fmt in self.sf_container_descriptions.keys():
