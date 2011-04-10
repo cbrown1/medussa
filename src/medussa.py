@@ -10,12 +10,12 @@ import platform
 pyver_major = platform.python_version_tuple()[0]
 if pyver_major == "2":
     from portaudio import *
-    from sndfile import SF_INFO, csndfile, SFM_READ, sf_formats, sf_format_descriptions
+    from sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
     from pink import Pink_noise_t
     from rkit import Rk_state
 else:
     from .portaudio import *
-    from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats, sf_format_descriptions
+    from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
     from .pink import Pink_noise_t
     from .rkit import Rk_state
     xrange = range
@@ -200,11 +200,11 @@ class Device(object):
     ----------
     out_channels
         The number of output channels to use. PortAudio is not always correct
-        in reporting this number, and can sometimes return spurious values like 
-        128. In other contexts, this is often not a problem. But because of the 
-        way mix_mat works, it is important for this value to not be too large. 
-        Thus, it is set to 2 by default. You can always change it later by 
-        modifying the property device.out_channels. 
+        in reporting this number, and can sometimes return spurious values like
+        128. In other contexts, this is often not a problem. But because of the
+        way mix_mat works, it is important for this value to not be too large.
+        Thus, it is set to 2 by default. You can always change it later by
+        modifying the property device.out_channels.
     out_name
         The name of the output device, as reported by Port Audio.
     out_hostapi
@@ -1495,9 +1495,9 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
         Index to the desired input device.
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
-        in reporting this number, and can sometimes return spurious values like 
-        128. In other contexts, this is often not a problem. But because of the 
-        way mix_mat works, it is important for this value to not be too large. 
+        in reporting this number, and can sometimes return spurious values like
+        128. In other contexts, this is often not a problem. But because of the
+        way mix_mat works, it is important for this value to not be too large.
         Thus, you have 3 options (you can always change it later by modifying
         the property dev.out_channels):
 
@@ -1526,9 +1526,9 @@ def open_default_device(out_channels=2):
     ----------
     out_channels : int
         The number of output channels to use. PortAudio is not always correct
-        in reporting this number, and can sometimes return spurious values like 
-        128. In other contexts, this is often not a problem. But because of the 
-        way mix_mat works, it is important for this value to not be too large. 
+        in reporting this number, and can sometimes return spurious values like
+        128. In other contexts, this is often not a problem. But because of the
+        way mix_mat works, it is important for this value to not be too large.
         Thus, you have 3 options (you can always change it later by modifying
         the property dev.out_channels):
 
