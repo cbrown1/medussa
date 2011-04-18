@@ -569,7 +569,7 @@ class Stream(object):
         """
         if (self.stream_ptr == None):
             self.open()
-        if not self.is_playing():
+        if not self.is_playing:
             self.start()
 
     def pause(self):
@@ -582,6 +582,7 @@ class Stream(object):
             err = pa.Pa_StopStream(self.stream_ptr)
             ERROR_CHECK(err)
 
+    @property
     def is_playing(self):
         """
         Boolean indicating whether the stream is currently playing.
@@ -590,14 +591,45 @@ class Stream(object):
         ERROR_CHECK(err)
         return bool(err)
 
-    def mute(self):
+    @is_playing.setter
+    def is_playing(self, val):
+        if val:
+            self.play()
+        else:
+            self.pause()
+
+    @property
+    def is_muted(self):
+        # If mute_mat has any nonzero values, the all zero mute_mat has been
+        # swapped with the mix_mat (which may have been originally zero too).
+        return bool(self.mute_mat.any())
+
+    @is_muted.setter
+    def is_muted(self, val):
+        self.mute(bool(val))
+
+    def mute(self, val=None):
         """
         Mutes or unmutes the stream.
 
         Mix matrix is unaffected. Playback will continue while stream is muted.
         """
-        # simply swaps the mix matrix with a zero matrix of same shape, or back
-        self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+        if val is None:
+            return self.is_muted
+        elif val:
+            if not self.is_muted:
+                # If is_muted, the true mix_mat is being stored in mute_mat, so swap.
+                # Otherwise, we're already muted, so do nothing.
+                self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+        else:
+            if self.is_muted:
+                # We want to unmute, and since the mix_mat is in mute_mat, swap.
+                # If not muted, then we don't need to unmute, so do nothing.
+                self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+        return self.is_muted
+
+    def unmute(self):
+        return self.mute(False)
 
     def __init__(self):
         self.stream_ptr = None
@@ -917,12 +949,17 @@ class FiniteStream(Stream):
         cls._instances -= dead
 
     @property
-    def loop(self):
-        return self.finite_user_data.loop
+    def is_looping(self):
+        return bool(self.finite_user_data.loop)
 
-    @loop.setter
-    def loop(self, val):
+    @is_looping.setter
+    def is_looping(self, val):
         self.finite_user_data.loop = val
+
+    def loop(self, state=None):
+        if state is not None:
+            self.is_looping = state
+        return self.is_looping
 
     @property
     def cursor(self):
@@ -966,7 +1003,7 @@ class FiniteStream(Stream):
         """
         if (self.stream_ptr == None):
             self.open()
-        if not self.is_playing():
+        if not self.is_playing:
             if self.cursor == 0 and not pa.Pa_IsStreamStopped(self.stream_ptr):
                 pa.Pa_StopStream(self.stream_ptr)
                 self.start()
@@ -1066,7 +1103,7 @@ class ArrayStream(FiniteStream):
         and can be get/set with dev.out_channels. The values of the mix_mat
         are floats between 0. and 1., and are used to specify the playback
         level of each source channel on each output channel.
-    loop
+    is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
     frames
@@ -1105,7 +1142,7 @@ class ArrayStream(FiniteStream):
     def arr(self):
         del self._arr
 
-    def __init__(self, device, fs, mix_mat, arr, loop=False):
+    def __init__(self, device, fs, mix_mat, arr, is_looping=False):
         super(ArrayStream, self).__init__()
 
         if len(arr.shape) == 1:
@@ -1125,7 +1162,7 @@ class ArrayStream(FiniteStream):
         self.fs = fs
 
         # Initialize `FiniteStream` attributes
-        self.loop = loop
+        self.is_looping = is_looping
 
         # Initialize this class' attributes
         self.arr = arr
@@ -1192,7 +1229,7 @@ class SndfileStream(FiniteStream):
         can be get/set with dev.out_channels. The values of the mix_mat are
         floats between 0. and 1., and are used to specify the playback level
         of each source channel on each output channel.
-    loop
+    is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
     frames
@@ -1276,7 +1313,7 @@ class SndfileStream(FiniteStream):
         else:
             raise RuntimeError("`%s` attribute is immutable." % (name))
 
-    def __init__(self, device, mix_mat, file_name, loop=False):
+    def __init__(self, device, mix_mat, file_name, is_looping=False):
         super(SndfileStream, self).__init__()
 
         # Initialize `Stream` attributes
@@ -1287,7 +1324,7 @@ class SndfileStream(FiniteStream):
 
 
         # Initialize `FiniteStream` attributes
-        self.loop = loop
+        self.is_looping = is_looping
 
         self.cursor = 0
 
@@ -1608,7 +1645,7 @@ def play_array(arr, fs, dev=None):
     d = open_device(dev)
     s = d.open_array(arr, fs)
     s.play()
-    while s.is_playing():
+    while s.is_playing:
         time.sleep(.01)
 
 
@@ -1634,7 +1671,7 @@ def play_file(file_name, dev=None):
     d = open_device(dev)
     s = d.open_file(file_name)
     s.play()
-    while s.is_playing():
+    while s.is_playing:
         time.sleep(.01)
 
 
