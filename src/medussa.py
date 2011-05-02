@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import time
 import os
 import numpy as np
@@ -7,8 +8,10 @@ import inspect
 import weakref
 import platform
 
-pyver_major = platform.python_version_tuple()[0]
-if pyver_major == "2":
+pymaj = platform.python_version_tuple()[0]
+pymin = platform.python_version_tuple()[1]
+pyver = "%s.%s" % (pymaj, pymin)
+if pymaj == "2":
     from portaudio import *
     from sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
     from pink import Pink_noise_t
@@ -20,9 +23,7 @@ else:
     from .rkit import Rk_state
     xrange = range
 
-pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
 
-# Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
     libname = os.path.join(get_python_lib(), 'medussa', 'medussa.dll')
     if not os.path.exists(libname):
@@ -43,11 +44,13 @@ cmedussa = ctypes.CDLL(libname)
 device_instances = lambda: list(Device.instances())
 stream_instances = lambda: list(Stream.instances())
 
-
 @atexit.register
 def medussa_exit():
     pa.Pa_Terminate()
 
+
+###################
+## Data Structs
 
 class StreamUserData(ctypes.Structure):
     """
@@ -175,6 +178,9 @@ class PinkUserData(ctypes.Structure):
                 ("self",   py_object),
                 ("pn",     c_void_p))
 
+
+###################
+## Object Classes
 
 class Device(object):
     """
@@ -371,7 +377,7 @@ class Device(object):
         """
         Returns a stream object representing pink noise.
 
-        Parameters
+          Parameters
         ----------
         fs : int
             The sampling frequency. Don't specify for the device's default.
@@ -558,6 +564,9 @@ class Stream(object):
         Returns the portaudio time, which is in seconds.
         """
         t = pa.Pa_GetStreamTime(self.stream_ptr)
+        print "Here"
+        print t
+        print "There"
         if t:
             return t
         else:
@@ -668,10 +677,13 @@ class ToneStream(Stream):
         A NumPy array that acts as a mixer. The number of columns corresponds
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
-        channels, which is hardware specific, and can be get/set with
-        dev.out_channels. The values of the mix_mat are floats between 0.
-        and 1., and are used to specify the playback level of each source
-        channel on each output channel.
+        channels, which is accessible with dev.out_channels. The values of
+		the mix_mat are floats between 0. and 1., and are used to specify the
+		playback level of each source channel on each output channel. A default
+		mix_mat will have ones along the diagonal, and zeros everywhere else
+		(source channel 1 to output device channel 1, source 2 to ouput 2,
+		etc). A mix_mat of all ones would route all source channels to all
+		device output channels.
 
     """
     _instances = set()
@@ -770,12 +782,15 @@ class WhiteStream(Stream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a whitestream, 1),
+        to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
-        channels, which is hardware specific, and can be get/set with
-        dev.out_channels. The values of the mix_mat are floats between 0.
-        and 1., and are used to specify the playback level of each source
-        channel on each output channel.
+        channels, which is accessible with dev.out_channels. The values of
+		the mix_mat are floats between 0. and 1., and are used to specify the
+		playback level of each source channel on each output channel. A default
+		mix_mat will have ones along the diagonal, and zeros everywhere else
+		(source channel 1 to output device channel 1, source 2 to ouput 2,
+		etc). A mix_mat of all ones would route all source channels to all
+		device output channels.
 
     """
     _instances = set()
@@ -870,12 +885,15 @@ class PinkStream(Stream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a pinkstream, 1),
+        to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
-        channels, which is hardware specific, and can be get/set with
-        dev.out_channels. The values of the mix_mat are floats between 0.
-        and 1., and are used to specify the playback level of each source
-        channel on each output channel.
+        channels, which is accessible with dev.out_channels. The values of
+		the mix_mat are floats between 0. and 1., and are used to specify the
+		playback level of each source channel on each output channel. A default
+		mix_mat will have ones along the diagonal, and zeros everywhere else
+		(source channel 1 to output device channel 1, source 2 to ouput 2,
+		etc). A mix_mat of all ones would route all source channels to all
+		device output channels.
 
     """
     _instances = set()
@@ -1097,12 +1115,15 @@ class ArrayStream(FiniteStream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of an arraystream, the
-        number of `columns` in the array), and the number of rows corresponds
-        to the number of device output channels, which is hardware specific,
-        and can be get/set with dev.out_channels. The values of the mix_mat
-        are floats between 0. and 1., and are used to specify the playback
-        level of each source channel on each output channel.
+        to the number of source channels (in the case of a tonestream, 1),
+        and the number of rows corresponds to the number of device output
+        channels, which is accessible with dev.out_channels. The values of
+		the mix_mat are floats between 0. and 1., and are used to specify the
+		playback level of each source channel on each output channel. A default
+		mix_mat will have ones along the diagonal, and zeros everywhere else
+		(source channel 1 to output device channel 1, source 2 to ouput 2,
+		etc). A mix_mat of all ones would route all source channels to all
+		device output channels.
     is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
@@ -1223,12 +1244,15 @@ class SndfileStream(FiniteStream):
         Sampling frequency, in Hz.
     mix_mat
         A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of an sndfilestream, a
-        stereo soundfile has 2), and the number of rows corresponds to the
-        number of device output channels, which is hardware specific, and
-        can be get/set with dev.out_channels. The values of the mix_mat are
-        floats between 0. and 1., and are used to specify the playback level
-        of each source channel on each output channel.
+        to the number of source channels (in the case of a tonestream, 1),
+        and the number of rows corresponds to the number of device output
+        channels, which is accessible with dev.out_channels. The values of
+		the mix_mat are floats between 0. and 1., and are used to specify the
+		playback level of each source channel on each output channel. A default
+		mix_mat will have ones along the diagonal, and zeros everywhere else
+		(source channel 1 to output device channel 1, source 2 to ouput 2,
+		etc). A mix_mat of all ones would route all source channels to all
+		device output channels.
     is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
@@ -1259,7 +1283,7 @@ class SndfileStream(FiniteStream):
 
     @property
     def file_name(self):
-        if pyver_major == '3':
+        if pymaj == '3':
             return self._file_name.decode('utf-8')
         else:
             return self._file_name
@@ -1268,7 +1292,7 @@ class SndfileStream(FiniteStream):
     def file_name(self, val):
         # Only permit assignment to file_name attribute if we are in `__init__`
         if inspect.stack()[1][3] == "__init__":
-            if pyver_major == '3':
+            if pymaj == '3':
                 self.sndfile_user_data.file_name = c_char_p(bytes(val, 'utf-8'))
                 self._file_name = bytes(val, 'utf-8')
             else:
@@ -1331,7 +1355,7 @@ class SndfileStream(FiniteStream):
         # Initialize this class' attributes
         self.file_name = file_name
         self.finfo = SF_INFO(0,0,0,0,0,0)
-        if pyver_major == '3':
+        if pymaj == '3':
             self.fin = csndfile.sf_open(bytes(file_name, 'utf-8'),
                                         SFM_READ,
                                         byref(self.finfo))
@@ -1385,7 +1409,23 @@ class SndfileStream(FiniteStream):
         csndfile.sf_close(c_void_p(self.fin))
 
 
+###################
+## General Methods
+
 def get_default_output_device_index():
+    """
+    Returns the index to the system default audio output device.
+
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    device_ind : int
+        The index to the default output device.
+
+    """
     devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
     if devices == []:
         return pa.Pa_GetDefaultOutputDevice()
@@ -1398,6 +1438,23 @@ def get_default_output_device_index():
 
 
 def get_default_input_device_index():
+    """
+    Returns the index to the system default audio input device.
+
+    Parameters
+    ----------
+    None.
+
+    Returns
+    -------
+    device_ind : int
+        The index to the default input device.
+
+	Notes
+	-----
+	Input (recording) has not bee implemented yet.
+
+	"""
     devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
     if devices == []:
         return pa.Pa_GetDefaultInputDevice()
@@ -1520,6 +1577,7 @@ def print_available_devices(hostapi=None, verbose=False):
 def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     """
     Opens the specified input and output devices.
+
     If no output device is specified, the default device will be used. If no
     input device is specified, none will be used.
 
@@ -1547,7 +1605,11 @@ def open_device(out_device_index=None, in_device_index=None, out_channels=2):
     d : Device object
         Object representing the specified devices.
 
-    """
+	Notes
+	-----
+	Input (recording) has not bee implemented yet.
+
+	"""
     if out_device_index == None:
         out_device_index = get_default_output_device_index()
 
@@ -1578,7 +1640,11 @@ def open_default_device(out_channels=2):
     d : Device object
         Object representing the specified devices.
 
-    """
+    Notes
+	-----
+	Input (recording) has not bee implemented yet.
+
+	"""
     out_di = get_default_output_device_index()
     in_di = get_default_input_device_index()
 
@@ -1626,9 +1692,9 @@ def terminate():
     return True
 
 
-def play_array(arr, fs, dev=None):
+def play_array(arr, fs, output_device_id=None, volume=1.):
     """
-    Plays an array on the default device with blocking, Matlab-style.
+    Plays a NumPy array with blocking, Matlab-style (synchronous playback).
 
     Parameters
     ----------
@@ -1636,27 +1702,45 @@ def play_array(arr, fs, dev=None):
         The array to play. Each column is treated as a channel.
     fs : int
         The sampling frequency.
+    output_device_id : int
+        The id of the output device to play from. [Ommit for system default]
+    volume : scalar
+        Volume during playback. 0. <= 1. [Default = 1]
 
     Returns
     -------
     None
 
     """
-    d = open_device(dev)
+    d = open_device(output_device_id)
     s = d.open_array(arr, fs)
+    s.mix_mat *= float(volume)
     s.play()
     while s.is_playing:
         time.sleep(.01)
 
 
-def play_file(file_name, dev=None):
+def play_file(file_name, output_device_id=None, volume=1., duration=0, max_duration=10):
     """
-    Plays a soundfile on the default device with blocking, Matlab-style.
+    Plays a soundfile with blocking (synchronous playback).
 
     Parameters
     ----------
-    filename : str
+    file_name : str
         The path to the file to play.
+    output_device_id : int
+        The id of the output device to play from. [Ommit for system default]
+    volume : scalar
+        Volume during playback. 0. <= 1. [Default = 1]
+    duration : scalar
+        The amount of the file to play, in seconds. Useful if you want to
+        play the first few seconds of a file. `max_duration` is ignored if
+        this property is set. [Default is the entire file]
+    max_duration : scalar
+        The maximum file duration to play, in seconds. Because this function
+        is blocking, this is a sort of sanity check in case you accidentally
+        pass a file that is exceedingly long. The check is not performed if
+		either this is set to 0, or if `duration` is set. [Default = 10 sec]
 
     Returns
     -------
@@ -1668,11 +1752,21 @@ def play_file(file_name, dev=None):
     correspondingly long time!
 
     """
-    d = open_device(dev)
+    d = open_device(output_device_id)
     s = d.open_file(file_name)
+    if max_duration > 0 and s.duration > max_duration * 1000.:
+        raise RuntimeError("The duration of the soundfile is longer than max_duration.\nTo play this file, set max_duration > %0.2f (or use 0 to bypass this check)." % (s.duration / 1000.))
+    if duration is None:
+        duration = s.duration
+    else:
+        duration = duration * 1000.
+        max_duration = 0
+    s.mix_mat *= float(volume)
     s.play()
     while s.is_playing:
-        time.sleep(.01)
+        pass
+        #if s.time() > duration:
+        #    s.stop()
 
 
 def read_file(file_name):
@@ -1681,11 +1775,14 @@ def read_file(file_name):
 
     Parameters
     ----------
-    filename : str
+    file_name : str
+        The path to the sound file. Can be relative or absolute.
 
     Returns
     -------
     (arr, fs) : (ndarray, float)
+        A 2-element tuple containing the audio data as a NumPy array, and
+        the sample rate as a float.
 
     Notes
     -----
@@ -1694,13 +1791,12 @@ def read_file(file_name):
     For that, you want scikits.audiolab.
 
     """
-
     if not os.path.isfile(file_name):
         raise IOError('File not found: %s' % file_name)
 
     finfo = SF_INFO(0,0,0,0,0,0)
     #fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
-    if pyver_major == '3':
+    if pymaj == '3':
         fin = csndfile.sf_open(bytes(file_name, 'utf-8'), SFM_READ, byref(finfo))
     else:
         fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
@@ -1777,7 +1873,7 @@ def write_file(file_name, arr, fs,
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
 
-    if pyver_major == '3':
+    if pymaj == '3':
         frames_written = cmedussa.writefile_helper(bytes(file_name, 'utf-8'),
                                                    byref(finfo),
                                                    _arr,
