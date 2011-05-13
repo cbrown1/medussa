@@ -3,10 +3,11 @@
 import platform
 pyver = platform.python_version_tuple()[0]
 if pyver == "2":
-    from sndfile_formats import sf_formats, sf_format_descriptions
+    from sndfile_formats import sndfile_formats
 else:
-    from .sndfile_formats import sf_formats, sf_format_descriptions
+    from .sndfile_formats import sndfile_formats
 
+sf_formats = sndfile_formats()
 
 from ctypes.util import find_library
 from distutils.sysconfig import get_python_lib

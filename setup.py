@@ -2,16 +2,26 @@
 from distutils.core import setup
 from distutils.sysconfig import get_python_lib
 import os
-import shutil
 import platform
+import sys
 
-pyver = "%s.%s" % (platform.python_version_tuple()[0], platform.python_version_tuple()[1])
-shutil.copy(os.path.join('src','docs.py'), '.')  # Hack! Why does this import *not* work when cd'ing into src?
-import docs  # And why *does* this relative import work at all with python >= 3?
-os.remove('docs.py')
-if os.path.isfile('docs.pyc'):
-    os.remove('docs.pyc')
-medussa_package = [docs.package_name]
+pymaj = platform.python_version_tuple()[0]
+pymin = platform.python_version_tuple()[1]
+pyver = "%s.%s" % (pymaj, pymin)
+
+sys.path.append('src')
+if pymaj == "2":
+    from docs import (package_name, version, url, author, author_email,
+                        long_help, short_description, long_description, 
+						maintainer, maintainer_email, keywords, platforms, 
+						)
+else:
+    from .docs import (package_name, version, url, author, author_email,
+                        long_help, short_description, long_description,
+						maintainer, maintainer_email, keywords, platforms, 
+						)
+
+medussa_package = [package_name]
 medussa_package_dir = 'src'
 medussa_package_data = ['*.py']
 medussa_data_files = []
@@ -27,23 +37,23 @@ else:
     medussa_data_files.append('lib/build/linux/py%s/libmedussa.so' % pyver)
     medussa_data_files_path = os.path.join(get_python_lib(prefix='/usr/local'), 'medussa')
 
-setup(name=docs.package_name,
-    version=docs.version,
-    description=docs.short_description,
-    author=docs.author,
-    author_email=docs.author_email,
-    maintainer = docs.maintainer,
-    maintainer_email = docs.maintainer_email,
-    url=docs.url,
+setup(name=package_name,
+    version=version,
+    description=short_description,
+    author=author,
+    author_email=author_email,
+    maintainer = maintainer,
+    maintainer_email = maintainer_email,
+    url=url,
     packages = medussa_package,
     requires = medussa_requires,
-    package_dir={docs.package_name: medussa_package_dir},
-    package_data={docs.package_name: medussa_package_data},
+    package_dir={package_name: medussa_package_dir},
+    package_data={package_name: medussa_package_data},
     data_files=[(medussa_data_files_path, medussa_data_files)],
-    keywords = docs.keywords,
-    license = docs.license,
-    platforms = docs.platforms,
-    long_description = docs.long_description,
+    keywords = keywords,
+    license = license,
+    platforms = platforms,
+    long_description = long_description,
     classifiers=[
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",

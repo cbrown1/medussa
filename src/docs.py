@@ -1,27 +1,26 @@
 # -*- coding: utf-8 -*-
 
-
 package_name = "medussa"
 version = "1.0"
 author = "Christopher A. Brown, Joseph K. Ranweiler"
 author_email = "c-b /at/ asu.edu"
-maintainer = 'Christopher Brown'
-maintainer_email = 'c-b /at/ asu.edu'
+maintainer = "Christopher Brown"
+maintainer_email = "c-b /at/ asu.edu"
 url = "http://www.medussa.us"
-keywords = 'sound audio signal wavplay'
-license = 'GPL'
-platforms = 'Win32, Linux'
+keywords = "sound audio signal wavplay"
+license = "GPL"
+platforms = "Win32, Linux"
 short_description = "Medussa: A cross-platform high-level audio library for Python"
 long_description = """\
- Medussa is a cross-platform high-level audio library for Python
+ Medussa is an easy to use high-level cross-platform audio library for Python 
  based on Port Audio and libsndfile. You can play NumPy arrays, stream sound
- files from disk, or create pure tones or 'on-line' white or pink noise.
- There are high-level functions like play_array (similar to matlab's wavplay).
- Or you can access specific host api's or devices, create streams as needed,
- and control them all asynchronously. Or for the most control, you can access
- the port audio library directly. Sweet!"""
+ files of various formats from disk, or create pure tones or 'on-line' white 
+ or pink noise. There are high-level functions like play_array (similar to 
+ matlab's wavplay). Or you can access specific host api's or devices, create 
+ streams as needed, and control them all asynchronously. Or for the most 
+ control, you can access the port audio library directly. Sweet!"""
 
-members = """\
+long_help = """\
  Methods
  -------
  play_array
@@ -29,11 +28,11 @@ members = """\
  play_file
     Plays a sound file on disk with blocking, Matlab-style.
  open_device
-    Returns an object representing a sound device.
+    Returns an object representing a audio device.
  open_default_device
-    Returns an object representing the default sound device.
+    Returns an object representing the default audio device.
  print_available_devices
-    Prints a list of available sound devices, with info.
+    Prints a list of available audio devices, with info.
  start_streams
     Tries to start playback of specified streams as synchronously as possible.
  read_file
@@ -63,8 +62,8 @@ members = """\
  the function Pa_GetDefaultOutputDevice when needed, but we experience
  mixer trouble on several machines we tested. We finally realized that that
  function was always returning the device whose index is 0, which is not
- always the system default device. So Medussa look for a device whose name
- is 'default' and use that, otherwise, use 0. The bottom line is that if you
+ always the system default device. So Medussa looks for a device whose name
+ is 'default' and uses that, otherwise, use 0. The bottom line is that if you
  have trouble playing streams on the default device, look at what others are
  available, and try some. You might have better results with another one.
 

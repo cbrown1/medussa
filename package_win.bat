@@ -10,6 +10,7 @@ rd /s /q build
 
 REM Build lib
 call "C:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86
+if ERRORLEVEL 1 call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86
 cd lib\build\win\msvc10
 msbuild medussa.sln /property:Configuration="Release Py%ver%"
 if ERRORLEVEL 1 goto BuildErrorLib
