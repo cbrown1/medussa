@@ -1867,7 +1867,12 @@ def write_file(file_name, arr, fs,
 
     finfo = SF_INFO(0,0,0,0,0,0)
     finfo.samplerate = int(fs)
-    finfo.channels = arr.shape[1]
+    if arr.ndim == 1:
+        finfo.channels = 1
+    elif arr.ndim == 2:
+        finfo.channels = arr.shape[1]
+    else:
+        raise TypeError('Array dimension must == 1 or 2')
     finfo.format = c_int(format)
 
     arr = np.ascontiguousarray(arr)
