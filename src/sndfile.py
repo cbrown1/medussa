@@ -40,10 +40,11 @@ class SF_INFO (Structure):
         int         seekable ;
     } SF_INFO ;
     """
-    _fields_ = (("frames",     c_uint),
-                ("format",     c_int),
+
+    _fields_ = (("frames",     c_longlong),
                 ("samplerate", c_int),
                 ("channels",   c_int),
+                ("format",     c_int),
                 ("sections",   c_int),
                 ("seekable",   c_int))
 
