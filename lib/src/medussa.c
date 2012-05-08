@@ -46,13 +46,13 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     }
 
     // `PaStream *stream` from `Stream.stream_ptr`
-    if (PyObject_HasAttrString(self, "stream_ptr")) {
-        attr = PyObject_GetAttrString(self, "stream_ptr");
+    if (PyObject_HasAttrString(self, "_stream_ptr")) {
+        attr = PyObject_GetAttrString(self, "_stream_ptr");
         if (attr == NULL) {
             return NULL;
         }
         else if (attr == Py_None) {
-            //printf("DEBUG: stream_ptr is none\n");
+            //printf("DEBUG: _stream_ptr is none\n");
         }
         else {
             Py_INCREF(attr);
@@ -79,9 +79,9 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         return NULL;
     }
 
-    // `unsigned long fpb` from `Stream.pa_fpb` [Frames per buffer]
-    if (PyObject_HasAttrString(self, "pa_fpb")) {
-        attr = PyObject_GetAttrString(self, "pa_fpb");
+    // `unsigned long fpb` from `Stream._pa_fpb` [Frames per buffer]
+    if (PyObject_HasAttrString(self, "_pa_fpb")) {
+        attr = PyObject_GetAttrString(self, "_pa_fpb");
         if (attr == NULL) {
             return NULL;
         }

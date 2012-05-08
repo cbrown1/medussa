@@ -9,7 +9,7 @@
 struct stream_user_data {
     void *parent;
 
-    void *device;
+    PyObject *device;
     
     PaStream *stream;
     PaStreamParameters *in_param;
@@ -22,6 +22,7 @@ struct stream_user_data {
     double *mute_mat;
     int mute_mat_0;
     int mute_mat_1;
+
     int pa_fpb;
 };
 typedef struct stream_user_data stream_user_data;

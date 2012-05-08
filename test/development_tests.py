@@ -6,44 +6,82 @@ import random
 
 fs = 44100.0
 
+#medussa.init()
+
 d = medussa.open_device()
 
+TEST_ALL = True
 
+# sanity checks: create and immediately delete streams
+#####################################################################
+if TEST_ALL or 0:
+    print "testing: sanity checks: creating and deleting streams"
+    
+    print "create_tone()"
+    s = d.create_tone(440,fs)
+    del s
+    print "create_tone() DONE"
+    
+    print "create_white()"
+    s = d.create_white(fs)
+    del s
+    print "create_white() DONE"
+    
+    print "create_pink()"
+    s = d.create_pink(fs)
+    del s
+    print "create_pink() DONE"
+
+    print "open_file()" # this used to crash when the SFINFO layout was broken
+    s = d.open_file("clean.wav")
+    del s
+    print "open_file() DONE"
+    
+    print "open_array()"
+    x,fs = medussa.read_file("clean.wav")
+    s = d.open_array(x, fs)
+    del s
+    print "open_array() DONE"
+
+
+    
 def playAndStopStream( s ):
-    #print "is_playing = " + str(s.is_playing) # BUG this errors with RuntimeError: PaError(-9988): Invalid stream pointer -- rossb 10 April 2012
+    print "> playAndStopStream()"
+    
+    #print "is_playing: " + str(s.is_playing) # BUG this errors with RuntimeError: PaError(-9988): Invalid stream pointer -- rossb 10 April 2012
     #assert( s.is_playing == False )
     assert( s.is_muted == False )
 
-    print "s.fs = " + str(s.fs)
+    print "s.fs: " + str(s.fs)
     
-    if 0: # test redundant (repeated) open()
+    if 1: # test redundant (repeated) open()
         print "opening"
         s.open()
         
-    if 0: # test open() then start()
+    if 1: # test open() then start()
         print "opening"
         
         s.open()
-        print "is_playing = " + str(s.is_playing)
+        print "is_playing: " + str(s.is_playing)
         assert( s.is_playing == False )
 
         print "starting"
         s.start()
     
-        print "is_playing = " + str(s.is_playing)
+        print "is_playing: " + str(s.is_playing)
         assert( s.is_playing == True )
 
     else: # test play()
         print "playing"
         s.play()
     
-        print "is_playing = " + str(s.is_playing)
+        print "is_playing: " + str(s.is_playing)
         assert( s.is_playing == True )
 
     if 1: # run the stream for 5 seconds
         print "running for 5 seconds"
         for i in range( 0, 10 ):
-            #print s.pa_time() # BUG prints "Here" "There" garbage debug messages -- rossb 10 April 2012
+            #print s.pa_time() # BUG prints "Here" "There" garbage debug messages -- rossb 10 April 2012 [FIXED May 4]
             sleep(.5)
     else: # play and pause the stream every half second for 5 seconds
         print "alternating pause() and play()"
@@ -64,22 +102,26 @@ def playAndStopStream( s ):
 
     assert( s.is_muted == False )
 
+    print "< playAndStopStream()"
 
 # simplest tests: init the stream and play a constant tone or noise
 #####################################################################
 
 # play a test tone at a fixed frequency
-if 0:
+if TEST_ALL or 0:
+    print "testing: play a test tone at a fixed frequency"
     s = d.create_tone(440,fs)
     playAndStopStream( s )
 
 # play white noise
-if 0:
+if TEST_ALL or 0:
+    print "testing: play white noise"
     s = d.create_white(fs)
     playAndStopStream( s )
     
 # play pink noise
-if 0:
+if TEST_ALL or 0:
+    print "testing: play pink noise"
     s = d.create_pink(fs)
     playAndStopStream( s )
 
@@ -88,7 +130,8 @@ if 0:
 #####################################################################
 
 # vary test tone frequency
-if 0:
+if TEST_ALL or 0:
+    print "testing: vary test tone frequency"
     s = d.create_tone(440,fs)
     s.play()
     for f in [440, 100, 220, 880, 500]:
@@ -98,7 +141,9 @@ if 0:
 
 # mute and unmute the stream every half second
 
-if 0:
+if TEST_ALL or 0:
+    print "testing: mute and unmute the stream every half second"
+    
     s = d.create_tone(440,fs)
     s.play()
     for i in range(0,10):
@@ -121,7 +166,8 @@ if 0:
 
 
 # linear amplitude ramp
-if 0:
+if TEST_ALL or 0:
+    print "testing: linear amplitude ramp"
     s = d.create_tone(440,fs)
     s.play()
     for i in range(1,100):
@@ -138,37 +184,37 @@ if 0:
 #####################################################################
 
 def printFiniteStreamLengthAttributes( s ):
-    print "s.frames = " + str(s.frames) # rename frameCount? what are the numpy conventions?
-    print "s.duration = " + str(s.duration) # rename durationSeconds. make sure it's actually in seconds
+    print "s.frames: " + str(s.frames) # rename frameCount? what are the numpy conventions?
+    print "s.duration: " + str(s.duration) # rename durationSeconds? make sure it's actually in seconds
 
 def printFiniteStreamPositionAttributes( s ):
-    print "s.cursor = " + str(s.cursor)
+    print "s.cursor: " + str(s.cursor)
 
-    print "s.time(units='ms') " + str(s.time(units='ms'))
-    print "s.time(units='sec') " + str(s.time(units='sec')) # why not 'secs' or 'seconds'?
-    print "s.time(units='frames') " + str(s.time(units='frames'))
+    print "s.time(units='ms'): " + str(s.time(units='ms'))
+    print "s.time(units='sec'): " + str(s.time(units='sec')) # why not 'secs' or 'seconds'?
+    print "s.time(units='frames'): " + str(s.time(units='frames'))
 
     
 # play soundfile (from array)
-if 0:
+if TEST_ALL or 0:
+    print "testing: basic soundfile playback (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
-    print "s.arr = " + str(s.arr)
+    print "s.arr: " + str(s.arr)
     playAndStopStream( s )
     printFiniteStreamPositionAttributes(s)
     
 # play soundfile (streaming)
-if 0:
+if TEST_ALL or 0:
+    print "testing: basic soundfile playback (file)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
-    print "s.file_name = " + s.file_name
-    #print "s.finfo = " + s.finfo # BUG THIS CRASHES -- rossb 10 April 2012
+    print "s.file_name: " + s.file_name
     playAndStopStream( s )
     printFiniteStreamPositionAttributes(s)
-
 
 # test restarting playback. 
 # repeatedly play for 2 seconds and stop. cursor should reset and
@@ -182,7 +228,8 @@ def playStopPlayStopEtc( s ):
         s.stop()
   
 # play an array
-if 0:
+if TEST_ALL or 0:
+    print "testing: restarting playback (array stream)"
     print "each time the stream starts it should play from the start"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
@@ -190,12 +237,13 @@ if 0:
     # this one doesn't crash at end
     
 # play soundfile (streaming)
-if 0:
+if TEST_ALL or 0:
+    print "testing: restarting playback (file stream)"
     print "each time the stream starts it should play from the start"
     s = d.open_file("clean.wav")
-    print "s.file_name = " + s.file_name
+    print "s.file_name: " + s.file_name
     playStopPlayStopEtc( s )
-    # BUG CRASHES AT END OF THIS TEST -- rossb 10 April 2012
+    # BUG CRASHES AT END OF THIS TEST -- rossb 10 April 2012 [FIXED May 4]
 
 
 # test looped soundfile playback. (s.is_looping and s.loop())
@@ -204,22 +252,22 @@ if 0:
 #####################################################################
 
 def playLoopedStopLoopThenStop( s ):
-    print "s.is_looping = " + str(s.is_looping)
+    print "s.is_looping: " + str(s.is_looping)
     assert(s.is_looping == False)
     
     s.loop( True )
-    print "s.is_looping = " + str(s.is_looping)
+    print "s.is_looping: " + str(s.is_looping)
     assert(s.is_looping == True)
     
     s.play()
     sleep(13)
 
-    print "s.is_looping = " + str(s.is_looping)
+    print "s.is_looping: " + str(s.is_looping)
     assert(s.is_looping == True)
 
     # play out to end of this loop...
     s.loop( False )
-    print "s.is_looping = " + str(s.is_looping)
+    print "s.is_looping: " + str(s.is_looping)
     assert(s.is_looping == False)
 
     print "should stop playing at end of loop cycle"
@@ -230,15 +278,17 @@ def playLoopedStopLoopThenStop( s ):
 
     
 # play an array looped
-if 0:
+if TEST_ALL or 0:
+    print "testing: looped playback (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     playLoopedStopLoopThenStop( s )
     
 # play soundfile (streaming) looped
-if 0:
+if TEST_ALL or 0:
+    print "testing: looped playback (streaming)"
     s = d.open_file("clean.wav")
-    print "s.file_name = " + s.file_name
+    print "s.file_name: " + s.file_name
     playLoopedStopLoopThenStop( s )
 
 
@@ -247,7 +297,8 @@ if 0:
 #####################################################################
 
 # play soundfile (from array)
-if 0:
+if TEST_ALL or 0:
+    print "testing: dynamic update of stream position (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     printFiniteStreamLengthAttributes(s)
@@ -264,7 +315,8 @@ if 0:
     s.stop()
     
 # play soundfile (streaming)
-if 0:
+if TEST_ALL or 0:
+    print "testing: dynamic update of stream position (streaming)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
@@ -285,7 +337,9 @@ if 0:
 # to s.cursor or calling time property at random.
 #####################################################################
 
-if 0:
+if TEST_ALL or 0:
+    print "testing: random seeking while stream is playing"
+    
     # start the stream. playback looping. choose random locations to
     # seek to every second (based on stream duration)
     # seek using a random choice of assiging to cursor or
@@ -293,7 +347,7 @@ if 0:
 
     s = d.open_file("clean.wav")
 
-    fileDurationSeconds = s.duration / 1000.
+    fileDurationSeconds = s.duration
     print str(fileDurationSeconds)
               
     s.loop( True )
@@ -301,7 +355,7 @@ if 0:
     
     s.play()
     for i in range( 0, 20 ):
-        #printFiniteStreamPositionAttributes(s) # BUG sometimes crashes when the file loops if I uncomment this line -- rossb 26 April 2012
+        printFiniteStreamPositionAttributes(s) # BUG sometimes crashes when the file loops if I uncomment this line -- rossb 26 April 2012 [FIXED May 4?]
         sleep(1)
         t = random.uniform(0, fileDurationSeconds)
 
@@ -318,11 +372,111 @@ if 0:
 # test that properties that should be read-only are read-only
 #####################################################################
 
-if 1:
+if TEST_ALL or 1:
+    print "testing: read-only properties"
     s = d.create_tone(440,fs)
+
+    print "testing: s.fs (read only)"
+    # read:
+    print "s.fs: ", s.fs
+    # write:
+    try:
+        s.fs = 22050
+        assert(False) # BAD, s.fs= should throw since s.fs should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected fs to be read-only
+    print "OK"
+
+    print "testing: s.max_mat (read / write)"
+    try:
+        m = s.mix_mat
+        s.mix_mat = m
+        assert(True) # GOOD
+    except AttributeError:
+        raise # BAD. problem getting or setting mix_mat
+    print "OK"
+
+    print "testing: s.mute_mat (no longer public)"
+    try:
+        print s.mute_mat
+        assert(False) # BAD, s.mute_mat shouldn't be there
+    except AttributeError:
+        assert(True) # GOOD, we expected mute_mat to be absent
+    print "OK"
+
+    
+    x,fs = medussa.read_file("clean.wav")
+    s2 = d.open_array(x, fs)
+
+    print "testing: s2.arr (read only)"
+    # read:
+    print "s2.arr: ", s2.arr
+    # write:
+    try:
+        s2.arr = [1,2,3,4]
+        assert(False) # BAD, s2.arr= should throw since s2.arr should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected s2.arr to be read-only
+    print "OK"
+    
+
+    s3 = d.open_file("clean.wav")
+    
+    print "testing: s3.file_name (read only)"
+    # read:
+    print "s3.file_name: ", s3.file_name
+    # write:
+    try:
+        s3.file_name = "xyz"
+        assert(False) # BAD, s3.file_name= should throw since s3.file_name should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.file_name to be read-only
+    print "OK"
+
+    print "testing: s3.frames (read only)"
+    # read:
+    print "s3.frames: ", s3.frames
+    # write:
+    try:
+        s3.frames = 123
+        assert(False) # BAD, s3.frames= should throw since s3.frames should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.frames to be read-only
+    print "OK"
+
+    print "testing: s3.duration (read only)"
+    # read:
+    print "s3.duration: ", s3.duration
+    # write:
+    try:
+        s3.duration = 123
+        assert(False) # BAD, s3.duration= should throw since s3.duration should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.duration to be read-only
+    print "OK"
+    
+
+    print "testing: s3.fin (no longer public)"
+    try:
+        print s3.fin
+        assert(False) # BAD, s3.fin shouldn't be there
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.fin to be absent
+    print "OK"
+
+    print "testing: s3.finfo (no longer public)"
+    try:
+        print s3.finfo
+        assert(False) # BAD, s3.finfo shouldn't be there
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.finfo to be absent
+    print "OK"
+    
+
+    print "ATTRIBUTE TESTS PASSED"
+
     playAndStopStream( s )
-
-    # TODO
-
+    playAndStopStream( s2 )
+    playAndStopStream( s3 )
 
 print "done."

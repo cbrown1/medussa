@@ -65,7 +65,12 @@ class StreamUserData(ctypes.Structure):
         double fs;
 
         double *mix_mat;
+        int mix_mat_0;
+        int mix_mat_1;
         double *mute_mat;
+        int mute_mat_0;
+        int mute_mat_1;
+    
         int pa_fpb;
     };
     """
@@ -428,7 +433,7 @@ class Device(object):
             The stream object.
 
         """
-        s = SndfileStream(self, None, file_name)
+        s = SoundfileStream(self, None, file_name)
         return s
 
 
@@ -449,103 +454,64 @@ class Stream(object):
                 dead.add(ref)
         cls._instances -= dead
 
-    @property
-    def stream(self):
-        return self.stream_user_data.stream
-
-    @stream.setter
-    def stream(self, val):
-        self.stream_user_data.stream = val
-
-    @stream.deleter
-    def stream(self):
-        del self.stream_user_data.stream
-
-    @property
-    def in_param(self):
-        return self.stream_user_data.in_param
-
-    @in_param.setter
-    def in_param(self, val):
-        self.stream_user_data.in_param = ctypes.cast(ctypes.pointer(val),
-                                                     ctypes.c_void_p)
-
-    @in_param.deleter
-    def in_param(self):
-        del self.stream_user_data.in_param
-
-    @property
-    def out_param(self):
-        return self._out_param
-
-    @out_param.setter
-    def out_param(self, val):
-        self.stream_user_data.out_param = ctypes.addressof(val)
-        self._out_param = val
-
-    @out_param.deleter
-    def out_param(self):
-        del self._out_param
-
-    @property
+    @property # (read-only)
     def fs(self):
         return self.stream_user_data.fs
 
     @fs.setter
     def fs(self, val):
-        self.stream_user_data.fs = val
+        raise AttributeError( "can't set attribute (stream.fs is read only)" )
 
+    # mix_mat is a public property. __mix_mat is the underlying attribute storage
     @property
     def mix_mat(self):
-        return self._mix_mat
-
+        return self.__mix_mat
+    
     @mix_mat.setter
     def mix_mat(self, val):
-        self._mix_mat = np.ascontiguousarray(val)
+        self.__mix_mat = np.ascontiguousarray(val)
         self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
         self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
         self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
-        self.mute_mat = self.mix_mat * 0.0
+        self._mute_mat = self.mix_mat * 0.0
 
     @mix_mat.deleter
     def mix_mat(self):
-        del self._mix_mat
+        del self.__mix_mat
 
+    # _mute_mat is a private property. __mute_mat is the underlying attribute storage
     @property
-    def mute_mat(self):
-        return self._mute_mat
+    def _mute_mat(self):
+        return self.__mute_mat
 
-    @mute_mat.setter
-    def mute_mat(self, val):
-        self._mute_mat = np.ascontiguousarray(val)
-        self.stream_user_data.mute_mat = self.mute_mat.ctypes.data_as(POINTER(c_double))
-        self.stream_user_data.mute_mat_0 = self.mute_mat.shape[0]
-        self.stream_user_data.mute_mat_1 = self.mute_mat.shape[1]
+    @_mute_mat.setter
+    def _mute_mat(self, val):
+        self.__mute_mat = np.ascontiguousarray(val)
+        self.stream_user_data.mute_mat = self._mute_mat.ctypes.data_as(POINTER(c_double))
+        self.stream_user_data.mute_mat_0 = self._mute_mat.shape[0]
+        self.stream_user_data.mute_mat_1 = self._mute_mat.shape[1]
 
-    @mute_mat.deleter
-    def mute_mat(self):
-        del self._mute_mat
+    @_mute_mat.deleter
+    def _mute_mat(self):
+        del self.__mute_mat
 
+    # _pa_fpb is queried from C side cmedussa.open_stream. this is brittle. FIXME (note that marking this as __pa_fpb breaks for some reason)
     @property
-    def pa_fpb(self):
+    def _pa_fpb(self):
         return self.stream_user_data.pa_fpb
 
-    @pa_fpb.setter
-    def pa_fpb(self, val):
+    @_pa_fpb.setter
+    def _pa_fpb(self, val):
         self.stream_user_data.pa_fpb = val
 
-    @pa_fpb.deleter
-    def pa_fpb(self):
-        del self.stream_user_data.pa_fpb
-
     def open(self):
-        self.stream_ptr = cmedussa.open_stream(py_object(self),
+        self._stream_ptr = cmedussa.open_stream(py_object(self),
                                                self.stream_user_data.in_param,
                                                self.stream_user_data.out_param,
                                                self.callback_ptr)
 
     def start(self):
-        err = pa.Pa_StartStream(self.stream_ptr)
+        err = pa.Pa_StartStream(self._stream_ptr)
         ERROR_CHECK(err)
         return err
 
@@ -553,30 +519,17 @@ class Stream(object):
         """
         Stops playback of the stream (Playback cursor is reset to zero).
         """
-        if pa.Pa_IsStreamStopped(self.stream_ptr):
+        if pa.Pa_IsStreamStopped(self._stream_ptr):
             return
         else:
-            err = pa.Pa_StopStream(self.stream_ptr)
+            err = pa.Pa_StopStream(self._stream_ptr)
             ERROR_CHECK(err)
-
-    def pa_time(self):
-        """
-        Returns the portaudio time, which is in seconds.
-        """
-        t = pa.Pa_GetStreamTime(self.stream_ptr)
-        print "Here"
-        print t
-        print "There"
-        if t:
-            return t
-        else:
-            raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     def play(self):
         """
         Starts playback of the stream.
         """
-        if (self.stream_ptr == None):
+        if (self._stream_ptr == None):
             self.open()
         if not self.is_playing:
             self.start()
@@ -585,10 +538,10 @@ class Stream(object):
         """
         Pauses playback of the stream (Playback cursor is not reset).
         """
-        if pa.Pa_IsStreamStopped(self.stream_ptr):
+        if pa.Pa_IsStreamStopped(self._stream_ptr):
             return
         else:
-            err = pa.Pa_StopStream(self.stream_ptr)
+            err = pa.Pa_StopStream(self._stream_ptr)
             ERROR_CHECK(err)
 
     @property
@@ -596,10 +549,10 @@ class Stream(object):
         """
         Boolean indicating whether the stream is currently playing.
         """
-        err = pa.Pa_IsStreamActive(self.stream_ptr)
+        err = pa.Pa_IsStreamActive(self._stream_ptr)
         ERROR_CHECK(err)
         return bool(err)
-
+    
     @is_playing.setter
     def is_playing(self, val):
         if val:
@@ -607,11 +560,21 @@ class Stream(object):
         else:
             self.pause()
 
+    def pa_time(self):
+        """
+        Returns the current portaudio time, which is in seconds.
+        """
+        t = pa.Pa_GetStreamTime(self._stream_ptr)
+        if t:
+            return t
+        else:
+            raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
+
     @property
     def is_muted(self):
-        # If mute_mat has any nonzero values, the all zero mute_mat has been
+        # If _mute_mat has any nonzero values, the all zero _mute_mat has been
         # swapped with the mix_mat (which may have been originally zero too).
-        return bool(self.mute_mat.any())
+        return bool(self._mute_mat.any())
 
     @is_muted.setter
     def is_muted(self, val):
@@ -629,24 +592,50 @@ class Stream(object):
             if not self.is_muted:
                 # If is_muted, the true mix_mat is being stored in mute_mat, so swap.
                 # Otherwise, we're already muted, so do nothing.
-                self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+                self.mix_mat, self._mute_mat = self._mute_mat, self.mix_mat
         else:
             if self.is_muted:
                 # We want to unmute, and since the mix_mat is in mute_mat, swap.
                 # If not muted, then we don't need to unmute, so do nothing.
-                self.mix_mat, self.mute_mat = self.mute_mat, self.mix_mat
+                self.mix_mat, self._mute_mat = self._mute_mat, self.mix_mat
         return self.is_muted
 
     def unmute(self):
         return self.mute(False)
 
-    def __init__(self):
-        self.stream_ptr = None
+    def __init__(self, device, fs, callback_ptr, mix_mat, out_channels ):
         self.stream_user_data = StreamUserData()
+        
+        self.device = device
+        self.stream_user_data.fs = fs
+        self.callback_ptr = callback_ptr
+
+        assert( mix_mat != None )
+        self.mix_mat = mix_mat
+        self._mute_mat = self.mix_mat * 0.0
+
+        self._out_param = PaStreamParameters(self.device.out_index,
+                                            out_channels,
+                                            paFloat32,
+                                            self.device.out_device_info.defaultLowOutputLatency,
+                                            None)
+        self.stream_user_data.out_param = ctypes.addressof(self._out_param)
+        
+        # Find a smart way to determine this value,
+        # which has to be hardcoded into the callback
+        self._pa_fpb = 1024
+
+        self._stream_ptr = None
+        
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
-        pa.Pa_CloseStream(self.stream_ptr)
+        if self._stream_ptr:
+            pa.Pa_CloseStream(self._stream_ptr)
+            self._stream_ptr = None
+
+        self.stream_user_data.out_param = None
+        del self._out_param
 
 
 class ToneStream(Stream):
@@ -707,56 +696,35 @@ class ToneStream(Stream):
     def tone_freq(self, val):
         self.tone_user_data.tone_freq = val
 
-    @property
-    def t(self):
-        return self.tone_user_data.t
-
-    @t.setter
-    def t(self, val):
-        self.tone_user_data.t = val
-
-
     def __init__(self, device, fs, mix_mat, tone_freq):
-        super(ToneStream, self).__init__()
+        # note that we call super __init__ below once we have assembled enough initialisation data
+        
+        # prepare the mix matrix before passing it to the base class ctor
+        
+        if mix_mat == None:
+            if device.out_channels == None:
+                out_channels = device.out_device_info.maxOutputChannels
+            else:
+                out_channels = device.out_channels
+            mix_mat = np.zeros((out_channels,1))
+            mix_mat[0,0] = 1.0
 
-        # Initialize `Stream` attributes
-        self.callback_ptr = cmedussa.callback_tone
-        self.device = device
+        super(ToneStream, self).__init__( device, fs, cmedussa.callback_tone, mix_mat, mix_mat.shape[0] )
 
         self.tone_user_data = ToneUserData()
 
-        if mix_mat == None:
-            if self.device.out_channels == None:
-                out_channels = self.device.out_device_info.maxOutputChannels
-            else:
-                out_channels = self.device.out_channels
-            self.mix_mat = np.zeros((out_channels,1))
-            self.mix_mat[0,0] = 1.0
-        else:
-            self.mix_mat = mix_mat
-
-        self.mute_mat = self.mix_mat * 0.0
-        self.fs = fs
-
         # Initialize this class' attributes
         self.tone_freq = tone_freq
-        self.t = 0
-
-        # Find a smart way to determine this value,
-        # which has to be hardcoded into the callback
-        self.pa_fpb = 1024
-
-        self.out_param = PaStreamParameters(self.device.out_index,
-                                            self.mix_mat.shape[0],
-                                            paFloat32,
-                                            self.device.out_device_info.defaultLowInputLatency,
-                                            None)
+        self.tone_user_data.t = 0
+        
         self.tone_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.tone_user_data)
 
         self._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
 
+    def __del__(self):
+        super(ToneStream, self).__del__()
+        
 
 class WhiteStream(Stream):
     """
@@ -806,61 +774,37 @@ class WhiteStream(Stream):
                 dead.add(ref)
         cls._instances -= dead
 
-    @property
-    def rk_state(self):
-        return self._rk_state
-
-    @rk_state.setter
-    def rk_state(self, val):
-        self._rk_state = val
-        self.white_user_data.rks = ctypes.addressof(self._rk_state)
-
-    @rk_state.deleter
-    def rk_state(self):
-        del self._rk_state
-
     def __init__(self, device, fs, mix_mat):
-        super(WhiteStream, self).__init__()
-
-        self.callback_ptr = cmedussa.callback_white
-        self.device = device
+        # note that we call super __init__ below once we have assembled enough initialisation data
+        
+        # prepare the mix matrix before passing it to the base class ctor
+        
+        if mix_mat == None:
+            if device.out_channels == None:
+                out_channels = device.out_device_info.maxOutputChannels
+            else:
+                out_channels = device.out_channels
+            mix_mat = np.zeros((out_channels,1))
+            mix_mat[0,0] = 1.0
+            
+        super(WhiteStream, self).__init__( device, fs, cmedussa.callback_white, mix_mat, mix_mat.shape[0] )
 
         self.white_user_data = WhiteUserData()
 
-        if mix_mat == None:
-            if self.device.out_channels == None:
-                out_channels = self.device.out_device_info.maxOutputChannels
-            else:
-                out_channels = self.device.out_channels
-            self.mix_mat = np.zeros((out_channels,1))
-            self.mix_mat[0,0] = 1.0
-        else:
-            self.mix_mat = mix_mat
-
-        self.mute_mat = self.mix_mat * 0.0
-        self.fs = fs
-
         # Initialize this class' attributes
-        self.rk_state = Rk_state()
-        cmedussa.rk_randomseed(byref(self.rk_state))
-
-        # Find a smart way to determine this value,
-        # which has to be hardcoded into the callback
-        self.pa_fpb = 1024
-
-        self.out_param = PaStreamParameters(self.device.out_index,
-                                            self.mix_mat.shape[0],
-                                            paFloat32,
-                                            self.device.out_device_info.defaultLowInputLatency,
-                                            None)
+        self._rk_state = Rk_state()
+        self.white_user_data.rks = ctypes.addressof(self._rk_state)
+        cmedussa.rk_randomseed(byref(self._rk_state))
 
         self.white_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.white_user_data)
 
         self._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
 
+    def __del__(self):
+        super(WhiteStream, self).__del__()
 
+        
 class PinkStream(Stream):
     """
     Medussa stream object representing pink noise, which has equal energy per octave.
@@ -910,48 +854,38 @@ class PinkStream(Stream):
         cls._instances -= dead
 
     def __init__(self, device, fs, mix_mat):
-        super(PinkStream, self).__init__()
-
-        self.callback_ptr = cmedussa.callback_pink
-        self.device = device
+        # note that we call super __init__ below once we have assembled enough initialisation data
+        
+        # prepare the mix matrix before passing it to the base class ctor
+        
+        if mix_mat == None:
+            if device.out_channels == None:
+                out_channels = device.out_device_info.maxOutputChannels
+            else:
+                out_channels = device.out_channels
+            mix_mat = np.zeros((out_channels,1))
+            mix_mat[0,0] = 1.0
+            
+        super(PinkStream, self).__init__( device, fs, cmedussa.callback_pink, mix_mat, mix_mat.shape[0] )
 
         self.pink_user_data = PinkUserData()
-
-        if mix_mat == None:
-            if self.device.out_channels == None:
-                out_channels = self.device.out_device_info.maxOutputChannels
-            else:
-                out_channels = self.device.out_channels
-            self.mix_mat = np.zeros((out_channels,1))
-            self.mix_mat[0,0] = 1.0
-        else:
-            self.mix_mat = mix_mat
-
-        self.mute_mat = self.mix_mat * 0.0
-        self.fs = fs
 
         self.pn = Pink_noise_t()
         self.pink_user_data.pn = ctypes.addressof(self.pn)
         cmedussa.initialize_pink_noise(self.pink_user_data.pn, 24)
 
-        self.pa_fpb = 1024
-
-        self.out_param = PaStreamParameters(self.device.out_index,
-                                            self.mix_mat.shape[0],
-                                            paFloat32,
-                                            self.device.out_device_info.defaultLowInputLatency,
-                                            None)
-
         self.pink_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.pink_user_data)
 
         self._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
+
+    def __del__(self):
+        super(PinkStream, self).__del__()
 
 
 class FiniteStream(Stream):
     """
-    Generic stream object used to derive sndfilestream and arraystream objects.
+    Generic stream class used to derive SoundfileStream and ArrayStream classes.
     """
     _instances = set()
 
@@ -993,7 +927,7 @@ class FiniteStream(Stream):
 
     @frames.setter
     def frames(self, val):
-        self.finite_user_data.frames = val
+        raise AttributeError( "can't set attribute (stream.frames is read only)" )
 
     @property
     def duration(self):
@@ -1001,40 +935,33 @@ class FiniteStream(Stream):
 
     @duration.setter
     def duration(self, val):
-        self.finite_user_data.duration = val
+        raise AttributeError( "can't set attribute (stream.duration is read only)" )
 
     def stop(self):
         """
         Stops playback of the stream (Playback cursor is reset to zero).
         """
-        if pa.Pa_IsStreamStopped(self.stream_ptr):
+        try:
+            super(FiniteStream, self).stop()
+        except:
             self.cursor = 0
-            return
-        else:
-            err = pa.Pa_StopStream(self.stream_ptr)
-            self.cursor = 0
-            ERROR_CHECK(err)
+            raise
 
+        self.cursor = 0
+        
     def play(self):
         """
         Starts playback of the stream.
         """
-        if (self.stream_ptr == None):
+        if (self._stream_ptr == None):
             self.open()
         if not self.is_playing:
-            if self.cursor == 0 and not pa.Pa_IsStreamStopped(self.stream_ptr):
-                pa.Pa_StopStream(self.stream_ptr)
+            if self.cursor == 0 and not pa.Pa_IsStreamStopped(self._stream_ptr):
+                pa.Pa_StopStream(self._stream_ptr)
                 self.start()
             else:
                 self.start()
-
-    def __init__(self):
-        super(FiniteStream, self).__init__()
-        self.finite_user_data = FiniteUserData()
-        self.pa_fpb = 1024
-        self._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
-
+        
     def time(self, pos=None, units="ms"):
         """
         Gets or sets the current playback cursor position.
@@ -1083,9 +1010,20 @@ class FiniteStream(Stream):
         else:
             raise RuntimeError("Bad argument to `units`")
 
-    def stop(self):
-        super(FiniteStream, self).stop()
-        self.cursor = 0
+
+    def __init__(self, device, fs, callback_ptr, mix_mat, out_channels, frames ):
+        super(FiniteStream, self).__init__( device, fs, callback_ptr, mix_mat, out_channels )
+        self.finite_user_data = FiniteUserData()
+
+        # Set length data
+        self.finite_user_data.frames = frames
+        self.finite_user_data.duration = frames / float(fs)
+        
+        self._instances.add(weakref.ref(self))
+
+    def __del__(self):
+        super(FiniteStream, self).__del__()
+
 
 class ArrayStream(FiniteStream):
     """
@@ -1128,9 +1066,11 @@ class ArrayStream(FiniteStream):
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
     frames
-        The number of frames (samples per source channel).
+        The number of frames (samples per source channel). (read-only)
+    duration
+        The duration in seconds. (read-only)
     arr
-        The array of audio data.
+        The array of audio data. (read-only)
 
     """
     _instances = set()
@@ -1148,77 +1088,61 @@ class ArrayStream(FiniteStream):
 
     @property
     def arr(self):
-        return self._arr
+        return self.__arr
 
     @arr.setter
     def arr(self, val):
+        raise AttributeError( "can't set attribute (stream.arr is read only)" )
+        
+    def __set_arr(self, val):
         if not val.dtype == np.dtype('double'):
             raise TypeError('Array must have `double` dtype.')
-        self._arr = np.ascontiguousarray(val)
-        self.array_user_data.ndarr = self._arr.ctypes.data_as(POINTER(c_double))
+        self.__arr = np.ascontiguousarray(val)
+        self.array_user_data.ndarr = self.__arr.ctypes.data_as(POINTER(c_double))
         self.array_user_data.ndarr_0 = val.shape[0]
         self.array_user_data.ndarr_1 = val.shape[1]
 
-    @arr.deleter
-    def arr(self):
-        del self._arr
-
     def __init__(self, device, fs, mix_mat, arr, is_looping=False):
-        super(ArrayStream, self).__init__()
-
+        # note that we call super __init__ below once we have assembled enough initialisation data
+        
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
-        self.array_user_data = ArrayUserData()
-
-        # Initialize `Stream` attributes
-        self.callback_ptr = cmedussa.callback_ndarray
-        self.device = device
+        # prepare the mix matrix before passing it to the base class ctor
+        
+        out_channels = device.out_channels
 
         if mix_mat == None:
-            self.mix_mat = np.eye(arr.shape[1])
-        else:
-            self.mix_mat = mix_mat
+            mix_mat = np.eye(arr.shape[1])
 
-        self.fs = fs
+        mix_mat = np.resize(mix_mat, (out_channels, mix_mat.shape[1]))
+        
+        if out_channels > mix_mat.shape[1]:
+            # zero out extra rows which, by default, are just repeated in memory
+            mix_mat[mix_mat.shape[1]:,:] *= 0.0
+
+        frames = arr.shape[0]      
+        super(ArrayStream, self).__init__( device, fs, cmedussa.callback_ndarray, mix_mat, out_channels, frames )
+    
+        self.array_user_data = ArrayUserData()
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
 
         # Initialize this class' attributes
-        self.arr = arr
-
-        # Set length data
-        self.frames = self.arr.shape[0]
-        self.duration = self.frames / float(self.fs) * 1000
-
-        out_channels = self.device.out_channels
-
-        self.mix_mat = np.resize(self.mix_mat,
-                                 (out_channels, self.mix_mat.shape[1]))
-
-        if out_channels > self.mix_mat.shape[1]:
-            # zero out extra rows which, by default, are just repeated in memory
-            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
-
-        self.mute_mat = self.mix_mat * 0.0
-
-        self.out_param = PaStreamParameters(self.device.out_index,
-                                            out_channels,
-                                            paFloat32,
-                                            self.device.out_device_info.defaultLowInputLatency,
-                                            None)
+        self.__set_arr( arr )
 
         self.array_user_data.parent = ctypes.addressof(self.finite_user_data)
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.array_user_data)
 
         self._instances.add(weakref.ref(self))
-        FiniteStream._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
 
-
-class SndfileStream(FiniteStream):
+    def __del__(self):
+        super(ArrayStream, self).__del__()
+        
+        
+class SoundfileStream(FiniteStream):
     """
     Medussa stream object representing a sound file on disk.
 
@@ -1257,9 +1181,11 @@ class SndfileStream(FiniteStream):
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
     frames
-        The number of frames (samples per source channel).
+        The number of frames (samples per source channel). (read-only)
+    duration
+        The duration in seconds. (read-only)
     file_name
-        The path to the sound file.
+        The path to the sound file. (read-only)
 
     Notes
     -----
@@ -1284,130 +1210,84 @@ class SndfileStream(FiniteStream):
     @property
     def file_name(self):
         if pymaj == '3':
-            return self._file_name.decode('utf-8')
+            return self.__file_name.decode('utf-8')
         else:
-            return self._file_name
+            return self.__file_name
 
     @file_name.setter
     def file_name(self, val):
-        # Only permit assignment to file_name attribute if we are in `__init__`
-        if inspect.stack()[1][3] == "__init__":
-            if pymaj == '3':
-                self.sndfile_user_data.file_name = c_char_p(bytes(val, 'utf-8'))
-                self._file_name = bytes(val, 'utf-8')
-            else:
-                self.sndfile_user_data.file_name = c_char_p(val)
-                self._file_name = val
+        raise AttributeError( "can't set attribute (stream.file_name is read only)" )
+
+    def __set_file_name(self, val): 
+        if pymaj == '3':
+            self.__file_name = bytes(val, 'utf-8')
+            self.sndfile_user_data.file_name = c_char_p(self.__file_name)
         else:
-            raise RuntimeError("`%s` attribute is immutable." % (name))
-
-    @file_name.deleter
-    def file_name(self):
-        del self._file_name
-
-    @property
-    def fin(self):
-        return self._fin
-
-    @fin.setter
-    def fin(self, val):
-        # Only permit assignment to `fin` attribute if we are in `__init__`
-        if inspect.stack()[1][3] == "__init__":
-            self.sndfile_user_data.fin = val
-            self._fin = val
-        else:
-            raise RuntimeError("`%s` attribute is immutable." % (name))
-
-    @fin.deleter
-    def fin(self):
-        del self._fin
-
-    @property
-    def finfo(self):
-        return self._finfo
-
-    @finfo.setter
-    def finfo(self, val):
-        # Only permit assignment to `finfo` attribute if we are in `__init__`
-        if inspect.stack()[1][3] == "__init__":
-            self._finfo = val
-            self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(val),
-                                                       POINTER(SF_INFO))
-#            self.sndfile_user_data.finfo = ctypes.addressof(self.finfo)
-        else:
-            raise RuntimeError("`%s` attribute is immutable." % (name))
+            self.__file_name = val
+            self.sndfile_user_data.file_name = c_char_p(self.__file_name)
 
     def __init__(self, device, mix_mat, file_name, is_looping=False):
-        super(SndfileStream, self).__init__()
-
-        # Initialize `Stream` attributes
-        self.callback_ptr = cmedussa.callback_sndfile_read
-        self.device = device
-
+        # note that we call super __init__ below once we have assembled enough initialisation data
+        
         self.sndfile_user_data = SndfileUserData()
 
+        # Initialize this class' attributes
+
+        if not os.path.isfile(file_name):
+            raise IOError('File not found: %s' % file_name)
+    
+        self.__set_file_name( file_name )
+        
+        self._finfo = SF_INFO(0,0,0,0,0,0)
+        self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(self._finfo),
+                                                       POINTER(SF_INFO))
+        # self.sndfile_user_data.finfo = ctypes.addressof(self._finfo)
+
+        if pymaj == '3':
+            self._fin = csndfile.sf_open(bytes(file_name, 'utf-8'),
+                                        SFM_READ,
+                                        byref(self._finfo))
+        else:
+            self._fin = csndfile.sf_open(file_name,
+                                        SFM_READ,
+                                        byref(self._finfo))
+        self.sndfile_user_data.fin = self._fin
+        
+        # set actual device output channels
+        if device.out_channels == None:
+            out_channels = device.out_device_info.maxOutputChannels
+        else:
+            out_channels = device.out_channels
+
+        if mix_mat == None:
+            mix_mat = np.eye(self._finfo.channels)
+
+        mix_mat = np.resize(mix_mat,
+                                 (out_channels, mix_mat.shape[1]))
+
+        if out_channels > mix_mat.shape[1]:
+            # zero out extra rows which, by default, are just repeated in memory
+            mix_mat[mix_mat.shape[1]:,:] *= 0.0
+
+        fs = self._finfo.samplerate
+        frames = self._finfo.frames
+        super(SoundfileStream, self).__init__( device, fs, cmedussa.callback_sndfile_read, mix_mat, out_channels, frames )
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
-
         self.cursor = 0
 
-        # Initialize this class' attributes
-        self.file_name = file_name
-        self.finfo = SF_INFO(0,0,0,0,0,0)
-        if pymaj == '3':
-            self.fin = csndfile.sf_open(bytes(file_name, 'utf-8'),
-                                        SFM_READ,
-                                        byref(self.finfo))
-        else:
-            self.fin = csndfile.sf_open(file_name,
-                                        SFM_READ,
-                                        byref(self.finfo))
-
-        # set sampling frequency
-        self.fs = self.finfo.samplerate
-
-        # set actual device output channels
-        if self.device.out_channels == None:
-            out_channels = self.device.out_device_info.maxOutputChannels
-        else:
-            out_channels = self.device.out_channels
-
-        # set signal length
-        self.frames = self.finfo.frames
-        self.duration = self.finfo.frames / float(self.finfo.samplerate) * 1000.0
-
-        if mix_mat == None:
-            self.mix_mat = np.eye(self.finfo.channels)
-        else:
-            self.mix_mat = mix_mat
-        self.mix_mat = np.resize(self.mix_mat,
-                                 (out_channels, self.mix_mat.shape[1]))
-
-        if out_channels > self.mix_mat.shape[1]:
-            # zero out extra rows which, by default, are just repeated in memory
-            self.mix_mat[self.mix_mat.shape[1]:,:] *= 0.0
-
-        self.mute_mat = self.mix_mat * 0.0
-
-        self.out_param = PaStreamParameters(self.device.out_index,
-                                            out_channels,
-                                            paFloat32,
-                                            self.device.out_device_info.defaultLowInputLatency,
-                                            None)
         self.sndfile_user_data.parent = ctypes.addressof(self.finite_user_data)
         self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
         self.user_data = ctypes.addressof(self.sndfile_user_data)
 
         self._instances.add(weakref.ref(self))
-        FiniteStream._instances.add(weakref.ref(self))
-        Stream._instances.add(weakref.ref(self))
-
 
     def __del__(self):
-        #pa.Pa_CloseStream(self.stream_ptr)
-        csndfile.sf_close(c_void_p(self.fin))
-
+        self.stop()
+        csndfile.sf_close(c_void_p(self._fin))
+        super(SoundfileStream, self).__del__()
+        
 
 ###################
 ## General Methods
@@ -1670,7 +1550,7 @@ def start_streams(*args):
 
     num_streams = len(args)
     STREAM_P_ARRAY_TYPE = c_void_p * num_streams  # custom-length type
-    stream_p_array = STREAM_P_ARRAY_TYPE(*[s.stream_ptr for s in args])
+    stream_p_array = STREAM_P_ARRAY_TYPE(*[s._stream_ptr for s in args])
     cmedussa.start_streams(stream_p_array, c_int(num_streams))
 
 
@@ -1754,12 +1634,12 @@ def play_file(file_name, output_device_id=None, volume=1., duration=0, max_durat
     """
     d = open_device(output_device_id)
     s = d.open_file(file_name)
-    if max_duration > 0 and s.duration > max_duration * 1000.:
-        raise RuntimeError("The duration of the soundfile is longer than max_duration.\nTo play this file, set max_duration > %0.2f (or use 0 to bypass this check)." % (s.duration / 1000.))
+    if max_duration > 0 and s.duration > max_duration:
+        raise RuntimeError("The duration of the soundfile is longer than max_duration.\nTo play this file, set max_duration > %0.2f (or use 0 to bypass this check)." % (s.duration))
     if duration is None:
         duration = s.duration
     else:
-        duration = duration * 1000.
+        duration = duration
         max_duration = 0
     s.mix_mat *= float(volume)
     s.play()
@@ -1795,7 +1675,6 @@ def read_file(file_name):
         raise IOError('File not found: %s' % file_name)
 
     finfo = SF_INFO(0,0,0,0,0,0)
-    #fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
     if pymaj == '3':
         fin = csndfile.sf_open(bytes(file_name, 'utf-8'), SFM_READ, byref(finfo))
     else:
