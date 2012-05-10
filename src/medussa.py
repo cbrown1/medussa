@@ -52,25 +52,45 @@ def medussa_exit():
 ###################
 ## Data Structs
 
+STREAM_COMMAND_SET_MATRICES = c_int(0)
+STREAM_COMMAND_FREE_MATRICES = c_int(1)
+STREAM_COMMAND_SET_IS_MUTED = c_int(2)
+
+class StreamCommand(ctypes.Structure):
+    """
+    struct stream_command{
+        int command;
+        void *data_ptr0;
+        void *data_ptr1;
+        double data_double;
+        unsigned int data_uint;
+    };
+    """
+    _fields_ = (("command",     c_int),
+                ("data_ptr0",   c_void_p),
+                ("data_ptr1",   c_void_p),
+                ("data_double", c_double),
+                ("data_uint",   c_uint))
+    
+        
 class StreamUserData(ctypes.Structure):
     """
     struct stream_user_data {
         void *parent;
 
-        void *device;
-
+        PyObject *device;
+        
         PaStream *stream;
         PaStreamParameters *in_param;
         PaStreamParameters *out_param;
         double fs;
 
-        double *mix_mat;
-        int mix_mat_0;
-        int mix_mat_1;
-        double *mute_mat;
-        int mute_mat_0;
-        int mute_mat_1;
-    
+        stream_command_queues *command_queues;
+        
+        int is_muted;
+        medussa_dmatrix *mix_mat;
+        medussa_dmatrix *mute_mat;
+
         int pa_fpb;
     };
     """
@@ -80,12 +100,10 @@ class StreamUserData(ctypes.Structure):
                 ("in_param",  c_void_p),
                 ("out_param", c_void_p),
                 ("fs",        c_double),
-                ("mix_mat",   POINTER(c_double)),
-                ("mix_mat_0", c_int),
-                ("mix_mat_1", c_int),
-                ("mute_mat",  POINTER(c_double)),
-                ("mute_mat_0", c_int),
-                ("mute_mat_1", c_int),
+                ("command_queues", c_void_p),
+                ("is_muted",  c_int),
+                ("mix_mat",   c_void_p),
+                ("mute_mat",  c_void_p),
                 ("pa_fpb",    c_int))
 
 
@@ -456,7 +474,7 @@ class Stream(object):
 
     @property # (read-only)
     def fs(self):
-        return self.stream_user_data.fs
+        return self._stream_user_data.fs
 
     @fs.setter
     def fs(self, val):
@@ -466,49 +484,42 @@ class Stream(object):
     @property
     def mix_mat(self):
         return self.__mix_mat
-    
+
     @mix_mat.setter
     def mix_mat(self, val):
+        if hasattr(self,'__mix_mat') and (val.shape != self.__mix_mat.shape):
+            raise ValueError( "parameter has incorrect shape. got " + str(val.shape) + " expected " + str(self.__mix_mat.shape) )
+        
         self.__mix_mat = np.ascontiguousarray(val)
-        self.stream_user_data.mix_mat = self.mix_mat.ctypes.data_as(POINTER(c_double))
-        self.stream_user_data.mix_mat_0 = self.mix_mat.shape[0]
-        self.stream_user_data.mix_mat_1 = self.mix_mat.shape[1]
-        self._mute_mat = self.mix_mat * 0.0
 
+        # allocate new C mix_mat and mute_mat matrices and send to PA callback
+        # mix_mat is a copy of __mix_mat's data. mute_mat has the same shape but is zeroed.
+
+        cmd = StreamCommand()
+        cmd.command = STREAM_COMMAND_SET_MATRICES
+        cmd.data_ptr0 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], self.mix_mat.ctypes.data_as(POINTER(c_double)) )
+        cmd.data_ptr1 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], 0 )        
+        self._post_command_to_pa_callback( cmd )
+                                                        
     @mix_mat.deleter
     def mix_mat(self):
         del self.__mix_mat
-
-    # _mute_mat is a private property. __mute_mat is the underlying attribute storage
-    @property
-    def _mute_mat(self):
-        return self.__mute_mat
-
-    @_mute_mat.setter
-    def _mute_mat(self, val):
-        self.__mute_mat = np.ascontiguousarray(val)
-        self.stream_user_data.mute_mat = self._mute_mat.ctypes.data_as(POINTER(c_double))
-        self.stream_user_data.mute_mat_0 = self._mute_mat.shape[0]
-        self.stream_user_data.mute_mat_1 = self._mute_mat.shape[1]
-
-    @_mute_mat.deleter
-    def _mute_mat(self):
-        del self.__mute_mat
+    
 
     # _pa_fpb is queried from C side cmedussa.open_stream. this is brittle. FIXME (note that marking this as __pa_fpb breaks for some reason)
     @property
     def _pa_fpb(self):
-        return self.stream_user_data.pa_fpb
+        return self._stream_user_data.pa_fpb
 
     @_pa_fpb.setter
     def _pa_fpb(self, val):
-        self.stream_user_data.pa_fpb = val
+        self._stream_user_data.pa_fpb = val
 
     def open(self):
         self._stream_ptr = cmedussa.open_stream(py_object(self),
-                                               self.stream_user_data.in_param,
-                                               self.stream_user_data.out_param,
-                                               self.callback_ptr)
+                                               self._stream_user_data.in_param,
+                                               self._stream_user_data.out_param,
+                                               self._callback_ptr)
 
     def start(self):
         err = pa.Pa_StartStream(self._stream_ptr)
@@ -549,9 +560,12 @@ class Stream(object):
         """
         Boolean indicating whether the stream is currently playing.
         """
-        err = pa.Pa_IsStreamActive(self._stream_ptr)
-        ERROR_CHECK(err)
-        return bool(err)
+        if self._stream_ptr:
+            err = pa.Pa_IsStreamActive(self._stream_ptr)
+            ERROR_CHECK(err)
+            return bool(err)
+        else:
+            return False;
     
     @is_playing.setter
     def is_playing(self, val):
@@ -572,15 +586,13 @@ class Stream(object):
 
     @property
     def is_muted(self):
-        # If _mute_mat has any nonzero values, the all zero _mute_mat has been
-        # swapped with the mix_mat (which may have been originally zero too).
-        return bool(self._mute_mat.any())
+        return self._is_muted
 
     @is_muted.setter
     def is_muted(self, val):
         self.mute(bool(val))
 
-    def mute(self, val=None):
+    def mute(self, val=None): #FIXME I think we should default val to True
         """
         Mutes or unmutes the stream.
 
@@ -588,54 +600,160 @@ class Stream(object):
         """
         if val is None:
             return self.is_muted
-        elif val:
-            if not self.is_muted:
-                # If is_muted, the true mix_mat is being stored in mute_mat, so swap.
-                # Otherwise, we're already muted, so do nothing.
-                self.mix_mat, self._mute_mat = self._mute_mat, self.mix_mat
         else:
-            if self.is_muted:
-                # We want to unmute, and since the mix_mat is in mute_mat, swap.
-                # If not muted, then we don't need to unmute, so do nothing.
-                self.mix_mat, self._mute_mat = self._mute_mat, self.mix_mat
+            if bool(val) != self._is_muted:
+                self._is_muted = bool(val)
+                                                        
+                cmd = StreamCommand()
+                cmd.command = STREAM_COMMAND_SET_IS_MUTED
+                cmd.data_uint = int(self._is_muted)
+                self._post_command_to_pa_callback( cmd )
+                
         return self.is_muted
 
     def unmute(self):
         return self.mute(False)
 
-    def __init__(self, device, fs, callback_ptr, mix_mat, out_channels ):
-        self.stream_user_data = StreamUserData()
+    def __init__(self):
+        self._stream_user_data = StreamUserData()
+        self._stream_user_data.command_queues = cmedussa.alloc_stream_command_queues();
+        self._stream_user_data.is_muted = 0;
+        self._stream_user_data.mix_mat = 0;
+        self._stream_user_data.mute_mat = 0;
+
+        self._stream_ptr = None
+
+        self._is_muted = False
         
-        self.device = device
-        self.stream_user_data.fs = fs
-        self.callback_ptr = callback_ptr
+    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels):
+        
+        self._device = device
+        self._stream_user_data.fs = fs
+        self._callback_ptr = callback_ptr
+        self._callback_command_exec_ptr = callback_command_exec_ptr
+        self._callback_user_data = ctypes.addressof(callback_user_data)
 
         assert( mix_mat != None )
         self.mix_mat = mix_mat
-        self._mute_mat = self.mix_mat * 0.0
 
-        self._out_param = PaStreamParameters(self.device.out_index,
+        self._out_param = PaStreamParameters(self._device.out_index,
                                             out_channels,
                                             paFloat32,
-                                            self.device.out_device_info.defaultLowOutputLatency,
+                                            self._device.out_device_info.defaultLowOutputLatency,
                                             None)
-        self.stream_user_data.out_param = ctypes.addressof(self._out_param)
+        self._stream_user_data.out_param = ctypes.addressof(self._out_param)
         
         # Find a smart way to determine this value,
         # which has to be hardcoded into the callback
         self._pa_fpb = 1024
 
-        self._stream_ptr = None
-        
         self._instances.add(weakref.ref(self))
 
-    def __del__(self):
+    def _close_stream_and_flush_commands(self):
+        # derived classes must call this at the beginning of their __del__()
+        # it ensures that the pa stream is closed and all commands have been finalised
+        # before any teardown happens.
+        
         if self._stream_ptr:
             pa.Pa_CloseStream(self._stream_ptr)
             self._stream_ptr = None
 
-        self.stream_user_data.out_param = None
+        # Ensure that the callback end of the command queue is empty,
+        # then process any results to free data.
+
+        # (the callback isn't running, so we can execute its commands here, to flush the queue)
+        cmedussa.execute_commands_in_pa_callback( self._stream_user_data.command_queues, self._callback_command_exec_ptr, self._callback_user_data ); 
+        cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues );
+        
+    def __del__(self):
+        assert( self._stream_ptr == None ) # derived class didn't call _close_stream_and_flush_commands?
+        
+        cmedussa.free_stream_command_queues( self._stream_user_data.command_queues );
+
+        cmedussa.free_medussa_dmatrix( self._stream_user_data.mix_mat );
+        cmedussa.free_medussa_dmatrix( self._stream_user_data.mute_mat );
+
+        self._stream_user_data.out_param = None
         del self._out_param
+        
+    def _post_command_to_pa_callback( self, cmd ):
+        # This function is more elaborate than simply posting the command to the queue
+        # because we want to make sure any results from earlier commands get processed.
+        # Also, when the callback isn't running, we want to execute the commands immediately
+        # to prevent the queue from filling with commands.
+                                                        
+        # first make sure the queues are as empty as possible
+        if self.is_playing:
+            cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
+        else:
+            cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
+            # (the callback isn't running, so we can execute its commands here, to flush the queue)
+            cmedussa.execute_commands_in_pa_callback( self._stream_user_data.command_queues, self._callback_command_exec_ptr, self._callback_user_data )
+            cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
+ 
+        # post our message to the callback
+        if cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, ctypes.addressof(cmd) ) != 1:
+
+            # if the command queue is full, we wait for it to have space
+            if self.is_playing:
+                while cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, ctypes.addressof(cmd) ) != 1:                           
+                    time.sleep(.01) 
+                    cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
+            else:
+                assert( False ) # we should never get here. the queue should not be full if the stream isn't running
+
+        # if the callback isn't running, execute the command immediately
+        if not self.is_playing:
+            # (the callback isn't running, so we can execute its commands here, to flush the queue)
+            cmedussa.execute_commands_in_pa_callback( self._stream_user_data.command_queues, self._callback_command_exec_ptr, self._callback_user_data )
+            cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
+        
+
+# find the number of output channels for a stream and validate
+# or allocate a mix matrix appropriate for the number of source and output channels
+# this is currently used by tone, white and pink streams
+def _util_validate_or_allocate_mix_mat( device, mix_mat, source_channels ):
+    
+    if device.out_channels == None:
+        out_channels = device.out_device_info.maxOutputChannels
+    else:
+        out_channels = device.out_channels
+    
+    mix_mat_shape = (out_channels, source_channels)
+
+    if mix_mat == None:
+        mix_mat = np.zeros(mix_mat_shape)
+        mix_mat[0,0] = 1.0
+    else:
+        if mix_mat.shape[0] != out_channels:
+            raise ValueError( "parameter mix_mat has incorrect shape. out_channels mismatch. expected shape: " + str(mix_mat_shape) )
+        elif mix_mat.shape[1] != source_channels:
+            raise ValueError( "parameter mix_mat has incorrect shape. source_channels mismatch. expected shape: " + str(mix_mat_shape) )    
+
+    return out_channels, mix_mat
+
+
+# find the number of output channels for a stream and validate
+# or allocate a mix matrix appropriate for the number of source and output channels
+# this is currently used by tone, white and pink streams
+# this version is currently used by the soundfile streams.
+# FIXME I'm not sure why it needs to be different from the above
+def _util_validate_or_allocate_mix_mat2( device, mix_mat, source_channels ):
+    if device.out_channels == None:
+        out_channels = device.out_device_info.maxOutputChannels
+    else:
+        out_channels = device.out_channels
+
+    if mix_mat == None:
+        mix_mat = np.eye(source_channels)
+
+    mix_mat = np.resize(mix_mat, (out_channels, mix_mat.shape[1]))
+    
+    if out_channels > mix_mat.shape[1]:
+        # zero out extra rows which, by default, are just repeated in memory
+        mix_mat[mix_mat.shape[1]:,:] *= 0.0
+
+    return out_channels, mix_mat
 
 
 class ToneStream(Stream):
@@ -690,41 +808,31 @@ class ToneStream(Stream):
 
     @property
     def tone_freq(self):
-        return self.tone_user_data.tone_freq
+        return self._tone_user_data.tone_freq
 
     @tone_freq.setter
     def tone_freq(self, val):
-        self.tone_user_data.tone_freq = val
+        self._tone_user_data.tone_freq = val
 
     def __init__(self, device, fs, mix_mat, tone_freq):
-        # note that we call super __init__ below once we have assembled enough initialisation data
+        super(ToneStream, self).__init__()
+
+        self._tone_user_data = ToneUserData()
+        self._tone_user_data.parent = ctypes.addressof(self._stream_user_data)
+        self._tone_user_data.t = 0
         
-        # prepare the mix matrix before passing it to the base class ctor
-        
-        if mix_mat == None:
-            if device.out_channels == None:
-                out_channels = device.out_device_info.maxOutputChannels
-            else:
-                out_channels = device.out_channels
-            mix_mat = np.zeros((out_channels,1))
-            mix_mat[0,0] = 1.0
+        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
 
-        super(ToneStream, self).__init__( device, fs, cmedussa.callback_tone, mix_mat, mix_mat.shape[0] )
+        super(ToneStream, self)._init2( device, fs, cmedussa.callback_tone, cmedussa.execute_tone_user_data_command, self._tone_user_data, mix_mat, out_channels )
 
-        self.tone_user_data = ToneUserData()
-
-        # Initialize this class' attributes
         self.tone_freq = tone_freq
-        self.tone_user_data.t = 0
         
-        self.tone_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.tone_user_data)
-
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
+        super(ToneStream, self)._close_stream_and_flush_commands()
         super(ToneStream, self).__del__()
-        
+
 
 class WhiteStream(Stream):
     """
@@ -775,33 +883,23 @@ class WhiteStream(Stream):
         cls._instances -= dead
 
     def __init__(self, device, fs, mix_mat):
-        # note that we call super __init__ below once we have assembled enough initialisation data
+        super(WhiteStream, self).__init__()
         
-        # prepare the mix matrix before passing it to the base class ctor
+        self._white_user_data = WhiteUserData()
+        self._white_user_data.parent = ctypes.addressof(self._stream_user_data)
         
-        if mix_mat == None:
-            if device.out_channels == None:
-                out_channels = device.out_device_info.maxOutputChannels
-            else:
-                out_channels = device.out_channels
-            mix_mat = np.zeros((out_channels,1))
-            mix_mat[0,0] = 1.0
-            
-        super(WhiteStream, self).__init__( device, fs, cmedussa.callback_white, mix_mat, mix_mat.shape[0] )
-
-        self.white_user_data = WhiteUserData()
-
-        # Initialize this class' attributes
         self._rk_state = Rk_state()
-        self.white_user_data.rks = ctypes.addressof(self._rk_state)
         cmedussa.rk_randomseed(byref(self._rk_state))
+        self._white_user_data.rks = ctypes.addressof(self._rk_state)
 
-        self.white_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.white_user_data)
+        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
+            
+        super(WhiteStream, self)._init2( device, fs, cmedussa.callback_white, cmedussa.execute_white_user_data_command, self._white_user_data, mix_mat, out_channels )
 
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
+        super(WhiteStream, self)._close_stream_and_flush_commands()
         super(WhiteStream, self).__del__()
 
         
@@ -854,32 +952,23 @@ class PinkStream(Stream):
         cls._instances -= dead
 
     def __init__(self, device, fs, mix_mat):
-        # note that we call super __init__ below once we have assembled enough initialisation data
+        super(PinkStream, self).__init__()
         
-        # prepare the mix matrix before passing it to the base class ctor
+        self._pink_user_data = PinkUserData()
+        self._pink_user_data.parent = ctypes.addressof(self._stream_user_data)
         
-        if mix_mat == None:
-            if device.out_channels == None:
-                out_channels = device.out_device_info.maxOutputChannels
-            else:
-                out_channels = device.out_channels
-            mix_mat = np.zeros((out_channels,1))
-            mix_mat[0,0] = 1.0
+        self._pn = Pink_noise_t()
+        self._pink_user_data.pn = ctypes.addressof(self._pn)
+        cmedussa.initialize_pink_noise(self._pink_user_data.pn, 24)
+
+        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
             
-        super(PinkStream, self).__init__( device, fs, cmedussa.callback_pink, mix_mat, mix_mat.shape[0] )
-
-        self.pink_user_data = PinkUserData()
-
-        self.pn = Pink_noise_t()
-        self.pink_user_data.pn = ctypes.addressof(self.pn)
-        cmedussa.initialize_pink_noise(self.pink_user_data.pn, 24)
-
-        self.pink_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.pink_user_data)
+        super(PinkStream, self)._init2( device, fs, cmedussa.callback_pink, cmedussa.execute_pink_user_data_command, self._pink_user_data, mix_mat, out_channels )
 
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
+        super(PinkStream, self)._close_stream_and_flush_commands()
         super(PinkStream, self).__del__()
 
 
@@ -902,11 +991,11 @@ class FiniteStream(Stream):
 
     @property
     def is_looping(self):
-        return bool(self.finite_user_data.loop)
+        return bool(self._finite_user_data.loop)
 
     @is_looping.setter
     def is_looping(self, val):
-        self.finite_user_data.loop = val
+        self._finite_user_data.loop = val
 
     def loop(self, state=None):
         if state is not None:
@@ -915,15 +1004,15 @@ class FiniteStream(Stream):
 
     @property
     def cursor(self):
-        return self.finite_user_data.cursor
+        return self._finite_user_data.cursor
 
     @cursor.setter
     def cursor(self, val):
-        self.finite_user_data.cursor = val
+        self._finite_user_data.cursor = val
 
     @property
     def frames(self):
-        return self.finite_user_data.frames
+        return self._finite_user_data.frames
 
     @frames.setter
     def frames(self, val):
@@ -931,7 +1020,7 @@ class FiniteStream(Stream):
 
     @property
     def duration(self):
-        return self.finite_user_data.duration
+        return self._finite_user_data.duration
 
     @duration.setter
     def duration(self, val):
@@ -1010,14 +1099,19 @@ class FiniteStream(Stream):
         else:
             raise RuntimeError("Bad argument to `units`")
 
+    def __init__(self):
+        super(FiniteStream, self).__init__()
+        self._finite_user_data = FiniteUserData()
+        self._finite_user_data.parent = ctypes.addressof(self._stream_user_data)
 
-    def __init__(self, device, fs, callback_ptr, mix_mat, out_channels, frames ):
-        super(FiniteStream, self).__init__( device, fs, callback_ptr, mix_mat, out_channels )
-        self.finite_user_data = FiniteUserData()
+        self._finite_user_data.cursor = 0
+        self._finite_user_data.loop = 0
+        
+    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels, frames ):
+        self._finite_user_data.frames = frames
+        self._finite_user_data.duration = frames / float(fs)
 
-        # Set length data
-        self.finite_user_data.frames = frames
-        self.finite_user_data.duration = frames / float(fs)
+        super(FiniteStream, self)._init2( device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels )
         
         self._instances.add(weakref.ref(self))
 
@@ -1098,47 +1192,33 @@ class ArrayStream(FiniteStream):
         if not val.dtype == np.dtype('double'):
             raise TypeError('Array must have `double` dtype.')
         self.__arr = np.ascontiguousarray(val)
-        self.array_user_data.ndarr = self.__arr.ctypes.data_as(POINTER(c_double))
-        self.array_user_data.ndarr_0 = val.shape[0]
-        self.array_user_data.ndarr_1 = val.shape[1]
+        self._array_user_data.ndarr = self.__arr.ctypes.data_as(POINTER(c_double))
+        self._array_user_data.ndarr_0 = val.shape[0]
+        self._array_user_data.ndarr_1 = val.shape[1]
 
     def __init__(self, device, fs, mix_mat, arr, is_looping=False):
-        # note that we call super __init__ below once we have assembled enough initialisation data
+        super(ArrayStream, self).__init__()
+
+        self._array_user_data = ArrayUserData()
+        self._array_user_data.parent = ctypes.addressof(self._finite_user_data)
         
         if len(arr.shape) == 1:
             arr = arr.reshape(arr.size, 1)
 
-        # prepare the mix matrix before passing it to the base class ctor
+        self.__set_arr( arr )
+
+        out_channels, mix_mat = _util_validate_or_allocate_mix_mat2( device, mix_mat, arr.shape[1] )
         
-        out_channels = device.out_channels
-
-        if mix_mat == None:
-            mix_mat = np.eye(arr.shape[1])
-
-        mix_mat = np.resize(mix_mat, (out_channels, mix_mat.shape[1]))
-        
-        if out_channels > mix_mat.shape[1]:
-            # zero out extra rows which, by default, are just repeated in memory
-            mix_mat[mix_mat.shape[1]:,:] *= 0.0
-
         frames = arr.shape[0]      
-        super(ArrayStream, self).__init__( device, fs, cmedussa.callback_ndarray, mix_mat, out_channels, frames )
-    
-        self.array_user_data = ArrayUserData()
+        super(ArrayStream, self)._init2( device, fs, cmedussa.callback_ndarray, cmedussa.execute_array_user_data_command, self._array_user_data, mix_mat, out_channels, frames )
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
-
-        # Initialize this class' attributes
-        self.__set_arr( arr )
-
-        self.array_user_data.parent = ctypes.addressof(self.finite_user_data)
-        self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.array_user_data)
-
+        
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
+        super(ArrayStream, self)._close_stream_and_flush_commands()
         super(ArrayStream, self).__del__()
         
         
@@ -1221,16 +1301,17 @@ class SoundfileStream(FiniteStream):
     def __set_file_name(self, val): 
         if pymaj == '3':
             self.__file_name = bytes(val, 'utf-8')
-            self.sndfile_user_data.file_name = c_char_p(self.__file_name)
+            self._sndfile_user_data.file_name = c_char_p(self.__file_name)
         else:
             self.__file_name = val
-            self.sndfile_user_data.file_name = c_char_p(self.__file_name)
+            self._sndfile_user_data.file_name = c_char_p(self.__file_name)
 
     def __init__(self, device, mix_mat, file_name, is_looping=False):
-        # note that we call super __init__ below once we have assembled enough initialisation data
+        super(SoundfileStream, self).__init__()
         
-        self.sndfile_user_data = SndfileUserData()
-
+        self._sndfile_user_data = SndfileUserData()
+        self._sndfile_user_data.parent = ctypes.addressof(self._finite_user_data)
+        
         # Initialize this class' attributes
 
         if not os.path.isfile(file_name):
@@ -1239,7 +1320,7 @@ class SoundfileStream(FiniteStream):
         self.__set_file_name( file_name )
         
         self._finfo = SF_INFO(0,0,0,0,0,0)
-        self.sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(self._finfo),
+        self._sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(self._finfo),
                                                        POINTER(SF_INFO))
         # self.sndfile_user_data.finfo = ctypes.addressof(self._finfo)
 
@@ -1251,40 +1332,21 @@ class SoundfileStream(FiniteStream):
             self._fin = csndfile.sf_open(file_name,
                                         SFM_READ,
                                         byref(self._finfo))
-        self.sndfile_user_data.fin = self._fin
+        self._sndfile_user_data.fin = self._fin
+
+        out_channels, mix_mat = _util_validate_or_allocate_mix_mat2( device, mix_mat, self._finfo.channels )
         
-        # set actual device output channels
-        if device.out_channels == None:
-            out_channels = device.out_device_info.maxOutputChannels
-        else:
-            out_channels = device.out_channels
-
-        if mix_mat == None:
-            mix_mat = np.eye(self._finfo.channels)
-
-        mix_mat = np.resize(mix_mat,
-                                 (out_channels, mix_mat.shape[1]))
-
-        if out_channels > mix_mat.shape[1]:
-            # zero out extra rows which, by default, are just repeated in memory
-            mix_mat[mix_mat.shape[1]:,:] *= 0.0
-
         fs = self._finfo.samplerate
         frames = self._finfo.frames
-        super(SoundfileStream, self).__init__( device, fs, cmedussa.callback_sndfile_read, mix_mat, out_channels, frames )
+        super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, cmedussa.execute_sndfile_read_user_data_command, self._sndfile_user_data, mix_mat, out_channels, frames )
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
-        self.cursor = 0
-
-        self.sndfile_user_data.parent = ctypes.addressof(self.finite_user_data)
-        self.finite_user_data.parent = ctypes.addressof(self.stream_user_data)
-        self.user_data = ctypes.addressof(self.sndfile_user_data)
 
         self._instances.add(weakref.ref(self))
 
     def __del__(self):
-        self.stop()
+        super(SoundfileStream, self)._close_stream_and_flush_commands()
         csndfile.sf_close(c_void_p(self._fin))
         super(SoundfileStream, self).__del__()
         

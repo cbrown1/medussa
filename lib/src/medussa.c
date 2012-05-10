@@ -26,8 +26,8 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     // Start pulling values from calling object...
     //
     // `void *user_data`from `Stream.user_data`
-    if (PyObject_HasAttrString(self, "user_data")) {
-        attr = PyObject_GetAttrString(self, "user_data");
+    if (PyObject_HasAttrString(self, "_callback_user_data")) {
+        attr = PyObject_GetAttrString(self, "_callback_user_data");
         if (attr == NULL) {
             return NULL;
         }

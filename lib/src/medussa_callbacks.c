@@ -5,6 +5,55 @@
 #define MAX_FRAME_SIZE 16
 
 
+void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    stream_user_data *sud = (stream_user_data *) data;
+    stream_command resultCommand;
+
+    switch( command->command ){
+    case STREAM_COMMAND_SET_MATRICES:
+
+        /* post old matrices back to python to be freed */
+        resultCommand.command = STREAM_COMMAND_FREE_MATRICES;
+        resultCommand.data_ptr0 = sud->mix_mat;
+        resultCommand.data_ptr1 = sud->mute_mat;
+        PaUtil_WriteRingBuffer(resultQueue, &resultCommand, 1 );
+
+        /* install new matrices */
+        sud->mix_mat = (medussa_dmatrix*)command->data_ptr0;
+        sud->mute_mat = (medussa_dmatrix*)command->data_ptr1;
+
+        break;
+
+    case STREAM_COMMAND_SET_IS_MUTED:
+        sud->is_muted = command->data_uint;
+        break;
+
+    }
+}
+
+void execute_finite_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    finite_user_data *fud = (finite_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_stream_user_data_command( resultQueue, command, fud->parent );
+    }
+}
+
+void execute_array_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    array_user_data *aud = (array_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_finite_user_data_command( resultQueue, command, aud->parent );
+    }
+}
+
 int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       unsigned long frames,
                       const PaStreamCallbackTimeInfo *time_info,
@@ -16,7 +65,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
     double tmp_buf[MAX_FRAME_SIZE];
-    double *mix_mat;
+    medussa_dmatrix *mix_mat;
     double *arr;
     
     stream_user_data *sud;
@@ -43,10 +92,11 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         return 1;
     }
 
+    execute_commands_in_pa_callback( sud->command_queues, execute_array_user_data_command, aud );
+
     loop = fud->loop;
 
-    // Point `mix_mat_arr` to data buffer of `mix_mat`
-    mix_mat = (double *) sud->mix_mat;
+    mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
 
     // Determine `frame_size`, the number of channels, from `arr` (ERROR)
     frame_size = (unsigned int) aud->ndarr_1;
@@ -64,8 +114,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
             break;
         }
         
-        dmatrix_mult(mix_mat,
-                     sud->mix_mat_0, sud->mix_mat_1,
+        dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
                      arr+i*frame_size,
                      frame_size, 1,
                      tmp_buf,
@@ -96,6 +145,17 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 }
 
 
+void execute_sndfile_read_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    sndfile_user_data *sfud = (sndfile_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_finite_user_data_command( resultQueue, command, sfud->parent );
+    }
+}
+
 int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
                            unsigned long frames,
                            const PaStreamCallbackTimeInfo *time_info,
@@ -123,17 +183,19 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         
     SF_INFO *finfo;
     PaStreamParameters *out_param;
-    double *mix_mat;
+    medussa_dmatrix *mix_mat;
 
     sfud = (sndfile_user_data *) user_data;
     fud  = (finite_user_data *)  sfud->parent;
     stud = (stream_user_data *)  fud->parent;
 
+    execute_commands_in_pa_callback( stud->command_queues, execute_sndfile_read_user_data_command, sfud );
+
     // Begin attribute acquisition
     out_param = stud->out_param;
     finfo = sfud->finfo;
     channel_count = out_param->channelCount;
-    mix_mat = (double *) stud->mix_mat;
+    mix_mat = stud->is_muted ? stud->mute_mat : stud->mix_mat;
     loop = fud->loop;
     cursor = fud->cursor;
     finpath = sfud->finpath;
@@ -153,7 +215,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     frames_read = (int) sf_readf_double (fin, read_buf, frames);
 
     for (i = 0; i < frames_read; i++) {
-        dmatrix_mult(mix_mat, stud->mix_mat_0, stud->mix_mat_1, 
+        dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
                      (read_buf+i*frame_size), frame_size, 1,
                      tmp_buf, channel_count, 1);
         for (j = 0; j < channel_count; j++) {
@@ -190,6 +252,17 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 }
 
 
+void execute_tone_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    tone_user_data *tud = (tone_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_stream_user_data_command( resultQueue, command, tud->parent );
+    }
+}
+
 int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
                     unsigned long frames,
                     const PaStreamCallbackTimeInfo *time_info,
@@ -201,7 +274,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs, tone_freq;
 
-    double *mix_mat;
+    medussa_dmatrix *mix_mat;
 
     PaStreamParameters *spout;
 
@@ -209,6 +282,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     tone_user_data *tud;
     tud = (tone_user_data *) user_data;
     sud = (stream_user_data *) tud->parent;
+
+    execute_commands_in_pa_callback( sud->command_queues, execute_tone_user_data_command, tud );
 
     // Point `self` to calling instance
     // `float fs` from `self.fs`
@@ -223,13 +298,12 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     // `PaStreamParameters *spout` from `Stream.out_param`
     spout = (PaStreamParameters *) sud->out_param;
 
-    // Point to data array of `mix_mat`
-    mix_mat = (double *) sud->mix_mat;
+    mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
 
     // Point to actual output buffer
     buf_out = (float *) pa_buf_out;
 
-    frame_size = sud->mix_mat_0;
+    frame_size = mix_mat->mat_0;
 
     //printf("%f, %f, %d\n", fs, tone_freq, frame_size);
     
@@ -238,7 +312,7 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     for (i = 0; i < frames; i++) {
         for (j = 0; j < frame_size; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat[j]));
+            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat->mat[j]));
         }
         t++;
     }
@@ -247,6 +321,18 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
     tud->t = t;
 
     return paContinue;
+}
+
+
+void execute_white_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    white_user_data *wud = (white_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_stream_user_data_command( resultQueue, command, wud->parent );
+    }
 }
 
 int callback_white  (const void *pa_buf_in, void *pa_buf_out,
@@ -260,7 +346,7 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs;
 
-    double *mix_mat;
+    medussa_dmatrix *mix_mat;
 
     double tmp;
 
@@ -275,9 +361,11 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
     wud = (white_user_data *) user_data;
     sud = (stream_user_data *) wud->parent;
 
+    execute_commands_in_pa_callback( sud->command_queues, execute_stream_user_data_command, sud );
+
     fs = sud->fs;
     rks = wud->rks;
-    mix_mat = (double *) sud->mix_mat;
+    mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
     spout = sud->out_param;
 
     buf_out = (float *) pa_buf_out;
@@ -298,11 +386,23 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 //printf("DEBUG: clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp * ((float) mix_mat[j]);
+            buf_out[i*frame_size + j] = tmp * ((float) mix_mat->mat[j]);
         }
     }
 
     return paContinue;
+}
+
+
+void execute_pink_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
+{
+    pink_user_data *pud = (pink_user_data *) data;
+
+    switch( command->command ){
+
+    default:
+        execute_stream_user_data_command( resultQueue, command, pud->parent );
+    }
 }
 
 int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
@@ -316,7 +416,7 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
     
     float fs;
 
-    double *mix_mat;
+    medussa_dmatrix *mix_mat;
 
     double tmp;
 
@@ -330,10 +430,12 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
     pud = (pink_user_data *) user_data;
     sud = (stream_user_data *) pud->parent;
 
+    execute_commands_in_pa_callback( sud->command_queues, execute_stream_user_data_command, sud );
+
     fs = sud->fs;
     pn = (pink_noise_t *) pud->pn;
 
-    mix_mat = (double *) sud->mix_mat;
+    mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
     spout = sud->out_param;
 
     buf_out = (float *) pa_buf_out;
@@ -354,7 +456,7 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 //printf("DEBUG: clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp * ((float) mix_mat[j]);
+            buf_out[i*frame_size + j] = tmp * ((float) mix_mat->mat[j]);
         }
     }
 
