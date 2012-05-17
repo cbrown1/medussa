@@ -15,8 +15,11 @@ if [ ! -d "$pythonIncludeDirectory" ]; then
     if [ ! -d "$pythonIncludeDirectory" ]; then
         pythonIncludeDirectory=/usr/local/include/python${PYVER}m/
         if [ ! -d "$pythonIncludeDirectory" ]; then
-            echo "Can't find python include folder!"
-            exit 1
+		    pythonIncludeDirectory=/opt/python${PYVER}/include/
+			if [ ! -d "$pythonIncludeDirectory" ]; then
+			    echo "Can't find python include folder!"
+			    exit 1
+			fi
         fi
     fi
 fi
@@ -25,8 +28,11 @@ numpyIncludeDirectory=/usr/lib/python${PYVER}/site-packages/numpy/core/include/
 if [ ! -d "$numpyIncludeDirectory" ]; then
     numpyIncludeDirectory=/usr/local/lib/python${PYVER}/site-packages/numpy/core/include/
     if [ ! -d "$numpyIncludeDirectory" ]; then
-        echo "Can't find numpy include folder!"
-        exit 1
+		numpyIncludeDirectory=/opt/python${PYVER}/lib/python${PYVER}/site-packages/numpy/core/include/
+		if [ ! -d "$numpyIncludeDirectory" ]; then
+		    echo "Can't find numpy include folder!"
+		    exit 1
+		fi
     fi
 fi
 
