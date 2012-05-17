@@ -455,6 +455,28 @@ class Device(object):
         return s
 
 
+# Given a proposed mix_mat and the number of source and output channels
+# return a valid (correctly shaped) mix_mat as follows:
+# if mix_mat is None: allocate a correctly shaped matrix of zeros except
+# for the diagonal, which is set to 1s.
+# if mix_mat is valid, return a copy of mix_mat conformed to the correct 
+# shape with any added elements set to zero.
+def _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels ):
+    
+    shape = (out_channels, source_channels)
+
+    if mix_mat == None:
+        mix_mat = np.zeros(shape)
+        for i in range( 0, min(shape) ):
+            mix_mat[i,i] = 1.0
+    else:
+        if mix_mat.shape != shape:
+            mix_mat = np.copy(mix_mat)
+            mixmat.resize( shape ) # fills missing entries with zeros
+
+    return mix_mat
+
+
 class Stream(object):
     """
     Generic stream class.
@@ -487,8 +509,10 @@ class Stream(object):
 
     @mix_mat.setter
     def mix_mat(self, val):
-        if hasattr(self,'__mix_mat') and (val.shape != self.__mix_mat.shape):
-            raise ValueError( "parameter has incorrect shape. got " + str(val.shape) + " expected " + str(self.__mix_mat.shape) )
+        if hasattr(self,'__mix_mat'):
+            # if we already have a __mix_mat (i.e. any time after construction)
+            # then conform the new mix_mat to the correct shape
+            val = _util_allocate_or_conform_mix_mat( val, self.__mix_mat.shape[1], self.__mix_mat.shape[0] )      
         
         self.__mix_mat = np.ascontiguousarray(val)
 
@@ -625,7 +649,7 @@ class Stream(object):
 
         self._is_muted = False
         
-    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels):
+    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, source_channels):
         
         self._device = device
         self._stream_user_data.fs = fs
@@ -633,8 +657,12 @@ class Stream(object):
         self._callback_command_exec_ptr = callback_command_exec_ptr
         self._callback_user_data = ctypes.addressof(callback_user_data)
 
-        assert( mix_mat != None )
-        self.mix_mat = mix_mat
+        if device.out_channels == None:
+            out_channels = device.out_device_info.maxOutputChannels
+        else:
+            out_channels = device.out_channels
+    
+        self.mix_mat = _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels )
 
         self._out_param = PaStreamParameters(self._device.out_index,
                                             out_channels,
@@ -707,53 +735,6 @@ class Stream(object):
             # (the callback isn't running, so we can execute its commands here, to flush the queue)
             cmedussa.execute_commands_in_pa_callback( self._stream_user_data.command_queues, self._callback_command_exec_ptr, self._callback_user_data )
             cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
-        
-
-# find the number of output channels for a stream and validate
-# or allocate a mix matrix appropriate for the number of source and output channels
-# this is currently used by tone, white and pink streams
-def _util_validate_or_allocate_mix_mat( device, mix_mat, source_channels ):
-    
-    if device.out_channels == None:
-        out_channels = device.out_device_info.maxOutputChannels
-    else:
-        out_channels = device.out_channels
-    
-    mix_mat_shape = (out_channels, source_channels)
-
-    if mix_mat == None:
-        mix_mat = np.zeros(mix_mat_shape)
-        mix_mat[0,0] = 1.0
-    else:
-        if mix_mat.shape[0] != out_channels:
-            raise ValueError( "parameter mix_mat has incorrect shape. out_channels mismatch. expected shape: " + str(mix_mat_shape) )
-        elif mix_mat.shape[1] != source_channels:
-            raise ValueError( "parameter mix_mat has incorrect shape. source_channels mismatch. expected shape: " + str(mix_mat_shape) )    
-
-    return out_channels, mix_mat
-
-
-# find the number of output channels for a stream and validate
-# or allocate a mix matrix appropriate for the number of source and output channels
-# this is currently used by tone, white and pink streams
-# this version is currently used by the soundfile streams.
-# FIXME I'm not sure why it needs to be different from the above
-def _util_validate_or_allocate_mix_mat2( device, mix_mat, source_channels ):
-    if device.out_channels == None:
-        out_channels = device.out_device_info.maxOutputChannels
-    else:
-        out_channels = device.out_channels
-
-    if mix_mat == None:
-        mix_mat = np.eye(source_channels)
-
-    mix_mat = np.resize(mix_mat, (out_channels, mix_mat.shape[1]))
-    
-    if out_channels > mix_mat.shape[1]:
-        # zero out extra rows which, by default, are just repeated in memory
-        mix_mat[mix_mat.shape[1]:,:] *= 0.0
-
-    return out_channels, mix_mat
 
 
 class ToneStream(Stream):
@@ -785,12 +766,12 @@ class ToneStream(Stream):
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
         channels, which is accessible with dev.out_channels. The values of
-		the mix_mat are floats between 0. and 1., and are used to specify the
-		playback level of each source channel on each output channel. A default
-		mix_mat will have ones along the diagonal, and zeros everywhere else
-		(source channel 1 to output device channel 1, source 2 to ouput 2,
-		etc). A mix_mat of all ones would route all source channels to all
-		device output channels.
+        the mix_mat are floats between 0. and 1., and are used to specify the
+        playback level of each source channel on each output channel. A default
+        mix_mat will have ones along the diagonal, and zeros everywhere else
+        (source channel 1 to output device channel 1, source 2 to ouput 2,
+        etc). A mix_mat of all ones would route all source channels to all
+        device output channels.
 
     """
     _instances = set()
@@ -820,10 +801,10 @@ class ToneStream(Stream):
         self._tone_user_data = ToneUserData()
         self._tone_user_data.parent = ctypes.addressof(self._stream_user_data)
         self._tone_user_data.t = 0
-        
-        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
 
-        super(ToneStream, self)._init2( device, fs, cmedussa.callback_tone, cmedussa.execute_tone_user_data_command, self._tone_user_data, mix_mat, out_channels )
+        super(ToneStream, self)._init2( device, fs, cmedussa.callback_tone, \
+                                        cmedussa.execute_tone_user_data_command, \
+                                        self._tone_user_data, mix_mat, 1 )
 
         self.tone_freq = tone_freq
         
@@ -861,12 +842,12 @@ class WhiteStream(Stream):
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
         channels, which is accessible with dev.out_channels. The values of
-		the mix_mat are floats between 0. and 1., and are used to specify the
-		playback level of each source channel on each output channel. A default
-		mix_mat will have ones along the diagonal, and zeros everywhere else
-		(source channel 1 to output device channel 1, source 2 to ouput 2,
-		etc). A mix_mat of all ones would route all source channels to all
-		device output channels.
+        the mix_mat are floats between 0. and 1., and are used to specify the
+        playback level of each source channel on each output channel. A default
+        mix_mat will have ones along the diagonal, and zeros everywhere else
+        (source channel 1 to output device channel 1, source 2 to ouput 2,
+        etc). A mix_mat of all ones would route all source channels to all
+        device output channels.
 
     """
     _instances = set()
@@ -891,10 +872,10 @@ class WhiteStream(Stream):
         self._rk_state = Rk_state()
         cmedussa.rk_randomseed(byref(self._rk_state))
         self._white_user_data.rks = ctypes.addressof(self._rk_state)
-
-        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
             
-        super(WhiteStream, self)._init2( device, fs, cmedussa.callback_white, cmedussa.execute_white_user_data_command, self._white_user_data, mix_mat, out_channels )
+        super(WhiteStream, self)._init2( device, fs, cmedussa.callback_white, \
+                                         cmedussa.execute_white_user_data_command, \
+                                         self._white_user_data, mix_mat, 1 )
 
         self._instances.add(weakref.ref(self))
 
@@ -930,12 +911,12 @@ class PinkStream(Stream):
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
         channels, which is accessible with dev.out_channels. The values of
-		the mix_mat are floats between 0. and 1., and are used to specify the
-		playback level of each source channel on each output channel. A default
-		mix_mat will have ones along the diagonal, and zeros everywhere else
-		(source channel 1 to output device channel 1, source 2 to ouput 2,
-		etc). A mix_mat of all ones would route all source channels to all
-		device output channels.
+        the mix_mat are floats between 0. and 1., and are used to specify the
+        playback level of each source channel on each output channel. A default
+        mix_mat will have ones along the diagonal, and zeros everywhere else
+        (source channel 1 to output device channel 1, source 2 to ouput 2,
+        etc). A mix_mat of all ones would route all source channels to all
+        device output channels.
 
     """
     _instances = set()
@@ -961,9 +942,9 @@ class PinkStream(Stream):
         self._pink_user_data.pn = ctypes.addressof(self._pn)
         cmedussa.initialize_pink_noise(self._pink_user_data.pn, 24)
 
-        out_channels, mix_mat = _util_validate_or_allocate_mix_mat( device, mix_mat, 1 )
-            
-        super(PinkStream, self)._init2( device, fs, cmedussa.callback_pink, cmedussa.execute_pink_user_data_command, self._pink_user_data, mix_mat, out_channels )
+        super(PinkStream, self)._init2( device, fs, cmedussa.callback_pink, \
+                                        cmedussa.execute_pink_user_data_command, \
+                                        self._pink_user_data, mix_mat, 1 )
 
         self._instances.add(weakref.ref(self))
 
@@ -1107,11 +1088,14 @@ class FiniteStream(Stream):
         self._finite_user_data.cursor = 0
         self._finite_user_data.loop = 0
         
-    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels, frames ):
+    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, source_channels, frames ):
         self._finite_user_data.frames = frames
         self._finite_user_data.duration = frames / float(fs)
 
-        super(FiniteStream, self)._init2( device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, out_channels )
+        super(FiniteStream, self)._init2( device, fs, callback_ptr, \
+                                          callback_command_exec_ptr, \
+                                          callback_user_data, mix_mat, \
+                                          source_channels )
         
         self._instances.add(weakref.ref(self))
 
@@ -1150,12 +1134,12 @@ class ArrayStream(FiniteStream):
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
         channels, which is accessible with dev.out_channels. The values of
-		the mix_mat are floats between 0. and 1., and are used to specify the
-		playback level of each source channel on each output channel. A default
-		mix_mat will have ones along the diagonal, and zeros everywhere else
-		(source channel 1 to output device channel 1, source 2 to ouput 2,
-		etc). A mix_mat of all ones would route all source channels to all
-		device output channels.
+        the mix_mat are floats between 0. and 1., and are used to specify the
+        playback level of each source channel on each output channel. A default
+        mix_mat will have ones along the diagonal, and zeros everywhere else
+        (source channel 1 to output device channel 1, source 2 to ouput 2,
+        etc). A mix_mat of all ones would route all source channels to all
+        device output channels.
     is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
@@ -1207,10 +1191,11 @@ class ArrayStream(FiniteStream):
 
         self.__set_arr( arr )
 
-        out_channels, mix_mat = _util_validate_or_allocate_mix_mat2( device, mix_mat, arr.shape[1] )
-        
-        frames = arr.shape[0]      
-        super(ArrayStream, self)._init2( device, fs, cmedussa.callback_ndarray, cmedussa.execute_array_user_data_command, self._array_user_data, mix_mat, out_channels, frames )
+        channels = arr.shape[1] 
+        frames = arr.shape[0]  
+        super(ArrayStream, self)._init2( device, fs, cmedussa.callback_ndarray, \
+                                         cmedussa.execute_array_user_data_command, \
+                                         self._array_user_data, mix_mat, channels, frames )
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
@@ -1251,12 +1236,12 @@ class SoundfileStream(FiniteStream):
         to the number of source channels (in the case of a tonestream, 1),
         and the number of rows corresponds to the number of device output
         channels, which is accessible with dev.out_channels. The values of
-		the mix_mat are floats between 0. and 1., and are used to specify the
-		playback level of each source channel on each output channel. A default
-		mix_mat will have ones along the diagonal, and zeros everywhere else
-		(source channel 1 to output device channel 1, source 2 to ouput 2,
-		etc). A mix_mat of all ones would route all source channels to all
-		device output channels.
+        the mix_mat are floats between 0. and 1., and are used to specify the
+        playback level of each source channel on each output channel. A default
+        mix_mat will have ones along the diagonal, and zeros everywhere else
+        (source channel 1 to output device channel 1, source 2 to ouput 2,
+        etc). A mix_mat of all ones would route all source channels to all
+        device output channels.
     is_looping
         Gets or sets whether the stream will continue playing from the
         beginning when it reaches the end.
@@ -1334,11 +1319,11 @@ class SoundfileStream(FiniteStream):
                                         byref(self._finfo))
         self._sndfile_user_data.fin = self._fin
 
-        out_channels, mix_mat = _util_validate_or_allocate_mix_mat2( device, mix_mat, self._finfo.channels )
-        
         fs = self._finfo.samplerate
         frames = self._finfo.frames
-        super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, cmedussa.execute_sndfile_read_user_data_command, self._sndfile_user_data, mix_mat, out_channels, frames )
+        super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, \
+                                             cmedussa.execute_sndfile_read_user_data_command, \
+                                             self._sndfile_user_data, mix_mat, self._finfo.channels, frames )
 
         # Initialize `FiniteStream` attributes
         self.is_looping = is_looping
