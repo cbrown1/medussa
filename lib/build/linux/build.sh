@@ -16,7 +16,7 @@ if [ ! -d "$pythonIncludeDirectory" ]; then
     if [ ! -d "$pythonIncludeDirectory" ]; then
         pythonIncludeDirectory=/usr/local/include/python${PYVER}m/
         if [ ! -d "$pythonIncludeDirectory" ]; then
-		    pythonIncludeDirectory=/opt/python${PYVER}/include/python2.7/
+		    pythonIncludeDirectory=/opt/python${PYVER}/include/python${PYVER}/
 			if [ ! -d "$pythonIncludeDirectory" ]; then
 			    echo "Can't find python include folder!"
 			    exit 1
