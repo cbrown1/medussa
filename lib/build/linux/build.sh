@@ -1,4 +1,5 @@
 #!/bin/bash
+
 PYVER=$1
 if [ -z "$PYVER" ]; then
   PYMAJ=`python -c "import platform; print(platform.python_version_tuple()[0])"`
@@ -15,7 +16,7 @@ if [ ! -d "$pythonIncludeDirectory" ]; then
     if [ ! -d "$pythonIncludeDirectory" ]; then
         pythonIncludeDirectory=/usr/local/include/python${PYVER}m/
         if [ ! -d "$pythonIncludeDirectory" ]; then
-		    pythonIncludeDirectory=/opt/python${PYVER}/include/
+		    pythonIncludeDirectory=/opt/python${PYVER}/include/python2.7/
 			if [ ! -d "$pythonIncludeDirectory" ]; then
 			    echo "Can't find python include folder!"
 			    exit 1
@@ -36,7 +37,9 @@ if [ ! -d "$numpyIncludeDirectory" ]; then
     fi
 fi
 
-make FLAGS="-I$pythonIncludeDirectory -I$numpyIncludeDirectory"
+paIncludeDirectory=../../include
+
+make FLAGS="-I$paIncludeDirectory -I$pythonIncludeDirectory -I$numpyIncludeDirectory"
 if [ $? -eq 0 ] ; then
   mkdir ./py${PYVER}
   cp libmedussa.so ./py${PYVER}

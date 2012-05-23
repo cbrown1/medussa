@@ -10,14 +10,15 @@ if platform.system() == "Windows":
     libname = get_python_lib() + "\\medussa\\portaudio_x86.dll"
     if not exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
+    # Load the shared library
+    pa = ctypes.CDLL(libname)
 	
 else:
     libname = find_library("portaudio")
     if libname == None:
         raise RuntimeError("Unable to locate library `portaudio`.")
-
-# Load the shared library
-pa = ctypes.CDLL(libname)
+    # Load the shared library
+    pa = ctypes.CDLL("/usr/local/lib/"+libname)
 
 
 # set `restype` return type values for some functions
@@ -291,3 +292,4 @@ def ERROR_CHECK(err):
     """
     if err < 0:
         raise RuntimeError("PaError(%d): %s" % (err, pa.Pa_GetErrorText(c_int(err))))
+
