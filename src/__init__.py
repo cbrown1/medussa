@@ -25,7 +25,7 @@ else:
     from .medussa import (play_array, play_file, read_file, 
                         write_file, write_wav, write_flac, write_ogg, 
                         Stream, ToneStream, PinkStream, WhiteStream, 
-						FiniteStream, ArrayStream, SndfileStream, 
+						FiniteStream, ArrayStream, SoundfileStream, 
 						get_default_output_device_index, 
 						get_default_input_device_index, 
 						Device, open_device, open_default_device, 
