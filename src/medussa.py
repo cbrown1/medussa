@@ -29,7 +29,7 @@ if platform.system() == "Windows":
     if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 elif platform.system() == "Linux":
-    libname = os.path.join(get_python_lib(prefix='/usr/local'), 'medussa', 'libmedussa.so')
+    libname = os.path.join(get_python_lib(), 'medussa', 'libmedussa.so')
     if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 else:

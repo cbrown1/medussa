@@ -16,7 +16,7 @@ fi
 ./build.sh $pyver
 cd ../../..
 
-installdir=$(python${pyver} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(prefix='/usr/local'))")
+installdir=$(python${pyver} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
 
 if [ -d ${installdir}/medussa ]; then
     sudo rm -r ${installdir}/medussa
@@ -28,4 +28,7 @@ if [ -d build ]; then
     sudo rm -r build
 fi
 python${pyver} setup.py build
-sudo python${pyver} setup.py install --prefix='/usr/local'
+sudo python${pyver} setup.py install
+
+#python${pyver} setup.py bdist_rpm --fix-python --force-arch=i386 --no-autoreq --distribution-name=el6
+
