@@ -55,6 +55,7 @@ def medussa_exit():
 STREAM_COMMAND_SET_MATRICES = c_int(0)
 STREAM_COMMAND_FREE_MATRICES = c_int(1)
 STREAM_COMMAND_SET_IS_MUTED = c_int(2)
+FINITE_STREAM_COMMAND_SET_CURSOR = c_int(3)
 
 class StreamCommand(ctypes.Structure):
     """
@@ -537,6 +538,9 @@ class Stream(object):
                                                self._callback_ptr)
 
     def start(self):
+        if not pa.Pa_IsStreamStopped(self._stream_ptr): # needed since some callbacks call paComplete
+            pa.Pa_StopStream(self._stream_ptr)          # so streams can be inactive but not stopped
+            
         err = pa.Pa_StartStream(self._stream_ptr)
         ERROR_CHECK(err)
         return err
@@ -700,7 +704,7 @@ class Stream(object):
         # because we want to make sure any results from earlier commands get processed.
         # Also, when the callback isn't running, we want to execute the commands immediately
         # to prevent the queue from filling with commands.
-                                                        
+        
         # first make sure the queues are as empty as possible
         if self.is_playing:
             cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
@@ -980,7 +984,30 @@ class FiniteStream(Stream):
 
     @cursor.setter
     def cursor(self, val):
-        self._finite_user_data.cursor = val
+        raise AttributeError( "can't set attribute (stream.cursor is read only). use request_seek()" )
+
+    @property
+    def cursor_is_at_end(self):
+        return (self._finite_user_data.cursor >= self._finite_user_data.frames)
+
+    @cursor_is_at_end.setter
+    def cursor_is_at_end(self, val):
+        raise AttributeError( "can't set attribute (stream.cursor_is_at_end is read only)" )
+    
+    def request_seek( self, positionFrames ):
+        """
+        Update playback cursor asynchronously. If the stream is running
+        the cursor attribute will reflect the change after the PortAudio
+        callback next executes.
+        """
+        cmd = StreamCommand()
+        cmd.command = FINITE_STREAM_COMMAND_SET_CURSOR
+        cmd.data_uint = c_uint(positionFrames)
+        self._post_command_to_pa_callback( cmd )
+
+    def _reset_cursor_when_inactive( self ): # internal method. only safe when stream is not active
+        assert( pa.Pa_IsStreamActive(self._stream_ptr) == 0 )
+        self._finite_user_data.cursor = 0
 
     @property
     def frames(self):
@@ -1005,10 +1032,10 @@ class FiniteStream(Stream):
         try:
             super(FiniteStream, self).stop()
         except:
-            self.cursor = 0
+            self._reset_cursor_when_inactive()
             raise
 
-        self.cursor = 0
+        self._reset_cursor_when_inactive()
         
     def play(self):
         """
@@ -1017,12 +1044,10 @@ class FiniteStream(Stream):
         if (self._stream_ptr == None):
             self.open()
         if not self.is_playing:
-            if self.cursor == 0 and not pa.Pa_IsStreamStopped(self._stream_ptr):
-                pa.Pa_StopStream(self._stream_ptr)
-                self.start()
-            else:
-                self.start()
-        
+            if self.cursor_is_at_end: # if cursor is at end, play from start. otherwise continue from current pos
+                self._reset_cursor_when_inactive()
+            self.start()
+            
     def time(self, pos=None, units="ms"):
         """
         Gets or sets the current playback cursor position.
@@ -1031,8 +1056,8 @@ class FiniteStream(Stream):
         ----------
         pos : numeric
             The cursor cursor position. If `pos` is `None`, the function
-            returns the current position. Otherwise, the current cursor
-            position will be set to `pos`.
+            returns the current position. Otherwise the current cursor
+            position is updated to `pos` asynchronously via request_seek()
         units : string
             The units of pos. May be of value:
             "ms": assume `pos` is of type `float` [default]
@@ -1055,21 +1080,18 @@ class FiniteStream(Stream):
                 return self.cursor
         elif units == "ms":
             newcursor = int(pos / 1000.0 * self.fs)
-            if not (newcursor < self.frames):
-                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
-            self.cursor = int(pos / 1000.0 * self.fs)
         elif units == "sec":
             newcursor = int(pos * self.fs)
-            if not (newcursor < self.frames):
-                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
-            self.cursor = int(pos * self.fs)
         elif units == "frames":
             assert isinstance(pos, int)
-            if not (pos < self.frames):
-                raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
-            self.cursor = pos
+            newcursor = pos
         else:
             raise RuntimeError("Bad argument to `units`")
+
+        if newcursor > self.frames:
+            # we allow newcursor to be equal to self.frames. this signifies that it is at the end
+            raise RuntimeError("New cursor position %d exceeds signal frame count %d." % (newcursor, self.frames))
+        self.request_seek( newcursor )
 
     def __init__(self):
         super(FiniteStream, self).__init__()
@@ -1079,7 +1101,7 @@ class FiniteStream(Stream):
         self._finite_user_data.cursor = 0
         self._finite_user_data.loop = 0
         
-    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, source_channels, frames ):
+    def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, source_channels, frames, is_looping):
         self._finite_user_data.frames = frames
         self._finite_user_data.duration = frames / float(fs)
 
@@ -1087,6 +1109,8 @@ class FiniteStream(Stream):
                                           callback_command_exec_ptr, \
                                           callback_user_data, mix_mat, \
                                           source_channels )
+
+        self._finite_user_data.loop = is_looping
         
         self._instances.add(weakref.ref(self))
 
@@ -1186,10 +1210,7 @@ class ArrayStream(FiniteStream):
         frames = arr.shape[0]  
         super(ArrayStream, self)._init2( device, fs, cmedussa.callback_ndarray, \
                                          cmedussa.execute_array_user_data_command, \
-                                         self._array_user_data, mix_mat, channels, frames )
-
-        # Initialize `FiniteStream` attributes
-        self.is_looping = is_looping
+                                         self._array_user_data, mix_mat, channels, frames, is_looping )
         
         self._instances.add(weakref.ref(self))
 
@@ -1314,10 +1335,7 @@ class SoundfileStream(FiniteStream):
         frames = self._finfo.frames
         super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, \
                                              cmedussa.execute_sndfile_read_user_data_command, \
-                                             self._sndfile_user_data, mix_mat, self._finfo.channels, frames )
-
-        # Initialize `FiniteStream` attributes
-        self.is_looping = is_looping
+                                             self._sndfile_user_data, mix_mat, self._finfo.channels, frames, is_looping )
 
         self._instances.add(weakref.ref(self))
 

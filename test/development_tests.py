@@ -245,6 +245,79 @@ if TEST_ALL or 0:
     playStopPlayStopEtc( s )
     # BUG CRASHES AT END OF THIS TEST -- rossb 10 April 2012 [FIXED May 4]
 
+# test cursor update behavior
+#####################################################################
+
+def testCursorBehavior( s ):
+    print "testing: When the stream is created, cursor is 0."
+    print "s.cursor: " + str(s.cursor)
+    assert(s.cursor == 0 )
+
+    s.play()
+    sleep(1)
+    s.pause()
+
+    print "testing: pause() halts playback but doesn't reset the cursor."
+    print "s.cursor: " + str(s.cursor)
+    assert(s.cursor != 0 )
+
+    c = s.cursor
+    s.play()
+    sleep(1)
+
+    print "testing: calling play() on a paused stream doesn't reset the cursor."
+    print "testing: play() plays from the current cursor position."
+    assert s.cursor > c
+
+    c = s.cursor
+
+    s.play()
+
+    # wait for stream to reach the end (and stop)
+    while s.is_playing:
+        sleep( 1 )
+
+    print "testing: If the stream ends because it has reached the end (and looping isn't enabled), then cursor remains at the end."
+    assert not s.is_playing
+    assert s.cursor > c
+    assert s.cursor_is_at_end
+
+
+    print "testing: If the stream is at the end, Play() plays from the start()."
+
+    s.play()
+
+    sleep( 1 )
+
+    assert s.is_playing
+    assert not s.cursor_is_at_end
+    
+    s.stop()
+
+    print "testing: stop() always resets the cursor to zero."
+    assert s.cursor == 0 
+
+    print "testing: request_seek() is immediate when the stream is stopped."
+
+    s.request_seek( 0 );
+    assert s.cursor == 0;
+
+    s.request_seek( 50 );
+    assert s.cursor == 50;
+
+    print "OK"
+
+
+if TEST_ALL or 1:
+    print "testing: cursor behavior (array)"
+    x,fs = medussa.read_file("clean.wav")
+    s = d.open_array(x, fs)
+    testCursorBehavior( s )
+    
+    print "testing: cursor behavior (streaming)"
+    s = d.open_file("clean.wav")
+    testCursorBehavior( s )
+
 
 # test looped soundfile playback. (s.is_looping and s.loop())
 # when turning looping off while playing,
@@ -294,6 +367,7 @@ if TEST_ALL or 0:
 
 # test dynamic display of stream position.
 # print pos out 4 times a second while playing
+# test that cursor is at end after non-looped playback before stop() is called
 #####################################################################
 
 # play soundfile (from array)
@@ -310,7 +384,8 @@ if TEST_ALL or 0:
         printFiniteStreamPositionAttributes(s)
         sleep(.25)
 
-    # BUG even though the stream is looping, the cursor wraps to 0 here before stop is called -- rossb 10 April 2012 
+    # BUG even though the stream is NOT looping, the cursor wraps to 0 here before stop is called -- rossb 10 April 2012 [FIXED May 25]
+    assert( s.cursor != 0 )
     printFiniteStreamPositionAttributes(s)
     s.stop()
     
@@ -327,7 +402,8 @@ if TEST_ALL or 0:
         printFiniteStreamPositionAttributes(s)
         sleep(.25)
 
-    # BUG even though the stream is looping, the cursor wraps to 0 here before stop is called -- rossb 10 April 2012
+    # BUG even though the stream is NOT looping, the cursor wraps to 0 here before stop is called -- rossb 10 April 2012 [FIXED May 25]
+    assert( s.cursor != 0 )
     printFiniteStreamPositionAttributes(s)
     s.stop()
 
@@ -355,16 +431,16 @@ if TEST_ALL or 0:
     
     s.play()
     for i in range( 0, 20 ):
-        printFiniteStreamPositionAttributes(s) # BUG sometimes crashes when the file loops if I uncomment this line -- rossb 26 April 2012 [FIXED May 4?]
+        printFiniteStreamPositionAttributes(s) # BUG sometimes crashed when the file loops if I uncomment this line -- rossb 26 April 2012 [FIXED May 4?]
         sleep(1)
         t = random.uniform(0, fileDurationSeconds)
 
         if random.randint(0,1) == 0:
-            print "seeking with s.time"
+            print "seeking with s.time()"
             s.time(units='sec',pos=t)
         else:
-            print "seeking by assigning to s.cursor"
-            s.cursor = int( t * s.fs )
+            print "seeking by calling s.request_seek()"
+            s.request_seek( int( t * s.fs ) )
 
     s.stop()
 
@@ -454,7 +530,17 @@ if TEST_ALL or 1:
     except AttributeError:
         assert(True) # GOOD, we expected s3.duration to be read-only
     print "OK"
-    
+
+    print "testing: s3.cursor (read only)"
+    # read:
+    print "s3.cursor: ", s3.cursor
+    # write:
+    try:
+        s3.cursor = 123
+        assert(False) # BAD, s3.cursor= should throw since s3.cursor should be read-only
+    except AttributeError:
+        assert(True) # GOOD, we expected s3.cursor to be read-only
+    print "OK"
 
     print "testing: s3.fin (no longer public)"
     try:

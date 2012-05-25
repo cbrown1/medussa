@@ -37,6 +37,13 @@ void execute_finite_user_data_command( PaUtilRingBuffer *resultQueue, const stre
     finite_user_data *fud = (finite_user_data *) data;
 
     switch( command->command ){
+    case FINITE_STREAM_COMMAND_SET_CURSOR:
+
+        fud->cursor = command->data_uint;
+
+        /* TODO: when we implement async streaming from a separate thread, we may do something different here for the soundfile stream */
+
+        break;
 
     default:
         execute_stream_user_data_command( resultQueue, command, fud->parent );
@@ -60,7 +67,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
-    unsigned int i, j, frame_size, cursor, stream_channel_count;
+    unsigned int i, j, array_channel_count, stream_channel_count;
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
@@ -101,24 +108,23 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
 
 
-    // Determine `frame_size`, the number of channels, from `arr` (ERROR)
-    frame_size = (unsigned int) aud->ndarr_1;
+    // Determine `array_channel_count`, the number of channels, from `arr`
+    array_channel_count = (unsigned int) aud->ndarr_1;
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
-    cursor = fud->cursor;
-    arr = aud->ndarr + cursor*frame_size;
+    arr = aud->ndarr + fud->cursor*array_channel_count;
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     buf_out = (float *) pa_buf_out;
     for (i = 0; i < frame_count; i++) {
-        if (aud->ndarr_0 <= (fud->cursor+i)) {
+        if ( fud->cursor+i >= (unsigned)aud->ndarr_0 ) {
             break;
         }
         
         dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
-                     arr+i*frame_size,
-                     frame_size, 1,
+                     arr+i*array_channel_count,
+                     array_channel_count, 1,
                      tmp_buf,
                      stream_channel_count, 1);
 
@@ -134,22 +140,19 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
          }
     }
 
-    cursor += i;
-
     // Move `self.cursor`
-    fud->cursor = cursor;
+    fud->cursor = (fud->cursor + i); // Assume ATOMIC STORE
 
-    if (cursor < aud->ndarr_0) {
+    if (fud->cursor < (unsigned int)aud->ndarr_0) {
         return paContinue;
     }
 
-    // Reset `self.cursor`
-    fud->cursor = 0;
-
     if (loop) {
+        fud->cursor = 0;
         return paContinue;
     }
     else {
+        // NOTE: if the stream has completed we don't reset the cursor to zero.
         return paComplete;
     }
 }
@@ -177,7 +180,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     int frames_read;
     int i, j;
     int loop;
-    int cursor; // Tracks position in file between callbacks
     int stream_channel_count; // Number of stream output channels
     int file_channel_count; // Samples per frame for input file
     //double read_buf[1024];
@@ -201,7 +203,6 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     stream_channel_count = stud->out_param->channelCount;
     mix_mat = stud->is_muted ? stud->mute_mat : stud->mix_mat;
     loop = fud->loop;
-    cursor = fud->cursor;
     finpath = sfud->finpath;
     fin = sfud->fin;
     file_channel_count = finfo->channels;
@@ -211,7 +212,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
 
     // read from the file
-    sf_seek(fin, cursor, SEEK_SET);
+    sf_seek(fin, fud->cursor, SEEK_SET);
 
     // This is ugly, but convenient. We can eventually avoid this if really, really necessary [yes it is really really necessary to not call malloc in a callback. --rossb]
     read_buf = (double *) malloc(1024 * file_channel_count * sizeof(double));
@@ -230,10 +231,9 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             buf_out[i*stream_channel_count + j] = (float) tmp_buf[j];
         }
     }
-    cursor += frames_read;
 
     // Move `self.cursor`
-    fud->cursor = cursor;
+    fud->cursor = (fud->cursor + frames_read);  // Assume ATOMIC STORE
 
     if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
     free(read_buf);
@@ -253,14 +253,13 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
         // We've reached EOF
         sf_seek(fin, 0, SEEK_SET); // Reset `libsndfile` cursor to start of sound file
 
-        // Move `self.cursor`
-        fud->cursor = 0;
-
         if (loop) {
+            fud->cursor = 0;
             return paContinue;
         }
         else {
             // We're really all done
+            // NOTE: if the stream has completed we don't reset the cursor to zero.
             return paComplete;
         }
     }
