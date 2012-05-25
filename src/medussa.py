@@ -332,15 +332,6 @@ class Device(object):
 
     @out_channels.setter
     def out_channels(self, val):
-        for s in self.child_streams:
-            if s.mix_mat.shape[0] < val:
-                m = s.mix_mat.shape[0]
-                n = s.mix_mat.shape[1]
-                x = np.zeros((val,n))
-                x[:m,:n] = s.mix_mat
-                s.mix_mat = x
-            else:
-                s.mix_mat = s.mix_mat[:val]
         self._out_channels = val
 
     def __init__(self, in_index=None, out_index=None, out_channels=None):
