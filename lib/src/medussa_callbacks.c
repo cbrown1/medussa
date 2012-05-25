@@ -104,12 +104,11 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     stream_channel_count = sud->out_param->channelCount;
 
-    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
-    assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
-
-
     // Determine `array_channel_count`, the number of channels, from `arr`
     array_channel_count = (unsigned int) aud->ndarr_1;
+
+    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == array_channel_count ); // matrix must have same number of source channels as the file
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
     arr = aud->ndarr + fud->cursor*array_channel_count;
