@@ -22,9 +22,11 @@ void free_medussa_dmatrix( medussa_dmatrix *mat );
 /* -------------------------------------------------------------------- */
 
 typedef enum {
-    STREAM_COMMAND_SET_MATRICES,    /* mix_mat->data_ptr0, mute_mat->data_ptr1 */
-    STREAM_COMMAND_FREE_MATRICES,   /* mix_mat->data_ptr0, mute_mat->data_ptr1 */
-    STREAM_COMMAND_SET_IS_MUTED,    /* is_muted->data_uint */
+    STREAM_COMMAND_SET_MATRICES,    /* mix_mat > data_ptr0, mute_mat > data_ptr1 */
+    STREAM_COMMAND_FREE_MATRICES,   /* mix_mat > data_ptr0, mute_mat > data_ptr1 */
+    STREAM_COMMAND_SET_IS_MUTED,    /* is_muted > data_uint */
+
+    FINITE_STREAM_COMMAND_SET_CURSOR /* cursor > data_uint */
 };
 
 
@@ -118,7 +120,9 @@ struct finite_user_data {
     void *parent;
 
     int loop;
-    unsigned int cursor;
+    /* While stream is running <cursor> is only written by PA callback and
+       hence used for single-writer-single-reader atomic communication: Written by callback, read by Python. */
+    volatile unsigned int cursor;
     unsigned int frames;
     double duration;
 };

@@ -37,6 +37,13 @@ void execute_finite_user_data_command( PaUtilRingBuffer *resultQueue, const stre
     finite_user_data *fud = (finite_user_data *) data;
 
     switch( command->command ){
+    case FINITE_STREAM_COMMAND_SET_CURSOR:
+
+        fud->cursor = command->data_uint;
+
+        /* TODO: when we implement async streaming from a separate thread, we may do something different here for the soundfile stream */
+
+        break;
 
     default:
         execute_stream_user_data_command( resultQueue, command, fud->parent );
@@ -55,12 +62,12 @@ void execute_array_user_data_command( PaUtilRingBuffer *resultQueue, const strea
 }
 
 int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
-                      unsigned long frames,
+                      unsigned long frame_count,
                       const PaStreamCallbackTimeInfo *time_info,
                       PaStreamCallbackFlags status_flags,
                       void *user_data)
 {
-    unsigned int i, j, frame_size, cursor, channel_count;
+    unsigned int i, j, array_channel_count, stream_channel_count;
 
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
@@ -71,9 +78,6 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     stream_user_data *sud;
     finite_user_data *fud;
     array_user_data *aud;
-
-    // Point `buf_out` to actual output buffer
-    buf_out = (float *) pa_buf_out;
 
     // Point `self` to calling instance
     aud = (array_user_data *) user_data;
@@ -98,48 +102,56 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
 
-    // Determine `frame_size`, the number of channels, from `arr` (ERROR)
-    frame_size = (unsigned int) aud->ndarr_1;
+    stream_channel_count = sud->out_param->channelCount;
+
+    // Determine `array_channel_count`, the number of channels, from `arr`
+    array_channel_count = (unsigned int) aud->ndarr_1;
+
+    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == array_channel_count ); // matrix must have same number of source channels as the file
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
-    cursor = fud->cursor;
-    arr = aud->ndarr + cursor*frame_size;
-
-    channel_count = sud->out_param->channelCount;
+    arr = aud->ndarr + fud->cursor*array_channel_count;
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
-    for (i = 0; i < frames; i++) {
-        if (aud->ndarr_0 <= (fud->cursor+i)) {
+    buf_out = (float *) pa_buf_out;
+    for (i = 0; i < frame_count; i++) {
+        if ( fud->cursor+i >= (unsigned)aud->ndarr_0 ) {
             break;
         }
         
         dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
-                     arr+i*frame_size,
-                     frame_size, 1,
+                     arr+i*array_channel_count,
+                     array_channel_count, 1,
                      tmp_buf,
-                     channel_count, 1);
+                     stream_channel_count, 1);
 
-        for (j = 0; j < channel_count; j++) {
-            buf_out[i*channel_count + j] = (float) tmp_buf[j];
+        for (j = 0; j < stream_channel_count; j++) {
+            buf_out[i*stream_channel_count + j] = (float) tmp_buf[j];
         }
     }
-    cursor += i;
+
+    // if we're at the end of the array write silence into the remainder of the output buffer
+    for (; i < frame_count; i++) {
+         for (j = 0; j < stream_channel_count; j++) {
+                buf_out[i*stream_channel_count + j] = 0.0f;
+         }
+    }
 
     // Move `self.cursor`
-    fud->cursor = cursor;
+    fud->cursor = (fud->cursor + i); // Assume ATOMIC STORE
 
-    if (cursor < aud->ndarr_0) {
+    if (fud->cursor < (unsigned int)aud->ndarr_0) {
         return paContinue;
     }
 
-    // Reset `self.cursor`
-    fud->cursor = 0;
-
     if (loop) {
+        fud->cursor = 0;
         return paContinue;
     }
     else {
+        // NOTE: if the stream has completed we don't reset the cursor to zero.
         return paComplete;
     }
 }
@@ -157,34 +169,28 @@ void execute_sndfile_read_user_data_command( PaUtilRingBuffer *resultQueue, cons
 }
 
 int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
-                           unsigned long frames,
+                           unsigned long frame_count,
                            const PaStreamCallbackTimeInfo *time_info,
                            PaStreamCallbackFlags status_flags,
                            void *user_data)
 {
     float *buf_out;   // Points to `pa_buf_out`
-
     SNDFILE *fin;
     int frames_read;
-
     int i, j;
     int loop;
-    int cursor; // Tracks position in file between callbacks
-    int channel_count; // Number of stream output channels
-    int frame_size; // Samples per frame for input file
+    int stream_channel_count; // Number of stream output channels
+    int file_channel_count; // Samples per frame for input file
     //double read_buf[1024];
     double *read_buf; // we HAVE to malloc, but we're being ugly in this callback anyway, so oh well
     double tmp_buf[MAX_FRAME_SIZE];
     char *finpath;
-
+    SF_INFO *finfo;
+    medussa_dmatrix *mix_mat;
     sndfile_user_data *sfud;
     finite_user_data  *fud;
     stream_user_data  *stud;
-        
-    SF_INFO *finfo;
-    PaStreamParameters *out_param;
-    medussa_dmatrix *mix_mat;
-
+    
     sfud = (sndfile_user_data *) user_data;
     fud  = (finite_user_data *)  sfud->parent;
     stud = (stream_user_data *)  fud->parent;
@@ -192,60 +198,67 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     execute_commands_in_pa_callback( stud->command_queues, execute_sndfile_read_user_data_command, sfud );
 
     // Begin attribute acquisition
-    out_param = stud->out_param;
     finfo = sfud->finfo;
-    channel_count = out_param->channelCount;
+    stream_channel_count = stud->out_param->channelCount;
     mix_mat = stud->is_muted ? stud->mute_mat : stud->mix_mat;
     loop = fud->loop;
-    cursor = fud->cursor;
     finpath = sfud->finpath;
     fin = sfud->fin;
-    frame_size = finfo->channels;
+    file_channel_count = finfo->channels;
     // End attribute acquisition
+
+    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
+
+    // read from the file
+    sf_seek(fin, fud->cursor, SEEK_SET);
+
+    // This is ugly, but convenient. We can eventually avoid this if really, really necessary [yes it is really really necessary to not call malloc in a callback. --rossb]
+    read_buf = (double *) malloc(1024 * file_channel_count * sizeof(double));
+    if (read_buf == NULL) { printf("DEBUG 2: NULL pointer\n"); }
+
+    frames_read = (int) sf_readf_double (fin, read_buf, frame_count);
+    //
 
     buf_out = (float *) pa_buf_out;
     if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }
-
-    sf_seek(fin, cursor, SEEK_SET);
-
-    // This is ugly, but convenient. We can eventually avoid this if really, really necessary
-    read_buf = (double *) malloc(1024 * frame_size * sizeof(double));
-    if (read_buf == NULL) { printf("DEBUG 2: NULL pointer\n"); }
-
-    frames_read = (int) sf_readf_double (fin, read_buf, frames);
-
     for (i = 0; i < frames_read; i++) {
         dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
-                     (read_buf+i*frame_size), frame_size, 1,
-                     tmp_buf, channel_count, 1);
-        for (j = 0; j < channel_count; j++) {
-            buf_out[i*channel_count + j] = (float) tmp_buf[j];
+                     (read_buf+i*file_channel_count), file_channel_count, 1,
+                     tmp_buf, stream_channel_count, 1);
+        for (j = 0; j < stream_channel_count; j++) {
+            buf_out[i*stream_channel_count + j] = (float) tmp_buf[j];
         }
     }
-    cursor += frames_read;
 
     // Move `self.cursor`
-    fud->cursor = cursor;
+    fud->cursor = (fud->cursor + frames_read);  // Assume ATOMIC STORE
 
     if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
     free(read_buf);
 
-    if (frames_read == frames) {
+    if (frames_read == frame_count) {
         // Frames returned equals frames requested, so we didn't reach EOF
         return paContinue;
     }
     else {
+        // write silence into the remainder of the output buffer
+        for( i = frames_read; i < (int)frame_count; ++i ) {
+            for (j = 0; j < stream_channel_count; j++) {
+                buf_out[i*stream_channel_count + j] = 0.0f;
+            }
+        }
+
         // We've reached EOF
         sf_seek(fin, 0, SEEK_SET); // Reset `libsndfile` cursor to start of sound file
 
-        // Move `self.cursor`
-        fud->cursor = 0;
-
         if (loop) {
+            fud->cursor = 0;
             return paContinue;
         }
         else {
             // We're really all done
+            // NOTE: if the stream has completed we don't reset the cursor to zero.
             return paComplete;
         }
     }
@@ -264,22 +277,18 @@ void execute_tone_user_data_command( PaUtilRingBuffer *resultQueue, const stream
 }
 
 int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
-                    unsigned long frames,
+                    unsigned long frame_count,
                     const PaStreamCallbackTimeInfo *time_info,
                     PaStreamCallbackFlags status_flags,
                     void *user_data)
 {
-    unsigned int i, j, t, frame_size;
+    unsigned int i, j, t, channel_count;
     float *buf_out;
-    
     float fs, tone_freq;
-
     medussa_dmatrix *mix_mat;
-
-    PaStreamParameters *spout;
-
     stream_user_data *sud;
     tone_user_data *tud;
+
     tud = (tone_user_data *) user_data;
     sud = (stream_user_data *) tud->parent;
 
@@ -294,25 +303,20 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
 
     // `unsigned int t` from `self.t`
     t = tud->t;
-
-    // `PaStreamParameters *spout` from `Stream.out_param`
-    spout = (PaStreamParameters *) sud->out_param;
-
     mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
 
-    // Point to actual output buffer
-    buf_out = (float *) pa_buf_out;
+    channel_count = sud->out_param->channelCount;
+    assert( mix_mat->mat_0 == channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == 1 ); // matrix must have 1 source channel: our tone generator.
 
-    frame_size = mix_mat->mat_0;
-
-    //printf("%f, %f, %d\n", fs, tone_freq, frame_size);
+    //printf("%f, %f, %d\n", fs, tone_freq, channel_count);
     
-
     // Main loop for tone generation
-    for (i = 0; i < frames; i++) {
-        for (j = 0; j < frame_size; j++) {
+    buf_out = (float *) pa_buf_out;
+    for (i = 0; i < frame_count; i++) {
+        for (j = 0; j < channel_count; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
-            buf_out[i*frame_size + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat->mat[j]));
+            buf_out[i*channel_count + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat->mat[j]));
         }
         t++;
     }
@@ -336,27 +340,19 @@ void execute_white_user_data_command( PaUtilRingBuffer *resultQueue, const strea
 }
 
 int callback_white  (const void *pa_buf_in, void *pa_buf_out,
-                     unsigned long frames,
+                     unsigned long frame_count,
                      const PaStreamCallbackTimeInfo *time_info,
                      PaStreamCallbackFlags status_flags,
                      void *user_data)
 {
-    unsigned int i, j, frame_size;
+    unsigned int i, j, channel_count;
     float *buf_out;
-    
-    float fs;
-
+    double fs;
     medussa_dmatrix *mix_mat;
-
     double tmp;
-
-    PaStreamParameters *spout;
-
     white_user_data *wud;
     stream_user_data *sud;
-
-    // PRNG variables
-    rk_state *rks;
+    rk_state *rks; // PRNG variables
 
     wud = (white_user_data *) user_data;
     sud = (stream_user_data *) wud->parent;
@@ -366,15 +362,15 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
     fs = sud->fs;
     rks = wud->rks;
     mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
-    spout = sud->out_param;
-
-    buf_out = (float *) pa_buf_out;
-
-    frame_size = spout->channelCount;
+   
+    channel_count = sud->out_param->channelCount;
+    assert( mix_mat->mat_0 == channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == 1 ); // matrix must have 1 source channel: our noise generator.
 
     // Main loop for tone generation
-    for (i = 0; i < frames; i++) {
-        for (j = 0; j < frame_size; j++) {
+    buf_out = (float *) pa_buf_out;
+    for (i = 0; i < frame_count; i++) {
+        for (j = 0; j < channel_count; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
             tmp = rk_gauss(rks) * 0.1;
             //printf("%.6f\n", rk_gauss(state));
@@ -386,7 +382,7 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 //printf("DEBUG: clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp * ((float) mix_mat->mat[j]);
+            buf_out[i*channel_count + j] = (float) (tmp * ((float) mix_mat->mat[j]));
         }
     }
 
@@ -406,25 +402,18 @@ void execute_pink_user_data_command( PaUtilRingBuffer *resultQueue, const stream
 }
 
 int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
-                    unsigned long frames,
+                    unsigned long frame_count,
                     const PaStreamCallbackTimeInfo *time_info,
                     PaStreamCallbackFlags status_flags,
                     void *user_data)
 {
-    unsigned int i, j, frame_size;
+    unsigned int i, j, channel_count;
     float *buf_out;
-    
-    float fs;
-
+    double fs;
     medussa_dmatrix *mix_mat;
-
     double tmp;
-
-    PaStreamParameters *spout;
-
     pink_user_data *pud;
     stream_user_data *sud;
-
     pink_noise_t *pn;
 
     pud = (pink_user_data *) user_data;
@@ -436,15 +425,15 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
     pn = (pink_noise_t *) pud->pn;
 
     mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
-    spout = sud->out_param;
-
-    buf_out = (float *) pa_buf_out;
-
-    frame_size = spout->channelCount;
+    
+    channel_count = sud->out_param->channelCount;
+    assert( mix_mat->mat_0 == channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == 1 ); // matrix must have 1 source channel: our noise generator.
 
     // Main loop for tone generation
-    for (i = 0; i < frames; i++) {
-        for (j = 0; j < frame_size; j++) {
+    buf_out = (float *) pa_buf_out;
+    for (i = 0; i < frame_count; i++) {
+        for (j = 0; j < channel_count; j++) {
             // Note that we implicitly assume `mix_mat` is an `n x 1` matrix
             tmp = generate_pink_noise_sample(pn);
             //printf("%.6f\n", rk_gauss(state));
@@ -456,7 +445,7 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
                 tmp = 1.0;
                 //printf("DEBUG: clipped above\n");
             }
-            buf_out[i*frame_size + j] = tmp * ((float) mix_mat->mat[j]);
+            buf_out[i*channel_count + j] = (float) (tmp * ((float) mix_mat->mat[j]));
         }
     }
 
