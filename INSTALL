@@ -1,0 +1,42 @@
+Building and installing on linux:
+===========================
+
+ Assuming that you have a compatible Python and NumPy installed:
+ 
+ From a command prompt, go the the Medussa directory at type:
+ 
+ reinstall_linux.sh 2.7
+ 
+ (Replace "2.7" with whatever Python version you want to use. Medussa has been 
+ built successfully with Python 2.7 and 3.2, although others might be fine)
+ 
+ This removes any existing version, rebuilds the lib, and installs the package.
+ 
+ 
+Building and installing on Windows:
+===========================
+
+ Assuming that you have a compatible Python and NumPy installed, and you're 
+ using MSVC 10:
+ 
+ From a command prompt, go the the Medussa directory at type:
+ 
+ reinstall_win.bat 2.7
+ 
+ (Replace "2.7" with whatever Python version you want to use. Medussa has been 
+ built successfully with Python 2.7 and 3.2, although others might be fine)
+ 
+ This uninstalls any existing version. Rebuilds the msi. Installs the msi.
+
+ ------------------------------------------------------------------------------
+
+ Building the Medussa DLL only (this doesn't actually install anything though):
+	
+	1. Open the Visual Studio 10 project at:
+	\medussa\lib\build\win\msvc10\medusa.vcxproj
+	
+	2. Select the Solution Configuration according to the Python version you're using (I chose Release Py2.7).
+	
+	3. Choose Build Solution from the Build menu (or hit F7).
+	
+

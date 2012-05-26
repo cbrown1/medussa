@@ -2,24 +2,24 @@ import platform
 import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
-from os.path import exists
+from os.path import exists, join
 from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medussa\\portaudio_x86.dll"
-    if not exists(libname):
+    libname = os.path.join(get_python_lib(), "medussa", "portaudio_x86.dll")
+    if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
-    # Load the shared library
-    pa = ctypes.CDLL(libname)
 	
 else:
     libname = find_library("portaudio")
     if libname == None:
-        raise RuntimeError("Unable to locate library `portaudio`.")
-    # Load the shared library
-    pa = ctypes.CDLL("/usr/local/lib/"+libname)
+        raise RuntimeError("Unable to locate library: `portaudio`.")
 
+# Load the shared library
+# In linux, if this doesn't work try:
+#su -c "echo '/usr/local/lib' >> /etc/ld.so.conf"
+pa = ctypes.CDLL(libname)
 
 # set `restype` return type values for some functions
 pa.Pa_GetStreamTime.restype  = c_double  # c_double ~ PaTime

@@ -2,7 +2,7 @@
 
 package_name = "medussa"
 version = "1.0"
-author = "Christopher A. Brown, Joseph K. Ranweiler"
+author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina"
 author_email = "c-b /at/ asu.edu"
 maintainer = "Christopher Brown"
 maintainer_email = "c-b /at/ asu.edu"

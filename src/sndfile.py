@@ -25,6 +25,9 @@ else:
     if libname == None:
         raise RuntimeError("Unable to locate library `libsndfile`")
 
+# Load the shared library
+# In linux, if this doesn't work try:
+#su -c "echo '/usr/local/lib' >> /etc/ld.so.conf"
 csndfile = CDLL(libname)
 
 class SF_INFO (Structure):
