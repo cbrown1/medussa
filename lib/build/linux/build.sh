@@ -30,12 +30,22 @@ fi
 
 numpyIncludeDirectory=$(python${PYVER} -c "from numpy import distutils; print(distutils.misc_util.get_numpy_include_dirs()[0])")
 if [ ! -d "$numpyIncludeDirectory" ]; then
-    echo "Can't find numpy include folder!"
-    exit 1
+    numpyIncludeDirectory=/usr/lib/python${PYVER}/site-packages/numpy/core/include/
+    if [ ! -d "$numpyIncludeDirectory" ]; then
+        numpyIncludeDirectory=/usr/local/lib/python${PYVER}/site-packages/numpy/core/include/
+        if [ ! -d "$numpyIncludeDirectory" ]; then
+		    numpyIncludeDirectory=/opt/python${PYVER}/lib/python${PYVER}/site-packages/numpy/core/include/
+		    if [ ! -d "$numpyIncludeDirectory" ]; then
+		        echo "Can't find numpy include folder!"
+		        exit 1
+		    fi
+        fi
+    fi
 fi
-sharedLibsIncludeDirectory=../../include
 
-make FLAGS="-I$sharedLibsIncludeDirectory -I$pythonIncludeDirectory -I$numpyIncludeDirectory"
+paIncludeDirectory=../../include
+
+make FLAGS="-I$paIncludeDirectory -I$pythonIncludeDirectory -I$numpyIncludeDirectory"
 if [ $? -eq 0 ] ; then
   mkdir ./py${PYVER}
   cp libmedussa.so ./py${PYVER}

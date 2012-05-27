@@ -30,5 +30,3 @@ fi
 python${pyver} setup.py build
 sudo python${pyver} setup.py install
 
-#python${pyver} setup.py bdist_rpm --fix-python --force-arch=i386 --no-autoreq --distribution-name=el6
-

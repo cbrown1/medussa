@@ -8,6 +8,8 @@ dependencies="libportaudio2, libsndfile1, python-numpy (>= 1.2)" # Use '' for no
 section='python';  # Most python packages seem to go here
 
 pyver=$1
+pyvermaj=${pyver:0:1}
+pyvermin=${pyver:2:3}
 if [ "$pyver" == "" ]; then
 	echo "Usage: package_linux.sh pyver # where pyver ~= 2.7";
 	exit

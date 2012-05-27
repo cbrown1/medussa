@@ -1,42 +1,80 @@
-Building and installing on linux:
-===========================
+On Linux
+========
 
- Assuming that you have a compatible Python and NumPy installed:
- 
- From a command prompt, go the the Medussa directory at type:
+Build Requirements
+------------------
+
+ You will need the devel packages for python and numpy (>= 1.3). 
+
+
+Runtime requirements
+--------------------
+
+ The following will need to be installed:
+
+ portaudio <http://www.portaudio.com>. Only tested with v19, November 21, 2011, 
+ SVN rev 1788 (or later).
+
+ libsndfile <http://www.mega-nerd.com/libsndfile/>. Only tested with version 
+ 1.0.25, July 13 2011 (or later).
+
+ numpy <http://numpy.scipy.org/>. Version 1.3 or later should work.
+
+
+Building and installing
+-----------------------
+
+ This assuming that you have a compatible Python and NumPy installed)
+ From a command prompt, go the the Medussa directory and type:
  
  reinstall_linux.sh 2.7
  
- (Replace "2.7" with whatever Python version you want to use. Medussa has been 
- built successfully with Python 2.7 and 3.2, although others might be fine)
+ (Replace "2.7" with whatever Python version you want to use. Medussa builds 
+ and runs fine with Python 2.6, 2.7 and 3.2, although others might be ok too)
  
  This removes any existing version, rebuilds the lib, and installs the package.
- 
- 
-Building and installing on Windows:
-===========================
 
- Assuming that you have a compatible Python and NumPy installed, and you're 
- using MSVC 10:
+
+Building the Medussa shared lib
+-------------------------------
+
+ (this doesn't actually install anything, it only build the lib) 
+ From a command prompt, type:
  
- From a command prompt, go the the Medussa directory at type:
+ cd lib/build/linux
+ ./build.sh 2.7
+ cd ../../..
+
+ 
+On Windows:
+===========
+ 
+Building and installing
+-----------------------
+
+ Assuming that you have a compatible Python and NumPy (>= 1.3) installed, and
+ you're using MSVC 10:
+ 
+ From a command prompt, go the the Medussa directory and type:
  
  reinstall_win.bat 2.7
  
- (Replace "2.7" with whatever Python version you want to use. Medussa has been 
- built successfully with Python 2.7 and 3.2, although others might be fine)
+ (Replace "2.7" with whatever Python version you want to use. Medussa builds 
+ and runs fine with Python 2.6, 2.7 and 3.2, although others might be ok too)
  
- This uninstalls any existing version. Rebuilds the msi. Installs the msi.
+ This uninstalls any existing version, rebuilds the msi, & installs the msi.
 
- ------------------------------------------------------------------------------
+Building the Medussa DLL
+------------------------
 
- Building the Medussa DLL only (this doesn't actually install anything though):
+ (this doesn't actually install anything, it only build the lib):
 	
-	1. Open the Visual Studio 10 project at:
-	\medussa\lib\build\win\msvc10\medusa.vcxproj
+ 1. Open the Visual Studio 10 project at:
+    \medussa\lib\build\win\msvc10\medusa.vcxproj
+
+ 2. Select the Solution Configuration according to the Python version you're 
+    using (I chose Release Py2.7).
 	
-	2. Select the Solution Configuration according to the Python version you're using (I chose Release Py2.7).
-	
-	3. Choose Build Solution from the Build menu (or hit F7).
+ 3. Choose Build Solution from the Build menu (or hit F7).
 	
 
