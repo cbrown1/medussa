@@ -18,28 +18,24 @@ if [ ! -d "$pythonIncludeDirectory" ]; then
         if [ ! -d "$pythonIncludeDirectory" ]; then
 		    pythonIncludeDirectory=/opt/python${PYVER}/include/python${PYVER}/
 			if [ ! -d "$pythonIncludeDirectory" ]; then
-			    echo "Can't find python include folder!"
-			    exit 1
+		        pythonIncludeDirectory=/opt/python${PYVER}/include/python${PYVER}m/
+			    if [ ! -d "$pythonIncludeDirectory" ]; then
+			        echo "Can't find python include folder!"
+			        exit 1
+                fi
 			fi
         fi
     fi
 fi
 
-numpyIncludeDirectory=/usr/lib/python${PYVER}/site-packages/numpy/core/include/
+numpyIncludeDirectory=$(python${PYVER} -c "from numpy import distutils; print(distutils.misc_util.get_numpy_include_dirs()[0])")
 if [ ! -d "$numpyIncludeDirectory" ]; then
-    numpyIncludeDirectory=/usr/local/lib/python${PYVER}/site-packages/numpy/core/include/
-    if [ ! -d "$numpyIncludeDirectory" ]; then
-		numpyIncludeDirectory=/opt/python${PYVER}/lib/python${PYVER}/site-packages/numpy/core/include/
-		if [ ! -d "$numpyIncludeDirectory" ]; then
-		    echo "Can't find numpy include folder!"
-		    exit 1
-		fi
-    fi
+    echo "Can't find numpy include folder!"
+    exit 1
 fi
+sharedLibsIncludeDirectory=../../include
 
-paIncludeDirectory=../../include
-
-make FLAGS="-I$paIncludeDirectory -I$pythonIncludeDirectory -I$numpyIncludeDirectory"
+make FLAGS="-I$sharedLibsIncludeDirectory -I$pythonIncludeDirectory -I$numpyIncludeDirectory"
 if [ $? -eq 0 ] ; then
   mkdir ./py${PYVER}
   cp libmedussa.so ./py${PYVER}
