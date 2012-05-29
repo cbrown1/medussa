@@ -1,11 +1,35 @@
-# The format field in the above SF_INFO structure is made up of the bit-wise OR
-# of a major format type (values between 0x10000 and 0x08000000), a minor format
-# type (with values less than 0x10000) and an optional endian-ness value. The
-# currently understood formats are listed in sndfile.h as follows and also include
-# bitmasks for separating major and minor file types. Not all combinations of
-# endian-ness and major and minor file types are valid.
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+
+# The format field in the associated SF_INFO structure is made up of the 
+# bit-wise OR of a major format type (values between 0x10000 and 0x08000000), 
+# a minor format type (with values less than 0x10000) and an optional 
+# endian-ness value. The currently understood formats are listed in sndfile.h 
+# as follows and also include bitmasks for separating major and minor file 
+# types. Not all combinations of endian-ness and major and minor file types 
+# are valid.
 #
 # [ http://www.mega-nerd.com/libsndfile/api.html#open ]
+
 class sndfile_formats():
     def __init__(self):
         self.sf_container_descriptions= {
