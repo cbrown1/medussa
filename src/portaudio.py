@@ -24,7 +24,7 @@ import platform
 import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
-from os.path import exists, join
+import os
 from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
@@ -36,7 +36,7 @@ if platform.system() == "Windows":
 else:
     libname = find_library("portaudio")
     if libname == None:
-        raise RuntimeError("Unable to locate library: `portaudio`.")
+        raise RuntimeError("Unable to locate library: `portaudio`")
 
 # Load the shared library
 # In linux, if this doesn't work try:
