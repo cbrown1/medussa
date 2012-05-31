@@ -1828,7 +1828,7 @@ def write_file(file_name, arr, fs,
         finfo.channels = arr.shape[1]
     else:
         raise TypeError('Array dimension must == 1 or 2')
-    finfo.format = c_int(format)
+    finfo.format = c_int(fmt)
 
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
@@ -1837,13 +1837,13 @@ def write_file(file_name, arr, fs,
         frames_written = cmedussa.writefile_helper(bytes(file_name, 'utf-8'),
                                                    byref(finfo),
                                                    _arr,
-                                                   format,
+                                                   fmt,
                                                    frames)
     else:
         frames_written = cmedussa.writefile_helper(file_name,
                                                    byref(finfo),
                                                    _arr,
-                                                   format,
+                                                   fmt,
                                                    frames)
 
     return frames_written
@@ -1895,7 +1895,7 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 
     endformat = majformat | subformat[bits]
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)
 
 
 def write_flac(file_name, arr, fs, bits='s16', frames=None):
@@ -1942,7 +1942,7 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 
     endformat = majformat | subformat[bits]
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)
 
 
 def write_ogg(file_name, arr, fs, frames=None):
@@ -1982,4 +1982,4 @@ def write_ogg(file_name, arr, fs, frames=None):
 
     endformat = majformat | subformat
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)
