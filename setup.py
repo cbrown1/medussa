@@ -23,8 +23,10 @@
 from distutils.core import setup
 from distutils.sysconfig import get_python_lib
 import os
-import platform
 import sys
+import platform
+import subprocess
+import shutil
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
@@ -35,7 +37,6 @@ docs =  __import__('docs', fromlist=['package_name', 'version', 'url',
                     'author', 'author_email', 'long_help', 
                     'short_description', 'long_description', 'maintainer', 
                     'maintain_email', 'keywords', 'platforms'])
-
 del sys.path[0]
 
 medussa_package = [docs.package_name]
