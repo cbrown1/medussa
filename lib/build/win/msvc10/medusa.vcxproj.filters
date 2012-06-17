@@ -36,6 +36,9 @@
     <ClCompile Include="..\..\..\lib\pa_ringbuffer\pa_ringbuffer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\disk_streaming.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\medussa_matrix.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\pa_memorybarrier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\disk_streaming.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
