@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+
 import time
 import os
 import numpy as np
@@ -1815,7 +1835,7 @@ def write_file(file_name, arr, fs,
         finfo.channels = arr.shape[1]
     else:
         raise TypeError('Array dimension must == 1 or 2')
-    finfo.format = c_int(format)
+    finfo.format = c_int(fmt)
 
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
@@ -1824,13 +1844,13 @@ def write_file(file_name, arr, fs,
         frames_written = cmedussa.writefile_helper(bytes(file_name, 'utf-8'),
                                                    byref(finfo),
                                                    _arr,
-                                                   format,
+                                                   fmt,
                                                    frames)
     else:
         frames_written = cmedussa.writefile_helper(file_name,
                                                    byref(finfo),
                                                    _arr,
-                                                   format,
+                                                   fmt,
                                                    frames)
 
     return frames_written
@@ -1882,7 +1902,7 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 
     endformat = majformat | subformat[bits]
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)
 
 
 def write_flac(file_name, arr, fs, bits='s16', frames=None):
@@ -1929,7 +1949,7 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 
     endformat = majformat | subformat[bits]
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)
 
 
 def write_ogg(file_name, arr, fs, frames=None):
@@ -1969,4 +1989,4 @@ def write_ogg(file_name, arr, fs, frames=None):
 
     endformat = majformat | subformat
 
-    return write_file(file_name, arr, fs, format=endformat, frames=frames)
+    return write_file(file_name, arr, fs, fmt=endformat, frames=frames)

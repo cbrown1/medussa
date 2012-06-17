@@ -1,9 +1,32 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+
 from distutils.core import setup
 from distutils.sysconfig import get_python_lib
 import os
-import platform
 import sys
+import platform
+import subprocess
+import shutil
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
@@ -14,7 +37,6 @@ docs =  __import__('docs', fromlist=['package_name', 'version', 'url',
                     'author', 'author_email', 'long_help', 
                     'short_description', 'long_description', 'maintainer', 
                     'maintain_email', 'keywords', 'platforms'])
-
 del sys.path[0]
 
 medussa_package = [docs.package_name]
@@ -32,7 +54,7 @@ if platform.system() == "Windows":
 else:
     medussa_data_files.append('lib/build/linux/py%s/libmedussa.so' % pyver)
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
-print get_python_lib()
+
 setup(name=docs.package_name,
     version=docs.version,
     description=docs.short_description,

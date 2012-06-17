@@ -22,11 +22,31 @@
 
 set -e
 
+release=1
+arch="i386"; #"all"; #"i386"; #'amd64'
+dist="el6"
+
 pyver=$1
+pyvermaj=${pyver:0:1}
+pyvermin=${pyver:2:3}
+
+pydist="py${pyvermaj}${pyvermin}-opt"
+
 if [ "$pyver" == "" ]; then
-	echo "Usage: reinstall_linux.sh pyver # where pyver ~= 2.7";
+	echo "Usage: package_linux_rpm.sh pyver # where pyver ~= 2.7";
 	exit
 fi
+
+pybin="python${pyver}";
+
+# Get metadata
+ver=$(${pybin} setup.py --version);
+package=$(${pybin} setup.py --name);
+maintainer=$(${pybin} setup.py --maintainer);
+maintaineremail=$(${pybin} setup.py --maintainer-email);
+sdescription=$(${pybin} setup.py --description);
+ldescription=$(${pybin} setup.py --long-description);
+long_description="${sdescription}\n\n${ldescription}\n\nThis is a custom build of Medussa to /opt/python${pyver}\n";
 
 # Build lib
 cd ./lib/build/linux
@@ -36,17 +56,11 @@ fi
 ./build.sh $pyver
 cd ../../..
 
-installdir=$(python${pyver} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
-
-if [ -d ${installdir}/medussa ]; then
-    sudo rm -r ${installdir}/medussa
-fi
-if [ -e ${installdir}/medussa-*.egg-info ]; then
-    sudo rm ${installdir}/medussa-*.egg-info
-fi
 if [ -d build ]; then
     sudo rm -r build
 fi
 python${pyver} setup.py build
-sudo python${pyver} setup.py install
+sudo python${pyver} setup.py bdist_rpm --fix-python --binary-only --force-arch=${arch} --no-autoreq --distribution-name=${dist} --release=${release} --vendor="${maintainer} <${maintaineremail}>"
+
+mv -f dist/${package}-${ver}-${release}.${arch}.rpm dist/${package}-${ver}-${release}.${pydist}.${dist}.${arch}.rpm
 

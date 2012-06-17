@@ -1,3 +1,25 @@
+/*
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+*/
+
 #include "medussa_callbacks.h"
 #include "medussa_matrix.h"
 
@@ -102,12 +124,11 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     stream_channel_count = sud->out_param->channelCount;
 
-    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
-    assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
-
-
     // Determine `array_channel_count`, the number of channels, from `arr`
     array_channel_count = (unsigned int) aud->ndarr_1;
+
+    assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
+    assert( mix_mat->mat_1 == array_channel_count ); // matrix must have same number of source channels as the file
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
     arr = aud->ndarr + fud->cursor*array_channel_count;

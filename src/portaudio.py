@@ -1,25 +1,47 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+
 import platform
 import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
-from os.path import exists
+import os
 from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medussa\\portaudio_x86.dll"
-    if not exists(libname):
+    libname = os.path.join(get_python_lib(), "medussa", "portaudio_x86.dll")
+    if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
-    # Load the shared library
-    pa = ctypes.CDLL(libname)
 	
 else:
     libname = find_library("portaudio")
     if libname == None:
-        raise RuntimeError("Unable to locate library `portaudio`.")
-    # Load the shared library
-    pa = ctypes.CDLL("/usr/local/lib/"+libname)
+        raise RuntimeError("Unable to locate library: `portaudio`")
 
+# Load the shared library
+# In linux, if this doesn't work try:
+#su -c "echo '/usr/local/lib' >> /etc/ld.so.conf"
+pa = ctypes.CDLL(libname)
 
 # set `restype` return type values for some functions
 pa.Pa_GetStreamTime.restype  = c_double  # c_double ~ PaTime
