@@ -228,7 +228,7 @@ void IOBufferList_insert_ordered_by_sequence_number( IOBufferList *list, IOBuffe
             previous = current;
             current = current->next;
         }
-        assert( b->sequence_number >= previous && b->sequence_number < current );
+        assert( b->sequence_number >= previous->sequence_number && b->sequence_number < current->sequence_number );
         b->next = current;
         previous->next = b;
     }
@@ -290,9 +290,9 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     result->completed_read_buffer_count = 0;
 
     result->next_read_sequence_number = 0;
-    result->next_completed_read_sequence_number;
+    result->next_completed_read_sequence_number = 0;
 
-    result->next_read_position_frames;
+    result->next_read_position_frames = 0;
     result->current_position_frames = 0;
 
     // allocate i/o buffers
@@ -531,11 +531,11 @@ void file_stream_advance_read_ptr( FileStream *file_stream, sf_count_t frame_cou
 
 
 typedef struct IOThread{
+    volatile int run;
 
 #ifdef WIN32
     HANDLE thread_handle;
     WIN_THREAD_ID thread_id;
-    volatile int run;
 #else
     // posix
     pthread_t thread;
@@ -743,7 +743,7 @@ static void destroy_iothread()
 {
     int i;
 
-    assert( IOBufferList_is_empty(iothread_->pending_reads_fifo) );
+    assert( IOBufferList_is_empty(&iothread_->pending_reads_fifo) );
 
     iothread_->run = 0;
 

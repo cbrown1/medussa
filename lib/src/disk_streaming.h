@@ -4,8 +4,6 @@
 #include <sndfile.h>
 #include "pa_ringbuffer.h"
 
-typedef struct FileStream;
-
 // ---------------------------------------------------------------------------
 // i/o buffer is the unit of file i/o.
 // the buffer data is read in the i/o thread and used in the pa callback
