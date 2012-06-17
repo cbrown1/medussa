@@ -12,6 +12,7 @@
 // posix
 #include <pthread.h>
 #include <semaphore.h>
+#include <unistd.h>
 #endif
 
 //#define TRACE( x ) printf x ;
@@ -239,7 +240,7 @@ void free_file_stream( FileStream *file_stream )
 #ifdef WIN32
             Sleep(10);
 #else
-            FIXME POSIX SLEEP
+            usleep(10000);
 #endif
             file_stream_process_buffers_from_io_thread( file_stream );
         } while( file_stream_pending_read_count(file_stream) < file_stream->buffer_count );
