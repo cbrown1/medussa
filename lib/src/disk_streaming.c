@@ -553,7 +553,7 @@ typedef struct IOThread{
 #define IOTHREAD_COMMAND_QUEUE_COMMAND_COUNT  (1024) /* must be a power of 2 */
 
 static IOThread *iothread_ = NULL; // singleton
-int iothread_refcount_ = 0;
+static int iothread_refcount_ = 0;
 
 static void iothread_process_commands()
 {
@@ -707,7 +707,7 @@ static int create_iothread() // returns 0 on success
 
         pthread_result = pthread_create( &iothread_->thread, &attr, io_thread_func, iothread_ );
         pthread_attr_destroy( &attr );
-        if( !pthread_result )
+        if( pthread_result != 0 )
             goto fail;
     }
 #endif
@@ -734,6 +734,7 @@ fail:
 #endif
 
         free( iothread_ );
+        iothread_ = NULL;
     }
 
     return IOTHREAD_FAIL;
