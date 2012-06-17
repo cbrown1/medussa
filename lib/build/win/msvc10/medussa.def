@@ -25,3 +25,5 @@ EXPORTS
     execute_tone_user_data_command
     execute_pink_user_data_command
     execute_white_user_data_command
+    allocate_file_stream
+    free_file_stream
