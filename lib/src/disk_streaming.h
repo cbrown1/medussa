@@ -7,8 +7,10 @@
 typedef struct FileStream;
 
 // ---------------------------------------------------------------------------
-// i/o buffer is the unit of file io.
+// i/o buffer is the unit of file i/o.
 // the buffer data is read in the i/o thread and used in the pa callback
+// ***
+// Threading: accessed from one thread at a time. Passed between threads using PaUtilRingBuffer
 
 #define IOBUFFER_INVALID_POSITION (-1)
 
@@ -29,6 +31,8 @@ void free_iobuffer( IOBuffer *buffer );
 
 // ---------------------------------------------------------------------------
 // singly linked list of IOBuffers used as a LIFO or FIFO stack or list.
+// ***
+// Threading: accessed from one thread at a time.
 
 typedef struct IOBufferList{ 
     IOBuffer *head;
@@ -47,25 +51,29 @@ void IOBufferList_insert_ordered_by_sequence_number( IOBufferList *list, IOBuffe
 
 
 // ---------------------------------------------------------------------------
-// file stream handles the state of asynchronous i/o for one open soundfile.
-// read requests are sent to the io thread. the resulting
+// file stream handles the state of asynchronous i/o for one open sound file.
+// read requests are sent to the i/o thread. the resulting
 // buffers are returned asynchronously in buffers_from_io_thread
-// each file stream has a fixed number of io buffers that it recycles
-// io buffers for a stream all have the same capacity
+// each file stream has a fixed number of i/o buffers that it recycles
+// i/o buffers for a stream all have the same capacity
 // file stream always streams in a continuous loop so that we can seamlessly
 // loop from end to start without the buffering pause that would happen if
 // we had to seek after we'd reached the end.
+// ***
+// Threading: data as marked below.
 
 #define FILESTREAM_STATE_IDLE       (0)
 #define FILESTREAM_STATE_BUFFERING  (1)
 #define FILESTREAM_STATE_STREAMING  (2)
 
 typedef struct FileStream{
-    // read-only after creation ----------------------------------------------
+    // ***
+    // Threading: read-only after creation ----------------------------------------------
     int buffer_count;
     sf_count_t file_frame_count;
 
-    // accessed in PA callback only ------------------------------------------
+    // ***
+    // Threading: accessed in PA callback only ------------------------------------------
     int state;
 
     IOBufferList free_buffers_lifo;			    // LIFO stack of free (unused) buffers
@@ -81,26 +89,32 @@ typedef struct FileStream{
     sf_count_t next_read_position_frames;
     sf_count_t current_position_frames;
 
-    // accessed in io thread only --------------------------------------------
+    // ***
+    // Threading: accessed in i/o thread only --------------------------------------------
     SNDFILE *sndfile;
     sf_count_t sndfile_position_frames; // cache file position to make seeking easier
 } FileStream;
 
+// ***
+// Threading: allocate and free from main (Python interpreter) thread
 FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int buffer_count, int buffer_frame_count );
 void free_file_stream( FileStream *file_stream );
 
-void file_stream_process_buffers_from_io_thread( FileStream *file_stream );
+// ***
+// Threading: seek, get_read_buffer_ptr, advance_read_ptr from PA callback only.
 void file_stream_seek( FileStream *file_stream, sf_count_t position );
 
 // get the next buffer segment. returns the length of the segment.
 sf_count_t file_stream_get_read_buffer_ptr( FileStream *file_stream, double **ptr );
 void file_stream_advance_read_ptr( FileStream *file_stream, sf_count_t frame_count );
 
+// ***
+// Threading: post_buffer_from_iothread from i/o thread only
 void file_stream_post_buffer_from_iothread( FileStream* file_stream, IOBuffer *buffer );
 
 // ---------------------------------------------------------------------------
 // i/o commands
-// used to request i/o from the io thread
+// used to request i/o from the i/o thread
 
 #define IO_COMMAND_READ		(0)	// read the specified buffer
 #define IO_COMMAND_CANCEL	(1)	// return any pending reads for the specified file_stream
@@ -124,10 +138,18 @@ typedef struct IOCommand{
 #define IOTHREAD_SUCCESS    (0)
 #define IOTHREAD_FAIL       (1)
 
-// io thread is reference counted. each stream should acquire it before use and release it afterwards
+// i/o thread is reference counted. each stream should acquire it before use and release it afterwards
+// ***
+// Threading: acquire and release from main (Python) thread. Usually this is handled by the streams.
 int acquire_iothread(); // returns IOTHREAD_SUCCESS on success
 void release_iothread();
-void enqueue_iocommand_from_pa_callback( const IOCommand *command ); // Copies command to iothread command queue
+
+// ***
+// Threading: enqueue an i/o command from the PA callback thread
+void enqueue_iocommand_from_pa_callback( const IOCommand *command ); // Copies command to i/o thread command queue
+
+// ***
+// Threading: enqueue an i/o command from the main (Python interpreter) thread
 void enqueue_iocommand_from_main_thread( const IOCommand *command );
 
 #endif /* INCLUDED_DISKSTREAMING_H */
