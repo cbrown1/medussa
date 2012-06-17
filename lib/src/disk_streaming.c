@@ -18,6 +18,100 @@
 //#define TRACE( x ) printf x ;
 #define TRACE( x )
 
+
+/*
+    DISK STREAMING OVERVIEW
+
+    = I/O Thread =
+
+    There is a single i/o thread that performs all disk i/o operations. 
+    When a stream needs to perform an i/o operation (e.g. to read from 
+    the sound file) the stream sends a command to the i/o thread to perform 
+    the read. Once the read has been performed the i/o thread sends the 
+    data back to the stream.
+
+    = I/O Buffers =
+    
+    Blocks of audio samples are stored in IOBuffers. These buffers are passed 
+    around in queues and stored in various lists. The IOBufferList data structure
+    is used to maintain linked lists of IOBuffers -- within a single thread, these
+    lists are used for LIFO stacks and FIFO queues. IOBuffers are passed 
+    between threads using PaUtilRingBuffers.
+
+    Each stream has its own set of IOBuffers. The buffers reference the stream
+    and store enough information so that the i/o thread can perform disk i/o
+    on the buffer and send it back to the owning stream.
+
+    = File Streams =
+
+    Each file stream is managed by a separate FileStream structure.
+    
+    Each FileStream maintains it's own pool of IOBuffers. At any time, 
+    a FileStream's buffers are in one of three places:
+        1. FileStream::free_buffers_lifo -- unused buffers list
+        2. FileStream::completed_read_buffers -- buffers that have been read but 
+                                                    not yet consumed by the client. kept in sequence
+        3. Enqueued with the i/o thread (see below)
+
+    The FileStream always reads ahead and works to keep completed_read_buffers full
+    of valid data read from disk. The client consumes data from the head of this list
+    by calling file_stream_get_read_buffer_ptr() to get the data, and 
+    file_stream_advance_read_ptr() to advance through the data. It is not necessary
+    for the client to consume the whole head buffer in one go.
+    
+    Once a client has consumed a buffer, FileStream moves the buffer to free_buffers_lifo, 
+    and from there the buffer is dispatched to read the next block of data from disk.
+    This process is described in more detail below.
+
+    When first loading, or after a seek operation, FileStream enters the BUFFERING state
+    until all buffers have been read (completed_read_buffers == buffer_count). Once all
+    buffers have been read the stream enters the STREAMING state and issues additional 
+    read requests when buffers become available.
+
+    FileStream reads buffers in a continuous loop. When it reaches the end of the file
+    it begins reading from the start again. This ensures that it's always possible to 
+    loop a file smoothly without entering the BUFFERING state.
+
+    = Buffer read life-cycle =
+
+    When a FileStream wants to read a buffer from disk it posts an IO_COMMAND_READ command
+    to the i/o thread using enqueue_iocommand_from_pa_callback(). The command contains a 
+    pointer to an IOBuffer. When the i/o thread receives the buffer it queues it in the 
+    pending_reads_fifo and performs the reads one at a time. It is possible for a stream
+    to request that pending reads be canceled using the IO_COMMAND_CANCEL command. This
+    allows seeking without waiting for all pending (and now pointless) reads to be completed.
+
+    In more detail, when there is a free IOBuffer available in free_buffers_lifo:
+
+        - FileStream pops an IOBuffer from free_buffers_lifo
+
+        - The buffer is configured with the appropriate file position position_frames 
+            for the next read operation in sequence.
+
+        - The buffer is sent from the PA callback to the i/o thread using an IO_COMMAND_READ 
+            command passed to enqueue_iocommand_from_pa_callback()
+
+        - In the i/o thread, the i/o thread dequeues the read command, and places the 
+            buffer into its pending_reads_fifo queue.
+
+        - The i/o thread works through the pending_reads_fifo queue, reading each buffer
+            from disk in turn.
+
+        - When the data has been read from disk, the i/o thread enqueues the buffer
+            into the owning FileStream's buffers_from_io_thread queue.
+
+        - Back in the PA callback thread, the FileStream polls its buffers_from_io_thread
+            queue from time to time. When the buffer is received in the 
+            buffers_from_io_thread queue it removed from the queue and placed on the end 
+            of the completed_read_buffers queue.
+
+    = I/O Thread life-cycle =
+
+    The i/o thread is reference counted by acquire_iothread()/release_iothread() pairs,
+    which are called when a FileStream is created and destroyed. So long as there is a
+    a single FileStream open the i/o thread keeps running.
+*/
+
 // ---------------------------------------------------------------------------
 // i/o buffer
 
@@ -134,7 +228,7 @@ void IOBufferList_insert_ordered_by_sequence_number( IOBufferList *list, IOBuffe
             previous = current;
             current = current->next;
         }
-        assert( b->sequence_number >= previous && b->sequence_number < current );
+        assert( b->sequence_number >= previous->sequence_number && b->sequence_number < current->sequence_number );
         b->next = current;
         previous->next = b;
     }
@@ -155,6 +249,8 @@ static int round_up_to_next_power_of_2( int x )
      
     return x;
 }
+
+static void file_stream_process_buffers_from_io_thread( FileStream *file_stream );
 
 FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int buffer_count, int buffer_frame_count )
 {
@@ -194,12 +290,12 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     result->completed_read_buffer_count = 0;
 
     result->next_read_sequence_number = 0;
-    result->next_completed_read_sequence_number;
+    result->next_completed_read_sequence_number = 0;
 
-    result->next_read_position_frames;
+    result->next_read_position_frames = 0;
     result->current_position_frames = 0;
 
-    // allocate io buffers
+    // allocate i/o buffers
 
     for( i=0; i < buffer_count; ++i ){
         IOBuffer *b = allocate_iobuffer( result, buffer_frame_count, sfinfo->channels );
@@ -318,7 +414,7 @@ void file_stream_seek( FileStream *file_stream, sf_count_t position )
     file_stream->state = FILESTREAM_STATE_BUFFERING;
 }
 
-void file_stream_process_buffers_from_io_thread( FileStream *file_stream )
+static void file_stream_process_buffers_from_io_thread( FileStream *file_stream )
 {
     // iterate all buffers in buffers_from_io_thread
     // if the buffer is valid insert it into completed_read_buffers (see below for definition of validity)
@@ -435,11 +531,11 @@ void file_stream_advance_read_ptr( FileStream *file_stream, sf_count_t frame_cou
 
 
 typedef struct IOThread{
+    volatile int run;
 
 #ifdef WIN32
     HANDLE thread_handle;
     WIN_THREAD_ID thread_id;
-    volatile int run;
 #else
     // posix
     pthread_t thread;
@@ -647,7 +743,7 @@ static void destroy_iothread()
 {
     int i;
 
-    assert( IOBufferList_is_empty(iothread_->pending_reads_fifo) );
+    assert( IOBufferList_is_empty(&iothread_->pending_reads_fifo) );
 
     iothread_->run = 0;
 
@@ -702,7 +798,7 @@ void enqueue_iocommand_from_pa_callback( const IOCommand *command )
     assert( iothread_ != NULL ); // didn't call acquire_iothread?
 
     // this will always succeed if there are more command slots than MAX_ACTIVE_STREAMS * (BUFFERS_PER_STREAM + 1) 
-    // ie each stream can have BUFFERS_PER_STREAM and a cancel request pending
+    // i.e. each stream can have BUFFERS_PER_STREAM and a cancel request pending
     PaUtil_WriteRingBuffer( &iothread_->incoming_commands[FROM_PA_CALLBACK], command, 1 );
 
 #ifdef WIN32
@@ -717,7 +813,7 @@ void enqueue_iocommand_from_main_thread( const IOCommand *command )
     assert( iothread_ != NULL ); // didn't call acquire_iothread?
 
     // this will always succeed if there are more command slots than MAX_ACTIVE_STREAMS * (BUFFERS_PER_STREAM + 1) 
-    // ie each stream can have BUFFERS_PER_STREAM and a cancel request pending
+    // i.e. each stream can have BUFFERS_PER_STREAM and a cancel request pending
     PaUtil_WriteRingBuffer( &iothread_->incoming_commands[FROM_MAIN_THREAD], command, 1 );
 
 #ifdef WIN32
