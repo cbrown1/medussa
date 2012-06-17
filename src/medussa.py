@@ -1355,7 +1355,7 @@ class SoundfileStream(FiniteStream):
         buffer_size_frames = 32 * 1024
         buffer_queue_duration_seconds = 5 # 5 seconds read ahead
         buffer_queue_duration_frames = self._finfo.samplerate * buffer_queue_duration_seconds
-        buffer_count = max( 4, int(buffer_queue_duration_frames / buffer_size_frames) )
+        buffer_count = max( 5, int(buffer_queue_duration_frames / buffer_size_frames) + 1 )
         
         self._sndfile_user_data.file_stream = cmedussa.allocate_file_stream( self._fin, ctypes.pointer(self._finfo), buffer_count, buffer_size_frames )
         
