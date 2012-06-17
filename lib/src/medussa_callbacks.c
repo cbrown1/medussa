@@ -40,9 +40,7 @@ void execute_finite_user_data_command( PaUtilRingBuffer *resultQueue, const stre
     case FINITE_STREAM_COMMAND_SET_CURSOR:
 
         fud->cursor = command->data_uint;
-
-        /* TODO: when we implement async streaming from a separate thread, we may do something different here for the soundfile stream */
-
+        /* note that we only seek the stream in the pa callback because the stream can usually only communicate with io thread from the callback */
         break;
 
     default:
@@ -177,20 +175,23 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
 {
     float *buf_out;   // Points to `pa_buf_out`
     SNDFILE *fin;
-    int frames_read;
     int i, j;
+    sf_count_t n;
     int loop;
     int stream_channel_count; // Number of stream output channels
     int file_channel_count; // Samples per frame for input file
-    //double read_buf[1024];
-    double *read_buf; // we HAVE to malloc, but we're being ugly in this callback anyway, so oh well
-    double tmp_buf[MAX_FRAME_SIZE];
+    double *read_buf;
+    sf_count_t read_buffer_frame_count;
+    sf_count_t frames_to_go;
+    int output_frame_index;
+    double tmp_buf[MAX_FRAME_SIZE]; // FIXME should be allocated to max(stream_channels, file_channels)
     char *finpath;
     SF_INFO *finfo;
     medussa_dmatrix *mix_mat;
     sndfile_user_data *sfud;
     finite_user_data  *fud;
     stream_user_data  *stud;
+    int result = paContinue;
     
     sfud = (sndfile_user_data *) user_data;
     fud  = (finite_user_data *)  sfud->parent;
@@ -211,60 +212,52 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
     assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
 
-    // read from the file
-    sf_seek(fin, fud->cursor, SEEK_SET);
-
-    // This is ugly, but convenient. We can eventually avoid this if really, really necessary [yes it is really really necessary to not call malloc in a callback. --rossb]
-    read_buf = (double *) malloc(1024 * file_channel_count * sizeof(double));
-    if (read_buf == NULL) { printf("DEBUG 2: NULL pointer\n"); }
-
-    frames_read = (int) sf_readf_double (fin, read_buf, frame_count);
-    //
-
     buf_out = (float *) pa_buf_out;
-    if (buf_out == NULL) { printf("DEBUG 1: NULL pointer\n"); }
-    for (i = 0; i < frames_read; i++) {
-        dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
-                     (read_buf+i*file_channel_count), file_channel_count, 1,
-                     tmp_buf, stream_channel_count, 1);
-        for (j = 0; j < stream_channel_count; j++) {
-            buf_out[i*stream_channel_count + j] = (float) tmp_buf[j];
-        }
-    }
+    output_frame_index = 0;    
+    frames_to_go = frame_count;
+ 
+    file_stream_seek( sfud->file_stream, fud->cursor );
 
-    // Move `self.cursor`
-    fud->cursor = (fud->cursor + frames_read);  // Assume ATOMIC STORE
+    // pull one or more buffer regions from the file stream and matrix it to out_buf
+    while( frames_to_go > 0 ){
+        read_buffer_frame_count = file_stream_get_read_buffer_ptr( sfud->file_stream, &read_buf );
+        if( read_buffer_frame_count == 0 )
+            break; // no data available, we write silence below
 
-    if (read_buf == NULL) { printf("DEBUG 3: NULL pointer\n"); }
-    free(read_buf);
-
-    if (frames_read == frame_count) {
-        // Frames returned equals frames requested, so we didn't reach EOF
-        return paContinue;
-    }
-    else {
-        // write silence into the remainder of the output buffer
-        for( i = frames_read; i < (int)frame_count; ++i ) {
+        n = (frames_to_go<read_buffer_frame_count) ? frames_to_go : read_buffer_frame_count;
+        for ( i = 0; i < n; i++, output_frame_index++ ) {
+            dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
+                (read_buf+i*file_channel_count), file_channel_count, 1,
+                tmp_buf, stream_channel_count, 1);
             for (j = 0; j < stream_channel_count; j++) {
-                buf_out[i*stream_channel_count + j] = 0.0f;
+                buf_out[output_frame_index*stream_channel_count + j] = (float) tmp_buf[j];
             }
         }
+        frames_to_go -= n;
 
-        // We've reached EOF
-        sf_seek(fin, 0, SEEK_SET); // Reset `libsndfile` cursor to start of sound file
+        // Move `self.cursor`
+        fud->cursor = (fud->cursor + (unsigned int)n);  // Assume ATOMIC STORE
 
-        if (loop) {
-            fud->cursor = 0;
-            return paContinue;
-        }
-        else {
-            // We're really all done
-            // NOTE: if the stream has completed we don't reset the cursor to zero.
-            return paComplete;
+        file_stream_advance_read_ptr( sfud->file_stream, n );
+        if( sfud->file_stream->current_position_frames == 0 ){ // file stream has reached end and wrapped position to start [FIXME this is a bit brittle]
+            if( loop ){
+                fud->cursor = 0; // Assume ATOMIC STORE
+                result = paContinue;
+            }else{
+                result = paComplete;
+            }
         }
     }
-}
 
+    // write silence into the remainder of the output buffer if we didn't fill it all
+    for(; output_frame_index < (int)frame_count; ++output_frame_index ) {
+        for (j = 0; j < stream_channel_count; j++) {
+            buf_out[output_frame_index*stream_channel_count + j] = 0.0f;
+        }
+    }
+
+    return result;
+}
 
 void execute_tone_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
 {
@@ -452,4 +445,3 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
 
     return paContinue;
 }
-

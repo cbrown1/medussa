@@ -157,7 +157,8 @@ class SndfileUserData(ctypes.Structure):
                 ("self",    py_object),
                 ("fin",     c_void_p),
                 ("file_name", c_char_p),
-                ("finfo",   POINTER(SF_INFO)))
+                ("finfo",   POINTER(SF_INFO)),
+                ("file_stream", c_void_p))
 
 class ToneUserData(ctypes.Structure):
     """
@@ -1331,6 +1332,11 @@ class SoundfileStream(FiniteStream):
                                         byref(self._finfo))
         self._sndfile_user_data.fin = self._fin
 
+        buffer_count = 8
+        buffer_size_frames = 64 * 1024
+        
+        self._sndfile_user_data.file_stream = cmedussa.allocate_file_stream( self._fin, ctypes.pointer(self._finfo), buffer_count, buffer_size_frames )
+        
         fs = self._finfo.samplerate
         frames = self._finfo.frames
         super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, \
@@ -1342,6 +1348,7 @@ class SoundfileStream(FiniteStream):
     def __del__(self):
         super(SoundfileStream, self)._close_stream_and_flush_commands()
         csndfile.sf_close(c_void_p(self._fin))
+        cmedussa.free_file_stream(self._sndfile_user_data.file_stream)
         super(SoundfileStream, self).__del__()
         
 
