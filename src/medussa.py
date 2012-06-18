@@ -28,19 +28,13 @@ import inspect
 import weakref
 import platform
 
+from .portaudio import *
+from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
+from .pink import Pink_noise_t
+from .rkit import Rk_state
+
 pymaj = platform.python_version_tuple()[0]
-pymin = platform.python_version_tuple()[1]
-pyver = "%s.%s" % (pymaj, pymin)
-if pymaj == "2":
-    from portaudio import *
-    from sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
-    from pink import Pink_noise_t
-    from rkit import Rk_state
-else:
-    from .portaudio import *
-    from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
-    from .pink import Pink_noise_t
-    from .rkit import Rk_state
+if pymaj == "3":
     xrange = range
 
 

@@ -20,12 +20,7 @@
 # Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
 #
 
-import platform
-pyver = platform.python_version_tuple()[0]
-if pyver == "2":
-    from sndfile_formats import sndfile_formats
-else:
-    from .sndfile_formats import sndfile_formats
+from .sndfile_formats import sndfile_formats
 
 sf_formats = sndfile_formats()
 
