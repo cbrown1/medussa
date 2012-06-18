@@ -431,7 +431,7 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
 
             TRACE(("file_stream_process_buffers_from_io_thread: OK %p\n", b))
 
-            assert( b->valid_frame_count > 0 ); //FIXME maybe we should cancel/bail if this is invalid
+            assert( b->valid_frame_count > 0 );
 
             IOBufferList_insert_ordered_by_sequence_number( &file_stream->completed_read_buffers, b );
             ++file_stream->completed_read_buffer_count;
@@ -536,6 +536,8 @@ typedef struct IOThread{
 #ifdef WIN32
     HANDLE thread_handle;
     WIN_THREAD_ID thread_id;
+    int command_event_inited;
+    HANDLE command_event;
 #else
     // posix
     pthread_t thread;
@@ -630,7 +632,7 @@ WIN_THREAD_FUNC io_thread_proc( void *pArg )
 {
     while( iothread_->run ){
         iothread_process_pending_io();
-        Sleep( 50 ); // FIXME should wait on event
+        WaitForSingleObject( iothread_->command_event, 1000 );
     }
 
     iothread_process_pending_io();
@@ -682,8 +684,16 @@ static int create_iothread() // returns 0 on success
     iothread_->run = 1;
 
 #ifdef WIN32
+    iothread_->command_event_inited = 0;
+
+    iothread_->command_event = CreateEvent( NULL, /* bManualReset= */ FALSE, /* bInitialState= */ TRUE, NULL );
+    if( iothread_->command_event == NULL )
+        goto fail;
+
+    iothread_->command_event_inited = 1;
+
     iothread_->thread_handle = CREATE_THREAD;
-    if( !iothread_->thread_handle )
+    if( iothread_->thread_handle == NULL )
         goto fail;
 
     SetThreadPriority( iothread_->thread_handle, THREAD_PRIORITY_ABOVE_NORMAL );  // prioritize disk io above normal but below real-time audio
@@ -726,6 +736,9 @@ fail:
 
 #ifdef WIN32
 
+        if( iothread_->command_event_inited )
+            CloseHandle( iothread_->command_event );
+
 #else
         // posix
 
@@ -749,8 +762,12 @@ static void destroy_iothread()
     iothread_->run = 0;
 
 #ifdef WIN32
+    SetEvent( iothread_->command_event );
+
     WaitForSingleObject( iothread_->thread_handle, 1000 );
     CloseHandle( iothread_->thread_handle );
+
+    CloseHandle( iothread_->command_event );
 #else
     // posix
     void *thread_result;
@@ -803,7 +820,7 @@ void enqueue_iocommand_from_pa_callback( const IOCommand *command )
     PaUtil_WriteRingBuffer( &iothread_->incoming_commands[FROM_PA_CALLBACK], command, 1 );
 
 #ifdef WIN32
-
+    SetEvent( iothread_->command_event );
 #else
     sem_post( &iothread_->command_semaphore );
 #endif
@@ -818,7 +835,7 @@ void enqueue_iocommand_from_main_thread( const IOCommand *command )
     PaUtil_WriteRingBuffer( &iothread_->incoming_commands[FROM_MAIN_THREAD], command, 1 );
 
 #ifdef WIN32
-
+    SetEvent( iothread_->command_event );
 #else
     sem_post( &iothread_->command_semaphore );
 #endif
