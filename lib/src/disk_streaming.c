@@ -115,20 +115,19 @@
 // ---------------------------------------------------------------------------
 // i/o buffer
 
-IOBuffer *allocate_iobuffer( FileStream *file_stream, size_t capacity_frames, size_t channel_count )
+IOBuffer *allocate_iobuffer( FileStream *file_stream, size_t capacity_frames )
 {
     IOBuffer *result = (IOBuffer*)malloc( sizeof(IOBuffer) );
     if( !result )
         return NULL;
 
-    result->data = (double*)malloc( sizeof(double) * capacity_frames * channel_count );
+    result->data = (double*)malloc( sizeof(double) * capacity_frames * file_stream->channel_count );
     if( !result->data ){
         free( result );
         return NULL;
     }
 
     result->capacity_frames = capacity_frames;
-    result->channel_count = channel_count;
     result->file_stream = file_stream;
     result->next = NULL;
     result->position_frames = IOBUFFER_INVALID_POSITION;
@@ -277,14 +276,17 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
         return NULL;
     }
 
-    TRACE(("ringbuffer_item_count: %d\n", ringbuffer_item_count))
-    PaUtil_InitializeRingBuffer( &result->buffers_from_io_thread, sizeof(IOBuffer*), ringbuffer_item_count, ringbuffer_data );
+    result->buffer_count = buffer_count;
+    result->file_frame_count = sfinfo->frames;
+    result->channel_count = sfinfo->channels;
 
     result->state = FILESTREAM_STATE_IDLE;
-    result->buffer_count = buffer_count;
 
     IOBufferList_initialize( &result->free_buffers_lifo );
     result->free_buffers_count = 0;
+
+    TRACE(("ringbuffer_item_count: %d\n", ringbuffer_item_count))
+    PaUtil_InitializeRingBuffer( &result->buffers_from_io_thread, sizeof(IOBuffer*), ringbuffer_item_count, ringbuffer_data );
 
     IOBufferList_initialize( &result->completed_read_buffers );
     result->completed_read_buffer_count = 0;
@@ -298,7 +300,7 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     // allocate i/o buffers
 
     for( i=0; i < buffer_count; ++i ){
-        IOBuffer *b = allocate_iobuffer( result, buffer_frame_count, sfinfo->channels );
+        IOBuffer *b = allocate_iobuffer( result, buffer_frame_count );
         if( !b ){
             free_file_stream( result );
             return NULL;
@@ -306,8 +308,6 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
         IOBufferList_push_head( &result->free_buffers_lifo, b );
         ++result->free_buffers_count;
     }
-
-    result->file_frame_count = sfinfo->frames;
 
     result->sndfile = sndfile;
     sf_seek(sndfile, 0, SEEK_SET);
@@ -475,7 +475,7 @@ sf_count_t file_stream_get_read_buffer_ptr( FileStream *file_stream, double **pt
             
             assert( file_stream->current_position_frames >= b->position_frames );
 
-            *ptr = b->data + (b->channel_count * frame_offset);
+            *ptr = b->data + (frame_offset * file_stream->channel_count);
             TRACE(("file_stream_get_read_buffer_ptr %d\n",  b->valid_frame_count - frame_offset))
             return b->valid_frame_count - frame_offset;
         }
