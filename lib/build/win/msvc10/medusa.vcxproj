@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\lib\pa_ringbuffer\pa_ringbuffer.c" />
+    <ClCompile Include="..\..\..\src\disk_streaming.c" />
     <ClCompile Include="..\..\..\src\medussa.c" />
     <ClCompile Include="..\..\..\src\medussa_callbacks.c" />
     <ClCompile Include="..\..\..\src\medussa_matrix.c" />
@@ -30,6 +31,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\include\pa_memorybarrier.h" />
     <ClInclude Include="..\..\..\include\pa_ringbuffer.h" />
+    <ClInclude Include="..\..\..\src\disk_streaming.h" />
     <ClInclude Include="..\..\..\src\medussa.h" />
     <ClInclude Include="..\..\..\src\medussa_callbacks.h" />
     <ClInclude Include="..\..\..\src\medussa_matrix.h" />

@@ -24,7 +24,6 @@ import time
 import os
 import numpy as np
 import atexit
-import inspect
 import weakref
 import platform
 
@@ -171,7 +170,8 @@ class SndfileUserData(ctypes.Structure):
                 ("self",    py_object),
                 ("fin",     c_void_p),
                 ("file_name", c_char_p),
-                ("finfo",   POINTER(SF_INFO)))
+                ("finfo",   POINTER(SF_INFO)),
+                ("file_stream", c_void_p))
 
 class ToneUserData(ctypes.Structure):
     """
@@ -406,7 +406,7 @@ class Device(object):
         """
         Returns a stream object representing pink noise.
 
-          Parameters
+        Parameters
         ----------
         fs : int
             The sampling frequency. Don't specify for the device's default.
@@ -552,6 +552,9 @@ class Stream(object):
                                                self._callback_ptr)
 
     def start(self):
+        """
+        Starts playback of the stream.
+        """
         if not pa.Pa_IsStreamStopped(self._stream_ptr): # needed since some callbacks call paComplete
             pa.Pa_StopStream(self._stream_ptr)          # so streams can be inactive but not stopped
             
@@ -561,7 +564,16 @@ class Stream(object):
 
     def stop(self):
         """
-        Stops playback of the stream (Playback cursor is reset to zero).
+        Stops playback of the stream.
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        
         """
         if pa.Pa_IsStreamStopped(self._stream_ptr):
             return
@@ -572,6 +584,15 @@ class Stream(object):
     def play(self):
         """
         Starts playback of the stream.
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        
         """
         if (self._stream_ptr == None):
             self.open()
@@ -581,6 +602,15 @@ class Stream(object):
     def pause(self):
         """
         Pauses playback of the stream (Playback cursor is not reset).
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        
         """
         if pa.Pa_IsStreamStopped(self._stream_ptr):
             return
@@ -629,7 +659,22 @@ class Stream(object):
         """
         Mutes or unmutes the stream.
 
+        Parameters
+        ----------
+        val : boolean
+            True to mute, false to unmute. Do not pass a val to get current 
+            mute state.
+            
+        Returns
+        -------
+        val : boolean
+            True is muted, otherwise false. Val will be returned if no input 
+            argument is specified.
+
+        Notes
+        -----
         Mix matrix is unaffected. Playback will continue while stream is muted.
+        
         """
         if val is None:
             return self.is_muted
@@ -752,35 +797,45 @@ class ToneStream(Stream):
 
     Methods
     -------
-    play
-        Starts playback of the stream.
-    stop
-        Stops playback of the stream (Playback cursor is reset to zero).
-    pause
-        Pauses playback of the stream (Playback cursor is not reset).
     mute
-        Mutes or unmutes the stream.
-        Mix matrix is unaffected. Playback will continue while stream is muted.
-    is_playing
-        Boolean indicating whether the stream is currently playing.
+        Mutes or unmutes the stream. Mix matrix is unaffected. Playback will
+        continue while stream is muted.
+    pause
+        Pauses playback of the stream (for this type of stream, same as 
+        stop).
+    play
+        Starts playback of the stream from current cursor position. If the 
+        current position is the end, the cursor position is reset to zero.
+    stop
+        Stops playback of the stream (for this type of stream, same as 
+        pause).
 
     Properties
     ----------
-    tone_freq
-        Frequency, in Hz, of the tone.
-    fs
-        Sampling frequency, in Hz.
-    mix_mat
-        A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of device output
-        channels, which is accessible with dev.out_channels. The values of
-        the mix_mat are floats between 0. and 1., and are used to specify the
-        playback level of each source channel on each output channel. A default
-        mix_mat will have ones along the diagonal, and zeros everywhere else
-        (source channel 1 to output device channel 1, source 2 to ouput 2,
-        etc). A mix_mat of all ones would route all source channels to all
-        device output channels.
+    fs : float (read-only)
+        The sampling frequency, in Hz.
+    is_muted : boolean
+        Whether the stream is currently muted (has no affect on mix_mat).
+    is_playing : boolean
+        Whether the stream is currently playing.
+    mix_mat : 2-d NumPy array
+        Acts as a mixer. The number of columns corresponds to the number of 
+        source channels (in the case of a stereo sound file, 2), and the 
+        number of rows corresponds to the number of device output channels, 
+        which is accessible with dev.out_channels. The values of the mix_mat 
+        are floats between 0. and 1., and are used to specify the playback 
+        level of each source channel on each outputchannel. A default mix_mat 
+        will have ones along the diagonal, and zeros everywhere else (source 
+        channel 1 routed to output device channel 1, source 2 to ouput 2, 
+        etc). A mix_mat of all ones would route all source channels to all 
+        device output channels. 
+        
+        Use mix_mat to change overall level (ie., volume) in addition to 
+        individual channel levels. To change the overall level (of all 
+        channels, leaving the relative channel levels unchanged), you can do 
+        something like stream.mix_mat *= .5.
+    tone_freq : float
+        The frequency, in Hz, of the tone.
 
     """
     _instances = set()
@@ -826,37 +881,48 @@ class ToneStream(Stream):
 
 class WhiteStream(Stream):
     """
-    Medussa stream object representing Gaussian white noise, which has a flat spectrum.
+    Medussa stream object representing Gaussian white noise, which has a flat
+    spectrum.
 
     Methods
     -------
-    play
-        Starts playback of the stream.
-    stop
-        Stops playback of the stream (Playback cursor is reset to zero).
-    pause
-        Pauses playback of the stream (Playback cursor is not reset).
     mute
-        Mutes or unmutes the stream.
-        Mix matrix is unaffected. Playback will continue while stream is muted.
-    is_playing
-        Boolean indicating whether the stream is currently playing.
+        Mutes or unmutes the stream. Mix matrix is unaffected. Playback will
+        continue while stream is muted.
+    pause
+        Pauses playback of the stream (for this type of stream, same as 
+        stop).
+    play
+        Starts playback of the stream from current cursor position. If the 
+        current position is the end, the cursor position is reset to zero.
+    stop
+        Stops playback of the stream (for this type of stream, same as 
+        pause).
 
     Properties
     ----------
-    fs
-        Sampling frequency, in Hz.
-    mix_mat
-        A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of device output
-        channels, which is accessible with dev.out_channels. The values of
-        the mix_mat are floats between 0. and 1., and are used to specify the
-        playback level of each source channel on each output channel. A default
-        mix_mat will have ones along the diagonal, and zeros everywhere else
-        (source channel 1 to output device channel 1, source 2 to ouput 2,
-        etc). A mix_mat of all ones would route all source channels to all
-        device output channels.
+    fs : float (read-only)
+        The sampling frequency, in Hz.
+    is_muted : boolean
+        Whether the stream is currently muted (has no affect on mix_mat).
+    is_playing : boolean
+        Whether the stream is currently playing.
+    mix_mat : 2-d NumPy array
+        Acts as a mixer. The number of columns corresponds to the number of 
+        source channels (in the case of a stereo sound file, 2), and the 
+        number of rows corresponds to the number of device output channels, 
+        which is accessible with dev.out_channels. The values of the mix_mat 
+        are floats between 0. and 1., and are used to specify the playback 
+        level of each source channel on each outputchannel. A default mix_mat 
+        will have ones along the diagonal, and zeros everywhere else (source 
+        channel 1 routed to output device channel 1, source 2 to ouput 2, 
+        etc). A mix_mat of all ones would route all source channels to all 
+        device output channels. 
+        
+        Use mix_mat to change overall level (ie., volume) in addition to 
+        individual channel levels. To change the overall level (of all 
+        channels, leaving the relative channel levels unchanged), you can do 
+        something like stream.mix_mat *= .5.
 
     """
     _instances = set()
@@ -895,37 +961,48 @@ class WhiteStream(Stream):
         
 class PinkStream(Stream):
     """
-    Medussa stream object representing pink noise, which has equal energy per octave.
-
+    Medussa stream object representing pink noise, which has equal energy per
+    octave.
+    
     Methods
     -------
-    play
-        Starts playback of the stream.
-    stop
-        Stops playback of the stream (Playback cursor is reset to zero).
-    pause
-        Pauses playback of the stream (Playback cursor is not reset).
     mute
-        Mutes or unmutes the stream.
-        Mix matrix is unaffected. Playback will continue while stream is muted.
-    is_playing
-        Boolean indicating whether the stream is currently playing.
+        Mutes or unmutes the stream. Mix matrix is unaffected. Playback will
+        continue while stream is muted.
+    pause
+        Pauses playback of the stream (for this type of stream, same as 
+        stop).
+    play
+        Starts playback of the stream from current cursor position. If the 
+        current position is the end, the cursor position is reset to zero.
+    stop
+        Stops playback of the stream (for this type of stream, same as 
+        pause).
 
     Properties
     ----------
-    fs
-        Sampling frequency, in Hz.
-    mix_mat
-        A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of device output
-        channels, which is accessible with dev.out_channels. The values of
-        the mix_mat are floats between 0. and 1., and are used to specify the
-        playback level of each source channel on each output channel. A default
-        mix_mat will have ones along the diagonal, and zeros everywhere else
-        (source channel 1 to output device channel 1, source 2 to ouput 2,
-        etc). A mix_mat of all ones would route all source channels to all
-        device output channels.
+    fs : float (read-only)
+        The sampling frequency, in Hz.
+    is_muted : boolean
+        Whether the stream is currently muted (has no affect on mix_mat).
+    is_playing : boolean
+        Whether the stream is currently playing.
+    mix_mat : 2-d NumPy array
+        Acts as a mixer. The number of columns corresponds to the number of 
+        source channels (in the case of a stereo sound file, 2), and the 
+        number of rows corresponds to the number of device output channels, 
+        which is accessible with dev.out_channels. The values of the mix_mat 
+        are floats between 0. and 1., and are used to specify the playback 
+        level of each source channel on each outputchannel. A default mix_mat 
+        will have ones along the diagonal, and zeros everywhere else (source 
+        channel 1 routed to output device channel 1, source 2 to ouput 2, 
+        etc). A mix_mat of all ones would route all source channels to all 
+        device output channels. 
+        
+        Use mix_mat to change overall level (ie., volume) in addition to 
+        individual channel levels. To change the overall level (of all 
+        channels, leaving the relative channel levels unchanged), you can do 
+        something like stream.mix_mat *= .5.
 
     """
     _instances = set()
@@ -998,7 +1075,7 @@ class FiniteStream(Stream):
 
     @cursor.setter
     def cursor(self, val):
-        raise AttributeError( "can't set attribute (stream.cursor is read only). use request_seek()" )
+        raise AttributeError( "can't set attribute (stream.cursor is read only). use stream.time() instead" )
 
     @property
     def cursor_is_at_end(self):
@@ -1042,6 +1119,15 @@ class FiniteStream(Stream):
     def stop(self):
         """
         Stops playback of the stream (Playback cursor is reset to zero).
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        
         """
         try:
             super(FiniteStream, self).stop()
@@ -1054,6 +1140,21 @@ class FiniteStream(Stream):
     def play(self):
         """
         Starts playback of the stream.
+        
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        
+        Notes
+        -----
+        If playback cursor is exactly at the end of the stream (you can check 
+        the boolean property stream.cursor_is_at_end to see if it is), it is 
+        reset to zero.
+        
         """
         if (self._stream_ptr == None):
             self.open()
@@ -1062,7 +1163,7 @@ class FiniteStream(Stream):
                 self._reset_cursor_when_inactive()
             self.start()
             
-    def time(self, pos=None, units="ms"):
+    def time(self, pos=None, units="sec"):
         """
         Gets or sets the current playback cursor position.
 
@@ -1074,22 +1175,22 @@ class FiniteStream(Stream):
             position is updated to `pos` asynchronously via request_seek()
         units : string
             The units of pos. May be of value:
-            "ms": assume `pos` is of type `float` [default]
-            "sec": `assume `pos` is of type float`
-            "frames": assume `pos` is of type `int`
+            "ms": assume pos is of type float
+            "sec": assume pos is of type float [default]
+            "frames": assume pos is of type int
 
         Returns
         -------
         pos : numeric
             The current position of the cursor. This value is returned only
-            if no input `pos` is specified.
+            if input argument `pos` is unspecified or None.
 
         """
         if pos == None:
             if units == "ms":
-                return self.cursor / self.fs * 1000.0
+                return round(self.cursor / self.fs * 1000.0, 3)
             elif units == "sec":
-                return self.cursor / self.fs
+                return round(self.cursor / self.fs, 4)
             elif units == "frames":
                 return self.cursor
         elif units == "ms":
@@ -1136,48 +1237,64 @@ class ArrayStream(FiniteStream):
     """
     Medussa stream object representing a NumPy array.
 
-    You can use medussa.read_file to load soundfiles into NumPy arrays.
+    You can use medussa.read_file to load sound files into NumPy arrays.
 
     Methods
     -------
-    play
-        Starts playback of the stream.
-    stop
-        Stops playback of the stream (Playback cursor is reset to zero).
+    loop
+        Gets or sets whether the stream will loop (continue playing from
+        the beginning when it reaches the end).
+    mute
+        Mutes or unmutes the stream. Mix matrix is unaffected. Playback will
+        continue while stream is muted.
     pause
         Pauses playback of the stream (Playback cursor is not reset).
-    mute
-        Mutes or unmutes the stream.
-        Mix matrix is unaffected. Playback will continue while stream is muted.
-    is_playing
-        Boolean indicating whether the stream is currently playing.
+    play
+        Starts playback of the stream from current cursor position. If the 
+        current position is the end, the cursor position is reset to zero.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
     time
-        Gets or sets the current playback cursor position.
+        Gets or sets the current playback cursor position, default units = ms
 
     Properties
     ----------
-    fs
-        Sampling frequency, in Hz.
-    mix_mat
-        A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of device output
-        channels, which is accessible with dev.out_channels. The values of
-        the mix_mat are floats between 0. and 1., and are used to specify the
-        playback level of each source channel on each output channel. A default
-        mix_mat will have ones along the diagonal, and zeros everywhere else
-        (source channel 1 to output device channel 1, source 2 to ouput 2,
-        etc). A mix_mat of all ones would route all source channels to all
-        device output channels.
-    is_looping
-        Gets or sets whether the stream will continue playing from the
-        beginning when it reaches the end.
-    frames
-        The number of frames (samples per source channel). (read-only)
-    duration
-        The duration in seconds. (read-only)
-    arr
-        The array of audio data. (read-only)
+    cursor : long (read-only)
+        The current cursor position, in samples (or more precisely, frames). 
+    cursor_is_at_end : boolean
+        Whether the cursor position is exactly at the end of the stream.
+    duration : float (read-only)
+        The stream duration in seconds.
+    file_name : str (read-only)
+        The path to the sound file.
+    frames : long (read-only)
+        The number of samples per source channel.
+    fs : float (read-only)
+        The sampling frequency, in Hz.
+    is_looping : boolean
+        Whether the stream will continue playing from the beginning when it 
+        reaches the end.
+    is_muted : boolean
+        Whether the stream is currently muted (has no affect on mix_mat).
+    is_playing : boolean
+        Whether the stream is currently playing (setting to False is like 
+        calling pause; it does not reset the stream cursor).
+    mix_mat : 2-d NumPy array
+        Acts as a mixer. The number of columns corresponds to the number of 
+        source channels (in the case of a stereo sound file, 2), and the 
+        number of rows corresponds to the number of device output channels, 
+        which is accessible with dev.out_channels. The values of the mix_mat 
+        are floats between 0. and 1., and are used to specify the playback 
+        level of each source channel on each outputchannel. A default mix_mat 
+        will have ones along the diagonal, and zeros everywhere else (source 
+        channel 1 routed to output device channel 1, source 2 to ouput 2, 
+        etc). A mix_mat of all ones would route all source channels to all 
+        device output channels. 
+        
+        Use mix_mat to change overall level (ie., volume) in addition to 
+        individual channel levels. To change the overall level (of all 
+        channels, leaving the relative channel levels unchanged), you can do 
+        something like stream.mix_mat *= .5.
 
     """
     _instances = set()
@@ -1239,44 +1356,60 @@ class SoundfileStream(FiniteStream):
 
     Methods
     -------
-    play
-        Starts playback of the stream.
-    stop
-        Stops playback of the stream (Playback cursor is reset to zero).
+    loop
+        Gets or sets whether the stream will loop (continue playing from
+        the beginning when it reaches the end).
+    mute
+        Mutes or unmutes the stream. Mix matrix is unaffected. Playback will
+        continue while stream is muted.
     pause
         Pauses playback of the stream (Playback cursor is not reset).
-    mute
-        Mutes or unmutes the stream.
-        Mix matrix is unaffected. Playback will continue while stream is muted.
-    is_playing
-        Boolean indicating whether the stream is currently playing.
+    play
+        Starts playback of the stream from current cursor position. If the 
+        current position is the end, the cursor position is reset to zero.
+    stop
+        Stops playback of the stream (Playback cursor is reset to zero).
     time
-        Gets or sets the current playback cursor position.
+        Gets or sets the current playback cursor position, default units = ms
 
     Properties
     ----------
-    fs
-        Sampling frequency, in Hz.
-    mix_mat
-        A NumPy array that acts as a mixer. The number of columns corresponds
-        to the number of source channels (in the case of a tonestream, 1),
-        and the number of rows corresponds to the number of device output
-        channels, which is accessible with dev.out_channels. The values of
-        the mix_mat are floats between 0. and 1., and are used to specify the
-        playback level of each source channel on each output channel. A default
-        mix_mat will have ones along the diagonal, and zeros everywhere else
-        (source channel 1 to output device channel 1, source 2 to ouput 2,
-        etc). A mix_mat of all ones would route all source channels to all
-        device output channels.
-    is_looping
-        Gets or sets whether the stream will continue playing from the
-        beginning when it reaches the end.
-    frames
-        The number of frames (samples per source channel). (read-only)
-    duration
-        The duration in seconds. (read-only)
-    file_name
-        The path to the sound file. (read-only)
+    cursor : long (read-only)
+        The current cursor position, in samples (or more precisely, frames). 
+    cursor_is_at_end : boolean
+        Whether the cursor position is exactly at the end of the stream.
+    duration : float (read-only)
+        The stream duration in seconds.
+    file_name : str (read-only)
+        The path to the sound file.
+    frames : long (read-only)
+        The number of samples per source channel.
+    fs : float (read-only)
+        The sampling frequency, in Hz.
+    is_looping : boolean
+        Whether the stream will continue playing from the beginning when it 
+        reaches the end.
+    is_muted : boolean
+        Whether the stream is currently muted (has no affect on mix_mat).
+    is_playing : boolean
+        Whether the stream is currently playing (setting to False is like 
+        calling pause; it does not reset the stream cursor).
+    mix_mat : 2-d NumPy array
+        Acts as a mixer. The number of columns corresponds to the number of 
+        source channels (in the case of a stereo sound file, 2), and the 
+        number of rows corresponds to the number of device output channels, 
+        which is accessible with dev.out_channels. The values of the mix_mat 
+        are floats between 0. and 1., and are used to specify the playback 
+        level of each source channel on each outputchannel. A default mix_mat 
+        will have ones along the diagonal, and zeros everywhere else (source 
+        channel 1 routed to output device channel 1, source 2 to ouput 2, 
+        etc). A mix_mat of all ones would route all source channels to all 
+        device output channels. 
+        
+        Use mix_mat to change overall level (ie., volume) in addition to 
+        individual channel levels. To change the overall level (of all 
+        channels, leaving the relative channel levels unchanged), you can do 
+        something like stream.mix_mat *= .5.
 
     Notes
     -----
@@ -1345,6 +1478,13 @@ class SoundfileStream(FiniteStream):
                                         byref(self._finfo))
         self._sndfile_user_data.fin = self._fin
 
+        buffer_size_frames = 32 * 1024
+        buffer_queue_duration_seconds = 5 # 5 seconds read ahead
+        buffer_queue_duration_frames = self._finfo.samplerate * buffer_queue_duration_seconds
+        buffer_count = max( 5, int(buffer_queue_duration_frames / buffer_size_frames) + 1 )
+        
+        self._sndfile_user_data.file_stream = cmedussa.allocate_file_stream( self._fin, ctypes.pointer(self._finfo), buffer_count, buffer_size_frames )
+        
         fs = self._finfo.samplerate
         frames = self._finfo.frames
         super(SoundfileStream, self)._init2( device, fs, cmedussa.callback_sndfile_read, \
@@ -1356,6 +1496,7 @@ class SoundfileStream(FiniteStream):
     def __del__(self):
         super(SoundfileStream, self)._close_stream_and_flush_commands()
         csndfile.sf_close(c_void_p(self._fin))
+        cmedussa.free_file_stream(self._sndfile_user_data.file_stream)
         super(SoundfileStream, self).__del__()
         
 
@@ -1670,7 +1811,7 @@ def play_array(arr, fs, output_device_id=None, volume=1.):
         time.sleep(.01)
 
 
-def play_file(file_name, output_device_id=None, volume=1., duration=0, max_duration=10):
+def play_file(file_name, output_device_id=None, volume=1., duration=10):
     """
     Plays a soundfile with blocking (synchronous playback).
 
@@ -1684,13 +1825,11 @@ def play_file(file_name, output_device_id=None, volume=1., duration=0, max_durat
         Volume during playback. 0. <= 1. [Default = 1]
     duration : scalar
         The amount of the file to play, in seconds. Useful if you want to
-        play the first few seconds of a file. `max_duration` is ignored if
-        this property is set. [Default is the entire file]
-    max_duration : scalar
-        The maximum file duration to play, in seconds. Because this function
-        is blocking, this is a sort of sanity check in case you accidentally
-        pass a file that is exceedingly long. The check is not performed if
-		either this is set to 0, or if `duration` is set. [Default = 10 sec]
+        play the first few seconds of a file. The default value is 10 s, 
+        which is intended to be a sort of sanity check in case you 
+        accidentally pass a file that is exceedingly long (since it is a 
+        blocking function). To play an entire file regardless of how long it 
+        is, set `duration` to 0. 
 
     Returns
     -------
@@ -1704,19 +1843,13 @@ def play_file(file_name, output_device_id=None, volume=1., duration=0, max_durat
     """
     d = open_device(output_device_id)
     s = d.open_file(file_name)
-    if max_duration > 0 and s.duration > max_duration:
-        raise RuntimeError("The duration of the soundfile is longer than max_duration.\nTo play this file, set max_duration > %0.2f (or use 0 to bypass this check)." % (s.duration))
-    if duration is None:
+    if duration == 0:
         duration = s.duration
-    else:
-        duration = duration
-        max_duration = 0
     s.mix_mat *= float(volume)
     s.play()
     while s.is_playing:
-        pass
-        #if s.time() > duration:
-        #    s.stop()
+        if s.time() > duration:
+            s.stop()
 
 
 def read_file(file_name):
@@ -1801,7 +1934,7 @@ def write_file(file_name, arr, fs,
 
     Notes
     -----
-    Existing files will be over-written!
+    Existing files will be over-written without warning!
 
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
@@ -1855,10 +1988,11 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
         The array of data to write.
     fs : int
         The sampling frequency.
-    bits : int
-        The bit depth. For wavefiles, libsndfile can handle 8, 16, 24, or 32 bits.
-        You can also use a string to specify either signed 16-, 24- or 32-bit
-        integers ('s16', 's24', 's32'), or unsigned 8-bit integers ('u8').
+    bits : int or str
+        The bit depth. For wavefiles, libsndfile can handle 8, 16, 24, or 32 
+        bits. You can also use a string to specify either signed 16-, 24- or 
+        32-bit integers ('s16', 's24', 's32'), or unsigned 8-bit integers 
+        ('u8').
     frames : int
         The number of frames to write.
 
@@ -1869,7 +2003,7 @@ def write_wav(file_name, arr, fs, bits='s16', frames=None):
 
     Notes
     -----
-    Existing files will be over-written!
+    Existing files will be over-written without warning!
 
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
@@ -1904,9 +2038,9 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
         The array of data to write.
     fs : int
         The sampling frequency.
-    bits : int
-        The bit depth. For flac files, libsndfile can handle 8, 16, or 24 bits.
-        You can also use a string to specify signed 8- 16-, or 24-bit
+    bits : int or str
+        The bit depth. For flac files, libsndfile can handle 8, 16, or 24 
+        bits. You can also use a string to specify signed 8- 16-, or 24-bit
         integers ('s8', 's16', 's24').
     frames : int
         The number of frames to write.
@@ -1918,7 +2052,7 @@ def write_flac(file_name, arr, fs, bits='s16', frames=None):
 
     Notes
     -----
-    Existing files will be over-written!
+    Existing files will be over-written without warning!
 
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.
@@ -1961,9 +2095,10 @@ def write_ogg(file_name, arr, fs, frames=None):
 
     Notes
     -----
-    Existing files will be over-written!
+    Existing files will be over-written without warning!
 
-    Bit depth is not specified with the Vorbis format, but rather is variable.
+    Bit depth is not specified with the Vorbis format, but rather is 
+    variable.
 
     The file IO functions in Medussa are intended to be extremely light
     wrappers to libsndfile, and not a full python implementation of its API.

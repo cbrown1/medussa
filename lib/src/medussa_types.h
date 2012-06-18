@@ -28,6 +28,7 @@
 #include <sndfile.h>
 #include "randomkit.h"
 #include "pink.h"
+#include "disk_streaming.h"
 
 /* -------------------------------------------------------------------- */
 
@@ -173,6 +174,8 @@ struct sndfile_user_data {
     SNDFILE *fin;
     char *finpath;
     SF_INFO *finfo;
+
+    FileStream *file_stream;
 };
 typedef struct sndfile_user_data sndfile_user_data;
 

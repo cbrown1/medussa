@@ -206,8 +206,8 @@ if TEST_ALL or 0:
     playAndStopStream( s )
     printFiniteStreamPositionAttributes(s)
     
-# play soundfile (streaming)
-if TEST_ALL or 0:
+# play soundfile (streaming from file)
+if TEST_ALL or 1:
     print "testing: basic soundfile playback (file)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
@@ -237,7 +237,7 @@ if TEST_ALL or 0:
     # this one doesn't crash at end
     
 # play soundfile (streaming)
-if TEST_ALL or 0:
+if TEST_ALL or 1:
     print "testing: restarting playback (file stream)"
     print "each time the stream starts it should play from the start"
     s = d.open_file("clean.wav")
@@ -308,12 +308,13 @@ def testCursorBehavior( s ):
     print "OK"
 
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: cursor behavior (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     testCursorBehavior( s )
-    
+
+if TEST_ALL or 1:
     print "testing: cursor behavior (streaming)"
     s = d.open_file("clean.wav")
     testCursorBehavior( s )
@@ -358,7 +359,7 @@ if TEST_ALL or 0:
     playLoopedStopLoopThenStop( s )
     
 # play soundfile (streaming) looped
-if TEST_ALL or 0:
+if TEST_ALL or 1:
     print "testing: looped playback (streaming)"
     s = d.open_file("clean.wav")
     print "s.file_name: " + s.file_name
@@ -390,7 +391,7 @@ if TEST_ALL or 0:
     s.stop()
     
 # play soundfile (streaming)
-if TEST_ALL or 0:
+if TEST_ALL or 1:
     print "testing: dynamic update of stream position (streaming)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
@@ -413,8 +414,8 @@ if TEST_ALL or 0:
 # to s.cursor or calling time property at random.
 #####################################################################
 
-if TEST_ALL or 0:
-    print "testing: random seeking while stream is playing"
+if TEST_ALL or 1:
+    print "testing: random seeking file while stream is playing"
     
     # start the stream. playback looping. choose random locations to
     # seek to every second (based on stream duration)
@@ -448,7 +449,7 @@ if TEST_ALL or 0:
 # test that properties that should be read-only are read-only
 #####################################################################
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: read-only properties"
     s = d.create_tone(440,fs)
 
