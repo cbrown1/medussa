@@ -1081,7 +1081,7 @@ class FiniteStream(Stream):
 
     @cursor.setter
     def cursor(self, val):
-        raise AttributeError( "can't set attribute (stream.cursor is read only). use request_seek()" )
+        raise AttributeError( "can't set attribute (stream.cursor is read only). use stream.time() instead" )
 
     @property
     def cursor_is_at_end(self):
@@ -1817,7 +1817,7 @@ def play_array(arr, fs, output_device_id=None, volume=1.):
         time.sleep(.01)
 
 
-def play_file(file_name, output_device_id=None, volume=1., duration=0, max_duration=10):
+def play_file(file_name, output_device_id=None, volume=1., duration=10):
     """
     Plays a soundfile with blocking (synchronous playback).
 
@@ -1831,13 +1831,11 @@ def play_file(file_name, output_device_id=None, volume=1., duration=0, max_durat
         Volume during playback. 0. <= 1. [Default = 1]
     duration : scalar
         The amount of the file to play, in seconds. Useful if you want to
-        play the first few seconds of a file. `max_duration` is ignored if
-        this property is set. [Default is the entire file]
-    max_duration : scalar
-        The maximum file duration to play, in seconds. Because this function
-        is blocking, this is a sort of sanity check in case you accidentally
-        pass a file that is exceedingly long. The check is not performed if
-		either this is set to 0, or if `duration` is set. [Default = 10 sec]
+        play the first few seconds of a file. The default value is 10 s, 
+        which is intended to be a sort of sanity check in case you 
+        accidentally pass a file that is exceedingly long (since it is a 
+        blocking function). To play an entire file regardless of how long it 
+        is, set `duration` to 0. 
 
     Returns
     -------
@@ -1851,19 +1849,13 @@ def play_file(file_name, output_device_id=None, volume=1., duration=0, max_durat
     """
     d = open_device(output_device_id)
     s = d.open_file(file_name)
-    if max_duration > 0 and s.duration > max_duration:
-        raise RuntimeError("The duration of the soundfile is longer than max_duration.\nTo play this file, set max_duration > %0.2f (or use 0 to bypass this check)." % (s.duration))
-    if duration is None:
+    if duration == 0:
         duration = s.duration
-    else:
-        duration = duration
-        max_duration = 0
     s.mix_mat *= float(volume)
     s.play()
     while s.is_playing:
-        pass
-        #if s.time() > duration:
-        #    s.stop()
+        if s.time() > duration:
+            s.stop()
 
 
 def read_file(file_name):
