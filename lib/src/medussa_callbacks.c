@@ -34,25 +34,69 @@ void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stre
 
     switch( command->command ){
     case STREAM_COMMAND_SET_MATRICES:
+        {
+            resultCommand.command = STREAM_COMMAND_FREE_MATRICES;
+            resultCommand.data_ptr0 = 0;
+            resultCommand.data_ptr1 = 0;
 
-        /* post old matrices back to python to be freed */
-        resultCommand.command = STREAM_COMMAND_FREE_MATRICES;
-        resultCommand.data_ptr0 = sud->mix_mat;
-        resultCommand.data_ptr1 = sud->mute_mat;
-        PaUtil_WriteRingBuffer(resultQueue, &resultCommand, 1 );
+            sud->mix_mat_fade_countdown_frames = command->data_uint;
+            if( sud->mix_mat_fade_countdown_frames == 0 ){
 
-        /* install new matrices */
-        sud->mix_mat = (medussa_dmatrix*)command->data_ptr0;
-        sud->mute_mat = (medussa_dmatrix*)command->data_ptr1;
+                /* no fade. send back the old mix and target matrices back and install a new mix matrix */
+                resultCommand.data_ptr0 = sud->mix_mat;
+                sud->mix_mat = (medussa_dmatrix*)command->data_ptr0;
 
+                resultCommand.data_ptr1 = sud->target_mix_mat;
+                sud->target_mix_mat = 0;
+
+            }else{
+                /* compute fade increment matrix into fade_mat. put new matrix into target_mix_mat */
+           
+                resultCommand.data_ptr0 = sud->target_mix_mat;
+                sud->target_mix_mat = (medussa_dmatrix*)command->data_ptr0;
+                /* fade_inc_mat = (target_mix_mat - mix_mat) * (1. / sud->mix_mat_fade_countdown_frames); */
+
+                dmatrix_subtract( sud->target_mix_mat->mat, sud->target_mix_mat->mat_0, sud->target_mix_mat->mat_1,
+                                    sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
+                                    sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1 );
+
+                dmatrix_scale( sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
+                                    (1. / sud->mix_mat_fade_countdown_frames),
+                                    sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1 );
+            }
+
+            /* post old matrices back to main python thread to be freed */
+            PaUtil_WriteRingBuffer(resultQueue, &resultCommand, 1 );
+        }
         break;
 
     case STREAM_COMMAND_SET_IS_MUTED:
         sud->is_muted = command->data_uint;
         break;
-
     }
 }
+
+void increment_mix_mat_fade( stream_user_data *sud )
+{
+    if( sud->mix_mat_fade_countdown_frames == 0 )
+        return;
+
+    // mix_mat += fade_inc_mat
+    dmatrix_add( sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
+        sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
+        sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1 );
+
+    --sud->mix_mat_fade_countdown_frames;
+    if( sud->mix_mat_fade_countdown_frames == 0 ){
+
+        // Swap mix_mat and target_mix_mat. 
+        // old mix_mat (now stored in target_mix_mat) will be freed next time STREAM_COMMAND_SET_MATRICES executes
+        medussa_dmatrix *temp_mat = sud->mix_mat;
+        sud->mix_mat = sud->target_mix_mat;
+        sud->target_mix_mat = temp_mat;
+    }
+}
+
 
 void execute_finite_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
 {
@@ -150,6 +194,8 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         for (j = 0; j < stream_channel_count; j++) {
             buf_out[i*stream_channel_count + j] = (float) tmp_buf[j];
         }
+
+        increment_mix_mat_fade( sud );
     }
 
     // if we're at the end of the array write silence into the remainder of the output buffer
@@ -211,19 +257,19 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     medussa_dmatrix *mix_mat;
     sndfile_user_data *sfud;
     finite_user_data  *fud;
-    stream_user_data  *stud;
+    stream_user_data  *sud;
     int result = paContinue;
     
     sfud = (sndfile_user_data *) user_data;
     fud  = (finite_user_data *)  sfud->parent;
-    stud = (stream_user_data *)  fud->parent;
+    sud = (stream_user_data *)  fud->parent;
 
-    execute_commands_in_pa_callback( stud->command_queues, execute_sndfile_read_user_data_command, sfud );
+    execute_commands_in_pa_callback( sud->command_queues, execute_sndfile_read_user_data_command, sfud );
 
     // Begin attribute acquisition
     finfo = sfud->finfo;
-    stream_channel_count = stud->out_param->channelCount;
-    mix_mat = stud->is_muted ? stud->mute_mat : stud->mix_mat;
+    stream_channel_count = sud->out_param->channelCount;
+    mix_mat = sud->is_muted ? sud->mute_mat : sud->mix_mat;
     loop = fud->loop;
     finpath = sfud->finpath;
     fin = sfud->fin;
@@ -253,6 +299,8 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
             for (j = 0; j < stream_channel_count; j++) {
                 buf_out[output_frame_index*stream_channel_count + j] = (float) tmp_buf[j];
             }
+
+            increment_mix_mat_fade( sud );
         }
         frames_to_go -= n;
 
@@ -334,6 +382,8 @@ int callback_tone  (const void *pa_buf_in, void *pa_buf_out,
             buf_out[i*channel_count + j] = (float) (sin(TWOPI * ((float) t) / fs * tone_freq) * ((float) mix_mat->mat[j]));
         }
         t++;
+
+        increment_mix_mat_fade( sud );
     }
    
     // Set `self.t` to the current time value
@@ -399,6 +449,8 @@ int callback_white  (const void *pa_buf_in, void *pa_buf_out,
             }
             buf_out[i*channel_count + j] = (float) (tmp * ((float) mix_mat->mat[j]));
         }
+
+        increment_mix_mat_fade( sud );
     }
 
     return paContinue;
@@ -462,6 +514,8 @@ int callback_pink  (const void *pa_buf_in, void *pa_buf_out,
             }
             buf_out[i*channel_count + j] = (float) (tmp * ((float) mix_mat->mat[j]));
         }
+
+        increment_mix_mat_fade( sud );
     }
 
     return paContinue;

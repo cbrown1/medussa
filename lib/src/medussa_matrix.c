@@ -124,6 +124,71 @@ int dmatrix_mult_tof (double *a,  int a_m,  int a_n,
 }
 
 
+int dmatrix_add (double *a,  int a_m,  int a_n,
+    double *b,  int b_m,  int b_n,
+    double *ab, int ab_m, int ab_n)
+{
+    int N = a_m * a_n;
+    int i;
+
+    if ((a_n != b_n) || (a_m != b_m)) {
+        // Dimensions of sources don't match
+        printf("dmatrix_add: Dimension mismatch a b | a_n:%d b_n:%d a_m:%d b_m:%d\n", a_n, b_n, a_m, b_m );
+        return -1;
+    }
+    if ((a_m != ab_m) || (ab_n != b_n)) {
+        // Output matrix has wrong dimensions
+        printf("dmatrix_add: Dimension mismatch ab\n");
+        return -2;
+    }
+
+    for( i=0; i < N; ++i ){
+        ab[i] = a[i] + b[i];
+    }
+
+    return 0;
+}
+
+
+int dmatrix_subtract (double *a,  int a_m,  int a_n,
+    double *b,  int b_m,  int b_n,
+    double *ab, int ab_m, int ab_n)
+{
+    int N = a_m * a_n;
+    int i;
+
+    if ((a_n != b_n) || (a_m != b_m)) {
+        // Dimensions of sources don't match
+        printf("dmatrix_subtract: Dimension mismatch a b | a_n:%d b_n:%d a_m:%d b_m:%d\n", a_n, b_n, a_m, b_m );
+        return -1;
+    }
+    if ((a_m != ab_m) || (ab_n != b_n)) {
+        // Output matrix has wrong dimensions
+        printf("dmatrix_subtract: Dimension mismatch ab\n");
+        return -2;
+    }
+
+    for( i=0; i < N; ++i ){
+        ab[i] = a[i] - b[i];
+    }
+
+    return 0;
+}
+
+
+void dmatrix_scale (double *a,  int a_m,  int a_n,
+    double b,
+    double *ab, int ab_m, int ab_n)
+{
+    int N = a_m * a_n;
+    int i;
+
+    for( i=0; i < N; ++i ){
+        ab[i] = a[i] * b;
+    }
+}
+
+
 void fprint_matrix (float *a, int a_m, int a_n)
 {
     int i, j;

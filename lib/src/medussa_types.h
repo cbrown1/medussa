@@ -131,13 +131,16 @@ struct stream_user_data {
     int is_muted;
     medussa_dmatrix *mix_mat;
     medussa_dmatrix *mute_mat;
+    medussa_dmatrix *fade_inc_mat;
+    medussa_dmatrix *target_mix_mat;
+    int mix_mat_fade_countdown_frames;
 
     int pa_fpb;
 };
 typedef struct stream_user_data stream_user_data;
 
 void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data );
-
+void increment_mix_mat_fade( stream_user_data *sud ); /* should be called every frame */
 
 struct finite_user_data {
     void *parent;
