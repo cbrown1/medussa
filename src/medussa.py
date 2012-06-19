@@ -514,6 +514,15 @@ class Stream(object):
     def fs(self, val):
         raise AttributeError( "can't set attribute (stream.fs is read only)" )
 
+    # fade duration in seconds
+    @property
+    def mix_mat_fade_duration(self):
+        return self.__mix_mat_fade_duration
+
+    @mix_mat_fade_duration.setter
+    def mix_mat_fade_duration(self, val):
+        self.__mix_mat_fade_duration = val
+
     # mix_mat is a public property. __mix_mat is the underlying attribute storage
     @property
     def mix_mat(self):
@@ -521,6 +530,18 @@ class Stream(object):
 
     @mix_mat.setter
     def mix_mat(self, val):
+       self.fade_mix_mat_to( val, self.__mix_mat_fade_duration )
+                                                        
+    @mix_mat.deleter
+    def mix_mat(self):
+        del self.__mix_mat
+
+    # usually setting mix_mat fades over s.mix_mat_fade_duration seconds
+    # you can call fade_mix_mat_to to explicitly specify a fade time in seconds
+    # a fade_duration of 0 disables fading.
+    # note that irrespective of the fade duration, s.mix_mat reflects
+    # the target value immediately.
+    def fade_mix_mat_to(self, val, fade_duration ):
         if hasattr(self,'__mix_mat'):
             # if we already have a __mix_mat (i.e. any time after construction)
             # then conform the new mix_mat to the correct shape
@@ -535,13 +556,9 @@ class Stream(object):
         cmd.command = STREAM_COMMAND_SET_MATRICES
         cmd.data_ptr0 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], self.mix_mat.ctypes.data_as(POINTER(c_double)) )
         cmd.data_ptr1 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], 0 )        
+        cmd.data_uint = int(fade_duration * self.fs)
         self._post_command_to_pa_callback( cmd )
                                                         
-    @mix_mat.deleter
-    def mix_mat(self):
-        del self.__mix_mat
-    
-
     # _pa_fpb is queried from C side cmedussa.open_stream. this is brittle. FIXME (note that marking this as __pa_fpb breaks for some reason)
     @property
     def _pa_fpb(self):
@@ -722,7 +739,9 @@ class Stream(object):
         else:
             out_channels = device.out_channels
     
-        self.mix_mat = _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels )
+        self.mix_mat_fade_duration = 0.005
+        # initial mix_mat is installed without fading
+        self.fade_mix_mat_to( _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels ), 0 )
 
         self._out_param = PaStreamParameters(self._device.out_index,
                                             out_channels,

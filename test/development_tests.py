@@ -170,6 +170,7 @@ if TEST_ALL or 0:
     print "testing: linear amplitude ramp"
     s = d.create_tone(440,fs)
     s.play()
+    s.mix_mat_fade_duration= .1 # same as freqency we update mix_mat
     for i in range(1,100):
         x = float(i) / 100.
         print x
@@ -177,6 +178,24 @@ if TEST_ALL or 0:
         sleep(.1)
     s.stop()
 
+
+# toggle mix-mat between 0 and 1 every second, increasing fade time
+if TEST_ALL or 1:
+    print "testing: mix_mat_fade_duration. each time signal fades in/out has longer fade time"
+    s = d.create_tone(440,fs)
+    s.play()
+    n = 20
+    fade_time = 0
+    fade_inc = 1 / n
+    for i in range(1,n):
+        x = float(i % 2)
+        print x
+        s.mix_mat_fade_duration = fade_time
+        fade_time += fade_inc
+        s.mix_mat = np.array( [[x, 0], [0, x]] )
+        sleep(1)
+    s.stop()
+    
 
 # basic soundfile playback
 # test printing out s.frames and s.duration
@@ -207,7 +226,7 @@ if TEST_ALL or 0:
     printFiniteStreamPositionAttributes(s)
     
 # play soundfile (streaming from file)
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: basic soundfile playback (file)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
@@ -237,7 +256,7 @@ if TEST_ALL or 0:
     # this one doesn't crash at end
     
 # play soundfile (streaming)
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: restarting playback (file stream)"
     print "each time the stream starts it should play from the start"
     s = d.open_file("clean.wav")
@@ -314,7 +333,7 @@ if TEST_ALL or 0:
     s = d.open_array(x, fs)
     testCursorBehavior( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: cursor behavior (streaming)"
     s = d.open_file("clean.wav")
     testCursorBehavior( s )
@@ -359,7 +378,7 @@ if TEST_ALL or 0:
     playLoopedStopLoopThenStop( s )
     
 # play soundfile (streaming) looped
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: looped playback (streaming)"
     s = d.open_file("clean.wav")
     print "s.file_name: " + s.file_name
@@ -391,7 +410,7 @@ if TEST_ALL or 0:
     s.stop()
     
 # play soundfile (streaming)
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: dynamic update of stream position (streaming)"
     s = d.open_file("clean.wav")
     printFiniteStreamLengthAttributes(s)
@@ -414,7 +433,7 @@ if TEST_ALL or 1:
 # to s.cursor or calling time property at random.
 #####################################################################
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: random seeking file while stream is playing"
     
     # start the stream. playback looping. choose random locations to
