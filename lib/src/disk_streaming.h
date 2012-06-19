@@ -1,3 +1,25 @@
+/*
+# Copyright (c) 2010-2012 Christopher Brown
+#
+# This file is part of Medussa.
+#
+# Medussa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Medussa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Medussa.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
+#
+*/
+
 #ifndef INCLUDED_DISKSTREAMING_H
 #define INCLUDED_DISKSTREAMING_H
 
@@ -16,14 +38,13 @@ typedef struct IOBuffer{
     struct IOBuffer *next; // linked list link. the buffer will only appear in one list at a time. NULL when not in a list
     struct FileStream *file_stream;
     sf_count_t position_frames;
-    size_t channel_count;
     size_t capacity_frames;
     sf_count_t valid_frame_count;
     int sequence_number;
     double *data; // to make things easy this should be dimensioned as a multiple of pabuffer size * file channels
 } IOBuffer;
 
-IOBuffer *allocate_iobuffer( struct FileStream *file_stream, size_t capacity_frames, size_t channel_count );
+IOBuffer *allocate_iobuffer( struct FileStream *file_stream, size_t capacity_frames );
 void free_iobuffer( IOBuffer *buffer );
 
 
@@ -69,6 +90,7 @@ typedef struct FileStream{
     // Threading: read-only after creation ----------------------------------------------
     int buffer_count;
     sf_count_t file_frame_count;
+    size_t channel_count;
 
     // ***
     // Threading: accessed in PA callback only ------------------------------------------
