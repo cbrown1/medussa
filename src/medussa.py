@@ -110,7 +110,10 @@ class StreamUserData(ctypes.Structure):
         int is_muted;
         medussa_dmatrix *mix_mat;
         medussa_dmatrix *mute_mat;
-
+        medussa_dmatrix *fade_inc_mat;
+        medussa_dmatrix *target_mix_mat;
+        int mix_mat_fade_countdown_frames;
+        
         int pa_fpb;
     };
     """
@@ -124,6 +127,9 @@ class StreamUserData(ctypes.Structure):
                 ("is_muted",  c_int),
                 ("mix_mat",   c_void_p),
                 ("mute_mat",  c_void_p),
+                ("fade_inc_mat",  c_void_p),
+                ("target_mix_mat",  c_void_p),
+                ("mix_mat_fade_countdown_frames",  c_int),
                 ("pa_fpb",    c_int))
 
 
@@ -473,7 +479,7 @@ class Device(object):
 # for the diagonal, which is set to 1s.
 # if mix_mat is valid, return a copy of mix_mat conformed to the correct 
 # shape with any added elements set to zero.
-def _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels ):
+def _util_allocate_or_conform_mix_mat( mix_mat, out_channels, source_channels ):
     
     shape = (out_channels, source_channels)
 
@@ -484,7 +490,7 @@ def _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels ):
     else:
         if mix_mat.shape != shape:
             mix_mat = np.copy(mix_mat)
-            mixmat.resize( shape ) # fills missing entries with zeros
+            mix_mat.resize( shape ) # fills missing entries with zeros
 
     return mix_mat
 
@@ -542,20 +548,20 @@ class Stream(object):
     # note that irrespective of the fade duration, s.mix_mat reflects
     # the target value immediately.
     def fade_mix_mat_to(self, val, fade_duration ):
-        if hasattr(self,'__mix_mat'):
+        if hasattr(self,'_Stream__mix_mat'): # must use mangled name here http://bugs.python.org/issue8264
             # if we already have a __mix_mat (i.e. any time after construction)
             # then conform the new mix_mat to the correct shape
-            val = _util_allocate_or_conform_mix_mat( val, self.__mix_mat.shape[1], self.__mix_mat.shape[0] )      
+            val = _util_allocate_or_conform_mix_mat( val, self.__mix_mat.shape[0], self.__mix_mat.shape[1] )
         
         self.__mix_mat = np.ascontiguousarray(val)
 
         # allocate new C mix_mat and mute_mat matrices and send to PA callback
-        # mix_mat is a copy of __mix_mat's data. mute_mat has the same shape but is zeroed.
-
+        # mix_mat is a copy of __mix_mat's data.
+        
         cmd = StreamCommand()
         cmd.command = STREAM_COMMAND_SET_MATRICES
         cmd.data_ptr0 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], self.mix_mat.ctypes.data_as(POINTER(c_double)) )
-        cmd.data_ptr1 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], 0 )        
+        cmd.data_ptr1 = 0 
         cmd.data_uint = int(fade_duration * self.fs)
         self._post_command_to_pa_callback( cmd )
                                                         
@@ -721,7 +727,10 @@ class Stream(object):
         self._stream_user_data.is_muted = 0;
         self._stream_user_data.mix_mat = 0;
         self._stream_user_data.mute_mat = 0;
-
+        self._stream_user_data.fade_inc_mat = 0;
+        self._stream_user_data.target_mix_mat = 0;
+        self._stream_user_data.mix_mat_fade_countdown_frames = 0;
+        
         self._stream_ptr = None
 
         self._is_muted = False
@@ -738,10 +747,17 @@ class Stream(object):
             out_channels = device.out_device_info.maxOutputChannels
         else:
             out_channels = device.out_channels
-    
+ 
+        # mute_mat and fade_inc_mat are only allocated once.
+        # mix_mat and target_mix_mat get allocated/deallocated as necessary
+        self._stream_user_data.mix_mat = cmedussa.alloc_medussa_dmatrix( out_channels, source_channels, 0 )
+        self._stream_user_data.mute_mat = cmedussa.alloc_medussa_dmatrix( out_channels, source_channels, 0 )
+        self._stream_user_data.fade_inc_mat = cmedussa.alloc_medussa_dmatrix( out_channels, source_channels, 0 )
+        self._stream_user_data.target_mix_mat = cmedussa.alloc_medussa_dmatrix( out_channels, source_channels, 0 )
+        
         self.mix_mat_fade_duration = 0.005
         # initial mix_mat is installed without fading
-        self.fade_mix_mat_to( _util_allocate_or_conform_mix_mat( mix_mat, source_channels, out_channels ), 0 )
+        self.fade_mix_mat_to( _util_allocate_or_conform_mix_mat( mix_mat, out_channels, source_channels ), 0 )
 
         self._out_param = PaStreamParameters(self._device.out_index,
                                             out_channels,
@@ -779,7 +795,9 @@ class Stream(object):
 
         cmedussa.free_medussa_dmatrix( self._stream_user_data.mix_mat );
         cmedussa.free_medussa_dmatrix( self._stream_user_data.mute_mat );
-
+        cmedussa.free_medussa_dmatrix( self._stream_user_data.fade_inc_mat );
+        cmedussa.free_medussa_dmatrix( self._stream_user_data.target_mix_mat );
+        
         self._stream_user_data.out_param = None
         del self._out_param
         

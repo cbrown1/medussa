@@ -42,5 +42,20 @@ int dmatrix_mult_tof (double *a,  int a_m,  int a_n,
                       double *b,  int b_m,  int b_n,
                       float  *ab, int ab_m, int ab_n);
 
+// element-wise add. ab_ij = a_ij + b_ij
+int dmatrix_add (double *a,  int a_m,  int a_n,
+                double *b,  int b_m,  int b_n,
+                double *ab, int ab_m, int ab_n);
+
+// element-wise add. ab_ij = a_ij - b_ij
+int dmatrix_subtract (double *a,  int a_m,  int a_n,
+                double *b,  int b_m,  int b_n,
+                double *ab, int ab_m, int ab_n);
+
+// scalar multiplication. ab_ij = a_ij * b
+void dmatrix_scale (double *a,  int a_m,  int a_n,
+    double b,
+    double *ab, int ab_m, int ab_n);
+
 void fprint_matrix (float  *a, int a_m, int a_n);
 void dprint_matrix (double *a, int a_m, int a_n);

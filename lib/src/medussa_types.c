@@ -118,8 +118,10 @@ void process_results_from_pa_callback( stream_command_queues* qs )
     while( PaUtil_ReadRingBuffer( &qs->from_pa_callback_to_python, &cmd, 1) ){
         switch( cmd.command ){
             case STREAM_COMMAND_FREE_MATRICES:
-                free_medussa_dmatrix( (medussa_dmatrix*)cmd.data_ptr0 );
-                free_medussa_dmatrix( (medussa_dmatrix*)cmd.data_ptr1 );
+                if( cmd.data_ptr0 )
+                    free_medussa_dmatrix( (medussa_dmatrix*)cmd.data_ptr0 );
+                if( cmd.data_ptr1 )
+                    free_medussa_dmatrix( (medussa_dmatrix*)cmd.data_ptr1 );
                 break;
         }
     }
