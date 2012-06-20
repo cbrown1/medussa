@@ -40,7 +40,7 @@ if pymaj == "2":
                         )
     from docs import (package_name, version, url, author, author_email,
                         long_help, short_description, long_description)
-    from portaudio import pa, ERROR_CHECK
+    from portaudio import pa, PA_ERROR_CHECK
 else:
     from .medussa import (play_array, play_file, read_file, 
                         write_file, write_wav, write_flac, write_ogg, 
@@ -57,7 +57,7 @@ else:
                         )
     from .docs import (package_name, version, url, author, author_email,
                         long_help, short_description, long_description)
-    from .portaudio import pa, ERROR_CHECK
+    from .portaudio import pa, PA_ERROR_CHECK
 
 __doc__ = "%s\n\n%s" % (long_description, long_help)
 __package_name__ = package_name
@@ -71,6 +71,6 @@ del(package_name, version, url, author, author_email, long_help, short_descripti
 
 err = pa.Pa_Initialize()
 try:
-    ERROR_CHECK(err)
+    PA_ERROR_CHECK(err)
 except RuntimeError as e:
     raise ImportError(e.message)

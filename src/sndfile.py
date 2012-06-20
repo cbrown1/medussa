@@ -76,3 +76,4 @@ SFM_RDWR  = c_int(0x30)
 #csndfile.sf_seek.restype =
 csndfile.sf_seek.argtypes = [c_void_p, c_uint, c_int]
 
+csndfile.sf_strerror.restype   = c_char_p
