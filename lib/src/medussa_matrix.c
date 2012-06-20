@@ -22,6 +22,50 @@
 
 #include "medussa_matrix.h"
 
+#include <stdlib.h>
+#include <string.h>
+
+/* -------------------------------------------------------------------- */
+
+/* Allocate a medussa_dmatrix of dimension mat_0, mat_1 and initialize with data from mat.
+   If mat is NULL, the matrix contains all zeros.
+   If a memory allocation failure occurs the function returns NULL.
+*/
+medussa_dmatrix* alloc_medussa_dmatrix( int mat_0, int mat_1, double *mat )
+{
+    int dataLengthBytes = sizeof(double) * mat_0 * mat_1;
+
+    medussa_dmatrix *result = (medussa_dmatrix*)malloc( sizeof(medussa_dmatrix) );
+    if( !result )
+        return NULL;
+
+    result->mat_0 = mat_0;
+    result->mat_1 = mat_1;
+    
+    result->mat = (double*)malloc( dataLengthBytes );
+    if( !result->mat ){
+        free( result );
+        return NULL;
+    }
+
+    if( mat )
+        memcpy( result->mat, mat, dataLengthBytes );
+    else
+        memset( result->mat, 0, dataLengthBytes );
+
+    return result;
+}
+
+/* Free a medussa_dmatrix previously allocated with alloc_medussa_dmatrix */
+void free_medussa_dmatrix( medussa_dmatrix *mat )
+{
+    if( !mat ) return;
+    free( mat->mat );
+    free( mat );
+}
+
+/* -------------------------------------------------------------------- */
+
 float *mat (f_matrix *a, int i, int j)
 {
     return &(a->arr[i * a->n + j]);

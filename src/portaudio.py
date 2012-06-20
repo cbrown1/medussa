@@ -308,7 +308,7 @@ class PaStreamInfo (ctypes.Structure):
                 ("sampleRate",    c_double))
 
 
-def ERROR_CHECK(err):
+def PA_ERROR_CHECK(err):
     """
     If `err` is an actual Portaudio error (< 0), raises a RuntimeError whose message is the Portaudio error text.
     """
