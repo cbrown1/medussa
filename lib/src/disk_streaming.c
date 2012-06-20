@@ -332,7 +332,7 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     }
 
     result->sndfile = sndfile;
-    sf_seek(sndfile, 0, SEEK_SET);
+    sf_seek(sndfile, 0, SEEK_SET); // assume sf_seek succeeds. if the file doesn't support seeking it will be at the start anyway
     result->sndfile_position_frames = 0;
 
     return result;
@@ -347,7 +347,7 @@ void free_file_stream( FileStream *file_stream )
 {
     file_stream_process_buffers_from_io_thread( file_stream );
 
-    // wait until all buffers have been received back from io thread before disposing the file stream
+    // wait until all buffers have been received back from i/o thread before disposing the file stream
     if( file_stream_pending_read_count(file_stream) < file_stream->buffer_count ){
         IOCommand cmd;
         cmd.action = IO_COMMAND_CANCEL;
@@ -355,6 +355,8 @@ void free_file_stream( FileStream *file_stream )
         enqueue_iocommand_from_main_thread( &cmd );
 
         do{
+            // wait for IO_COMMAND_CANCEL to return all buffers.
+            // poll every 10 ms. that's more or less the time a HDD operation takes to execute
 #ifdef WIN32
             Sleep(10);
 #else
@@ -376,26 +378,32 @@ void free_file_stream( FileStream *file_stream )
     release_iothread();
 }
 
-void file_stream_issue_read_commands( FileStream *file_stream )
+void file_stream_issue_read_command( FileStream *file_stream, IOBuffer *b )
 {
+    b->position_frames = file_stream->next_read_position_frames;
+    b->sequence_number = file_stream->next_read_sequence_number++;
+
+    file_stream->next_read_position_frames += b->capacity_frames;
+    if( file_stream->next_read_position_frames >= file_stream->file_frame_count )
+        file_stream->next_read_position_frames = 0; // wrap around and read from start if we reach the end
+
+    {
+        IOCommand cmd;
+        cmd.action = IO_COMMAND_READ;
+        cmd.data.buffer = b;
+        enqueue_iocommand_from_pa_callback( &cmd );
+    }
+}
+
+void file_stream_issue_read_commands_using_all_free_buffers( FileStream *file_stream )
+{
+    // issue sequential reads with all free buffers
     while( file_stream->free_buffers_count > 0 ){
         
         IOBuffer *b = IOBufferList_pop_head( &file_stream->free_buffers_lifo );
         --file_stream->free_buffers_count;
 
-        b->position_frames = file_stream->next_read_position_frames;
-        b->sequence_number = file_stream->next_read_sequence_number++;
-
-        file_stream->next_read_position_frames += b->capacity_frames;
-        if( file_stream->next_read_position_frames >= file_stream->file_frame_count )
-            file_stream->next_read_position_frames = 0; // wrap around and read from start if we reach the end
-
-        {
-            IOCommand cmd;
-            cmd.action = IO_COMMAND_READ;
-            cmd.data.buffer = b;
-            enqueue_iocommand_from_pa_callback( &cmd );
-        }   
+        file_stream_issue_read_command( file_stream, b );
     }
 }
 
@@ -421,6 +429,7 @@ void file_stream_seek( FileStream *file_stream, sf_count_t position )
         enqueue_iocommand_from_pa_callback( &cmd );
     }
 
+    // move completed buffers to free buffers list
     IOBufferList_prepend_b_to_a( &file_stream->free_buffers_lifo, &file_stream->completed_read_buffers );
 
     file_stream->free_buffers_count += file_stream->completed_read_buffer_count;
@@ -428,10 +437,11 @@ void file_stream_seek( FileStream *file_stream, sf_count_t position )
     assert( file_stream->free_buffers_count == file_stream->buffer_count );
 
     file_stream->next_read_position_frames = position;
-    file_stream->next_completed_read_sequence_number = file_stream->next_read_sequence_number; // discard canceled and pending buffers prior to the next read
+    file_stream->next_completed_read_sequence_number = file_stream->next_read_sequence_number;  // cause file_stream_process_buffers_from_io_thread to 
+                                                                                                // discard canceled and pending buffers prior to the next read
     file_stream->current_position_frames = position;
 
-    file_stream_issue_read_commands( file_stream );
+    file_stream_issue_read_commands_using_all_free_buffers( file_stream );
 
     file_stream->state = FILESTREAM_STATE_BUFFERING;
 }
@@ -446,18 +456,28 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
 
     TRACE(("file_stream_process_buffers_from_io_thread\n"))
     while( PaUtil_ReadRingBuffer( &file_stream->buffers_from_io_thread, &b, 1) ){
-        // we expect to receive buffers back from the io thread in the order they were issued
+        // we expect to receive buffers back from the i/o thread in the order they were issued
         // based on this we can filter buffers before the last seek based on sequence number
+        // we also expect valid_frame_count to be > 0 -- it might be 0 in case of error,
+        // in that case the stream will fall into the BUFFERING state once the queue is exhausted
+        // and the client will play silence without the cursor advancing.
 
         if( b->sequence_number == file_stream->next_completed_read_sequence_number ){
 
-            TRACE(("file_stream_process_buffers_from_io_thread: OK %p\n", b))
+            if( b->valid_frame_count > 0 ){
+                TRACE(("file_stream_process_buffers_from_io_thread: OK %p\n", b))
 
-            assert( b->valid_frame_count > 0 );
+                IOBufferList_insert_ordered_by_sequence_number( &file_stream->completed_read_buffers, b );
+                ++file_stream->completed_read_buffer_count;
+            }else{
+                TRACE(("file_stream_process_buffers_from_io_thread: FREE b->valid_frame_count == 0 %p\n", b))
+                
+                IOBufferList_push_head( &file_stream->free_buffers_lifo, b );
+                ++file_stream->free_buffers_count;
 
-            IOBufferList_insert_ordered_by_sequence_number( &file_stream->completed_read_buffers, b );
-            ++file_stream->completed_read_buffer_count;
-
+                file_stream->state = FILESTREAM_STATE_ERROR; // prevents further reads from being dispatched
+            }
+            
             ++file_stream->next_completed_read_sequence_number;
 
         }else{
@@ -468,8 +488,8 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
         }
     }
 
-    file_stream_issue_read_commands( file_stream );
-
+    // if we're in the BUFFERING state, and the buffer queue is full, 
+    // switch to STREAMING so that the owner can start consuming data
     if( file_stream->state == FILESTREAM_STATE_BUFFERING && file_stream->completed_read_buffer_count == file_stream->buffer_count )
         file_stream->state = FILESTREAM_STATE_STREAMING;
 }
@@ -482,16 +502,23 @@ void file_stream_post_buffer_from_iothread( FileStream* file_stream, IOBuffer *b
 
 sf_count_t file_stream_get_read_buffer_ptr( FileStream *file_stream, double **ptr )
 {
+    // receive buffers back from i/o thread
     file_stream_process_buffers_from_io_thread( file_stream );
+
+    // request additional reads if possible
+    if( file_stream->state == FILESTREAM_STATE_BUFFERING || file_stream->state == FILESTREAM_STATE_STREAMING )
+        file_stream_issue_read_commands_using_all_free_buffers( file_stream );
 
     if( file_stream->state == FILESTREAM_STATE_STREAMING ){
         if( IOBufferList_is_empty( &file_stream->completed_read_buffers ) ){
+            // read buffer under run. switch back to buffering state
             file_stream->state = FILESTREAM_STATE_BUFFERING;
             *ptr = NULL;
             TRACE(("file_stream_get_read_buffer_ptr 0\n"))
             return 0;
 
         }else{
+            // return data from the head of completed buffers
             IOBuffer *b = file_stream->completed_read_buffers.head;
             sf_count_t frame_offset = file_stream->current_position_frames - b->position_frames;
             
@@ -520,15 +547,16 @@ void file_stream_advance_read_ptr( FileStream *file_stream, sf_count_t frame_cou
     assert( frame_offset <=  b->valid_frame_count ); // frame_count should only advance within the current buffer
 
     if( frame_offset == b->valid_frame_count ){
+        // we've finished with the head completed buffer. 
+        // remove it from the completed buffers list and issue a read command with it
+
         IOBufferList_pop_head( &file_stream->completed_read_buffers );
         --file_stream->completed_read_buffer_count;
 
-        IOBufferList_push_head( &file_stream->free_buffers_lifo, b );
-        ++file_stream->free_buffers_count;
-
-        file_stream_issue_read_commands( file_stream );
+        file_stream_issue_read_command( file_stream, b );
     }
 
+    // if the read position reached the end, wrap it to the start
     if( file_stream->current_position_frames >= file_stream->file_frame_count )
         file_stream->current_position_frames = 0;
 }
@@ -630,17 +658,33 @@ static void iothread_process_pending_io() // returns when there is nothing left 
     while( !IOBufferList_is_empty( &iothread_->pending_reads_fifo ) ){
 
         // perform a read and return the result to the pa callback
+        // if there is a problem with seeking or reading b->valid_frame_count is set to 0
 
         IOBuffer *b = IOBufferList_pop_head( &iothread_->pending_reads_fifo );
         
-        if( b->position_frames != b->file_stream->sndfile_position_frames ){
-            sf_seek(b->file_stream->sndfile, b->position_frames, SEEK_SET);
-            b->file_stream->sndfile_position_frames = b->position_frames;
+        // each i/o buffer can request a different location in the file, 
+        // but we keep track of current file pos and only seek if necessary
+        int seek_ok = 1;
+        if( b->position_frames == b->file_stream->sndfile_position_frames ){
+            seek_ok = 1;
+        }else{
+            if( sf_seek(b->file_stream->sndfile, b->position_frames, SEEK_SET) == -1 ){
+                TRACE(("sf_seek FAIL\n"))
+                seek_ok = 0;
+            }else{
+                // seek OK
+                seek_ok = 1;
+                b->file_stream->sndfile_position_frames = b->position_frames;
+            }
         }
 
-        TRACE(("sf_readf_double %d\n", b->capacity_frames))
-        b->valid_frame_count = sf_readf_double( b->file_stream->sndfile, b->data, b->capacity_frames );
-        b->file_stream->sndfile_position_frames += b->valid_frame_count;
+        if( seek_ok ){
+            b->valid_frame_count = sf_readf_double( b->file_stream->sndfile, b->data, b->capacity_frames );
+            TRACE(("sf_readf_double requested:%d read:%d\n", b->capacity_frames, b->valid_frame_count))
+            b->file_stream->sndfile_position_frames += b->valid_frame_count;
+        }else{
+            b->valid_frame_count = 0;
+        }
 
         file_stream_post_buffer_from_iothread( b->file_stream, b );
 
@@ -718,7 +762,7 @@ static int create_iothread() // returns 0 on success
     if( iothread_->thread_handle == NULL )
         goto fail;
 
-    SetThreadPriority( iothread_->thread_handle, THREAD_PRIORITY_ABOVE_NORMAL );  // prioritize disk io above normal but below real-time audio
+    SetThreadPriority( iothread_->thread_handle, THREAD_PRIORITY_ABOVE_NORMAL );  // prioritize disk i/o above normal but below real-time audio
 
 #else
     // posix

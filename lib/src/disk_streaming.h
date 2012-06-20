@@ -84,6 +84,7 @@ void IOBufferList_insert_ordered_by_sequence_number( IOBufferList *list, IOBuffe
 #define FILESTREAM_STATE_IDLE       (0)
 #define FILESTREAM_STATE_BUFFERING  (1)
 #define FILESTREAM_STATE_STREAMING  (2)
+#define FILESTREAM_STATE_ERROR      (3)
 
 typedef struct FileStream{
     // ***
