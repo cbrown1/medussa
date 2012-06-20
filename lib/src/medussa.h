@@ -38,10 +38,6 @@ if (err < 0) { \
 } \
 }
 
-#define NDARRAY_STREAM 0
-#define SNDFILE_STREAM 1
-#define TONE_STREAM 2
-
 PaStream *open_stream (PyObject *,
                        PaStreamParameters *,
                        PaStreamParameters *,
