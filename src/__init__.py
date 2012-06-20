@@ -41,6 +41,7 @@ if pymaj == "2":
     from docs import (package_name, version, url, author, author_email,
                         long_help, short_description, long_description)
     from portaudio import pa, PA_ERROR_CHECK
+    from sndfile import get_libsndfile_version
 else:
     from .medussa import (play_array, play_file, read_file, 
                         write_file, write_wav, write_flac, write_ogg, 
@@ -58,7 +59,8 @@ else:
     from .docs import (package_name, version, url, author, author_email,
                         long_help, short_description, long_description)
     from .portaudio import pa, PA_ERROR_CHECK
-
+    from .sndfile import get_libsndfile_version
+	
 __doc__ = "%s\n\n%s" % (long_description, long_help)
 __package_name__ = package_name
 __version__ = version
@@ -67,6 +69,7 @@ __author__ = author
 __author_email__ = author_email
 __url__ = url
 __pa_version__ = "%s, Release %d" % (pa.Pa_GetVersionText(), pa.Pa_GetVersion())
+__libsndfile_version__ = get_libsndfile_version()
 del(package_name, version, url, author, author_email, long_help, short_description, long_description)
 
 err = pa.Pa_Initialize()

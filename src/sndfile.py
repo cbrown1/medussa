@@ -72,6 +72,13 @@ SFM_READ  = c_int(0x10)
 SFM_WRITE = c_int(0x20)
 SFM_RDWR  = c_int(0x30)
 
+SFC_GET_LIB_VERSION = c_int(0x1000)
+
+def get_libsndfile_version():
+	s = create_string_buffer(128)
+	csndfile.sf_command (None, SFC_GET_LIB_VERSION, s, len(s))
+	return string_at(s)
+
 # set argument and return types for relevant `libsndfile' functions
 #csndfile.sf_seek.restype =
 csndfile.sf_seek.argtypes = [c_void_p, c_uint, c_int]
