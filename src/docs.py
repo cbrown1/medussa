@@ -23,9 +23,9 @@
 package_name = "medussa"
 version = "1.0"
 author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina"
-author_email = "c-b /at/ asu.edu"
+author_email = "cbrown1@pitt.edu"
 maintainer = "Christopher Brown"
-maintainer_email = "c-b /at/ asu.edu"
+maintainer_email = "cbrown1@pitt.edu"
 url = "http://www.medussa.us"
 keywords = "sound audio signal wavplay"
 license = "GPL"
@@ -62,9 +62,9 @@ long_help = """\
  write_wav
     Writes a NumPy array to a soundfile on disk in wave format.
  write_flac
-    Writes a NumPy array to a soundfile on disk in flac format.
+    Writes a NumPy array to a soundfile on disk in flac format (lossless).
  write_ogg
-    Writes a NumPy array to a soundfile on disk in ogg vorbis format.
+    Writes a NumPy array to a soundfile on disk in ogg vorbis format (lossy).
 
  Properties
  ----------
