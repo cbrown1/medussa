@@ -132,7 +132,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
                       void *user_data)
 {
     unsigned int i, j, array_channel_count, stream_channel_count;
-
+    unsigned int array_index;
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
     double tmp_buf[MAX_FRAME_SIZE];
@@ -175,18 +175,23 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     assert( mix_mat->mat_1 == array_channel_count ); // matrix must have same number of source channels as the file
 
     // Point `arr_frames` to C array of `arr`, move cursor appropriately
-    arr = aud->ndarr + fud->cursor*array_channel_count;
+    arr = aud->ndarr;
+    array_index = fud->cursor;
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
     buf_out = (float *) pa_buf_out;
-    for (i = 0; i < frame_count; i++) {
-        if ( fud->cursor+i >= (unsigned)aud->ndarr_0 ) {
-            break;
+    for (i = 0; i < frame_count; i++, array_index++) {
+
+        if( array_index >= (unsigned)aud->ndarr_0 ){
+            if( loop )
+                array_index = 0;
+            else
+                break;
         }
         
         dmatrix_mult(mix_mat->mat, mix_mat->mat_0, mix_mat->mat_1,
-                     arr+i*array_channel_count,
+                     arr + array_index*array_channel_count,
                      array_channel_count, 1,
                      tmp_buf,
                      stream_channel_count, 1);
@@ -198,7 +203,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
         increment_mix_mat_fade( sud );
     }
 
-    // if we're at the end of the array write silence into the remainder of the output buffer
+    // if we're at the end of the source array write silence into the remainder of the output buffer
     for (; i < frame_count; i++) {
          for (j = 0; j < stream_channel_count; j++) {
                 buf_out[i*stream_channel_count + j] = 0.0f;
@@ -206,19 +211,15 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     }
 
     // Move `self.cursor`
-    fud->cursor = (fud->cursor + i); // Assume ATOMIC STORE
+    fud->cursor = array_index; // Assume ATOMIC STORE
 
-    if (fud->cursor < (unsigned int)aud->ndarr_0) {
-        return paContinue;
-    }
+    if( fud->cursor >= (unsigned int)aud->ndarr_0 && !loop ){
 
-    if (loop) {
-        fud->cursor = 0;
-        return paContinue;
-    }
-    else {
         // NOTE: if the stream has completed we don't reset the cursor to zero.
         return paComplete;
+    }else{
+
+        return paContinue;
     }
 }
 
