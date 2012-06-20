@@ -575,7 +575,9 @@ class Stream(object):
                                                self._stream_user_data.in_param,
                                                self._stream_user_data.out_param,
                                                self._callback_ptr)
-
+        if self._stream_ptr == 0:
+            raise RuntimeError("Failed to open stream.")
+    
     def start(self):
         """
         Starts playback of the stream.
