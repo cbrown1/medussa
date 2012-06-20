@@ -24,7 +24,6 @@
 #include "medussa_matrix.h"
 
 #define TWOPI 6.2831853071795862
-#define MAX_FRAME_SIZE 16
 
 
 void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stream_command *command, void *data )
@@ -135,7 +134,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
     unsigned int array_index;
     int loop;        // Boolean
     float *buf_out;  // Points to `pa_buf_out`
-    double tmp_buf[MAX_FRAME_SIZE];
+    double *tmp_buf;
     medussa_dmatrix *mix_mat;
     double *arr;
     
@@ -180,6 +179,7 @@ int callback_ndarray (const void *pa_buf_in, void *pa_buf_out,
 
     // Copy each frame from of `arr` to the output buffer, multiplying by
     // the mixing matrix each time.
+    tmp_buf = fud->temp_mat->mat;
     buf_out = (float *) pa_buf_out;
     for (i = 0; i < frame_count; i++, array_index++) {
 
@@ -252,7 +252,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     sf_count_t read_buffer_frame_count;
     sf_count_t frames_to_go;
     int output_frame_index;
-    double tmp_buf[MAX_FRAME_SIZE]; // FIXME should be allocated to max(stream_channels, file_channels)
+    double *tmp_buf;
     char *finpath;
     SF_INFO *finfo;
     medussa_dmatrix *mix_mat;
@@ -280,6 +280,7 @@ int callback_sndfile_read (const void *pa_buf_in, void *pa_buf_out,
     assert( mix_mat->mat_0 == stream_channel_count ); // matrix must have as many output channels as our stream
     assert( mix_mat->mat_1 == file_channel_count ); // matrix must have same number of source channels as the file
 
+    tmp_buf = fud->temp_mat->mat;
     buf_out = (float *) pa_buf_out;
     output_frame_index = 0;    
     frames_to_go = frame_count;

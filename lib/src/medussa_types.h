@@ -151,6 +151,8 @@ struct finite_user_data {
     volatile unsigned int cursor;
     unsigned int frames;
     double duration;
+
+    medussa_dmatrix *temp_mat;
 };
 typedef struct finite_user_data finite_user_data;
 
