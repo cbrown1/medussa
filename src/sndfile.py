@@ -24,6 +24,7 @@ from .sndfile_formats import sndfile_formats
 
 sf_formats = sndfile_formats()
 
+import platform
 from ctypes.util import find_library
 from distutils.sysconfig import get_python_lib
 from os.path import exists
