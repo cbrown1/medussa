@@ -740,7 +740,6 @@ class Stream(object):
         self._stream_ptr = None
         
         try:
-            
             self._stream_user_data.command_queues = cmedussa.alloc_stream_command_queues();
             if not self._stream_user_data.command_queues:
                 raise MemoryError
