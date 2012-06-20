@@ -26,21 +26,10 @@
 #include <portaudio.h>
 #include "pa_ringbuffer.h"
 #include <sndfile.h>
+#include "medussa_matrix.h"
 #include "randomkit.h"
 #include "pink.h"
 #include "disk_streaming.h"
-
-/* -------------------------------------------------------------------- */
-
-struct medussa_dmatrix{
-    double *mat;
-    int mat_0;
-    int mat_1;
-};
-typedef struct medussa_dmatrix medussa_dmatrix;
-
-medussa_dmatrix* alloc_medussa_dmatrix( int mat_0, int mat_1, double *mat ); // pass null data to init the matrix
-void free_medussa_dmatrix( medussa_dmatrix *mat );
 
 /* -------------------------------------------------------------------- */
 
@@ -108,9 +97,6 @@ void execute_commands_in_pa_callback( stream_command_queues* qs, execute_command
     then process_results_from_pa_callback to ensure that all results are freed
     then call free_stream_command_queues
 
-
-
-    make sure python side uses a sleep-retry mechanism if the commandqueue is full
 */
 
 

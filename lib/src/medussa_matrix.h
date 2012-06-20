@@ -20,7 +20,21 @@
 #
 */
 
+#ifndef INCLUDED_MEDUSSA_MATRIX_H
+#define INCLUDED_MEDUSSA_MATRIX_H
+
 #include <stdio.h>
+
+struct medussa_dmatrix{
+    double *mat;
+    int mat_0;
+    int mat_1;
+};
+typedef struct medussa_dmatrix medussa_dmatrix;
+
+medussa_dmatrix* alloc_medussa_dmatrix( int mat_0, int mat_1, double *mat ); // pass null data to init the matrix
+void free_medussa_dmatrix( medussa_dmatrix *mat );
+
 
 typedef struct f_matrix {
     int m;
@@ -59,3 +73,5 @@ void dmatrix_scale (double *a,  int a_m,  int a_n,
 
 void fprint_matrix (float  *a, int a_m, int a_n);
 void dprint_matrix (double *a, int a_m, int a_n);
+
+#endif /* INCLUDED_MEDUSSA_MATRIX_H */
