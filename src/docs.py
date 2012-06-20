@@ -72,6 +72,8 @@ long_help = """\
     The Medussa library version.
  __pa_version__
     The Port Audio library version.
+ __libsndfile_version__
+    The libsndfile library version.
 
  Notes
  -----
