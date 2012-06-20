@@ -12,6 +12,7 @@ d = medussa.open_device()
 
 TEST_ALL = True
 
+
 # sanity checks: create and immediately delete streams
 #####################################################################
 if TEST_ALL or 0:
@@ -179,15 +180,15 @@ def testLinearAmplitudeRamp( s ):
         sleep(.1)
     s.stop()
     
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_tone(440,fs)
     testLinearAmplitudeRamp( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_white(fs)
     testLinearAmplitudeRamp( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_pink(fs)
     testLinearAmplitudeRamp( s )
 
@@ -211,15 +212,15 @@ def testFadeDuration( s ):
     sleep(1)
     s.stop()
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_tone(440,fs)
     testFadeDuration( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_white(fs)
     testFadeDuration( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     s = d.create_pink(fs)
     testFadeDuration( s )
 
@@ -314,7 +315,7 @@ def testCursorBehavior( s ):
 
     print "testing: calling play() on a paused stream doesn't reset the cursor."
     print "testing: play() plays from the current cursor position."
-    assert s.cursor > c
+    assert s.cursor >= c
 
     c = s.cursor
 
@@ -326,7 +327,7 @@ def testCursorBehavior( s ):
 
     print "testing: If the stream ends because it has reached the end (and looping isn't enabled), then cursor remains at the end."
     assert not s.is_playing
-    assert s.cursor > c
+    assert s.cursor >= c
     assert s.cursor_is_at_end
 
 
@@ -399,7 +400,7 @@ def playLoopedStopLoopThenStop( s ):
 
     
 # play an array looped
-if TEST_ALL or 0:
+if TEST_ALL or 1:
     print "testing: looped playback (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
@@ -414,27 +415,27 @@ if TEST_ALL or 0:
 
 
 # test fading on looped file streams
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: fading (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     s.loop( True )
     testLinearAmplitudeRamp( s )
     
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: fading (array)"
     x,fs = medussa.read_file("clean.wav")
     s = d.open_array(x, fs)
     s.loop( True )
     testFadeDuration( s )
 
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: fading (streaming)"
     s = d.open_file("clean.wav")
     s.loop( True )
     testLinearAmplitudeRamp( s )
     
-if TEST_ALL or 1:
+if TEST_ALL or 0:
     print "testing: fading (streaming)"
     s = d.open_file("clean.wav")
     s.loop( True )
