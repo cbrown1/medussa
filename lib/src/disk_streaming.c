@@ -429,17 +429,17 @@ void file_stream_seek( FileStream *file_stream, sf_count_t position )
         enqueue_iocommand_from_pa_callback( &cmd );
     }
 
-    // move completed buffers to free buffers list
-    IOBufferList_prepend_b_to_a( &file_stream->free_buffers_lifo, &file_stream->completed_read_buffers );
-
-    file_stream->free_buffers_count += file_stream->completed_read_buffer_count;
-    file_stream->completed_read_buffer_count = 0;
-    assert( file_stream->free_buffers_count == file_stream->buffer_count );
-
     file_stream->next_read_position_frames = position;
     file_stream->next_completed_read_sequence_number = file_stream->next_read_sequence_number;  // cause file_stream_process_buffers_from_io_thread to 
                                                                                                 // discard canceled and pending buffers prior to the next read
     file_stream->current_position_frames = position;
+
+    file_stream_process_buffers_from_io_thread( file_stream );
+
+    // move completed buffers to free buffers list
+    IOBufferList_prepend_b_to_a( &file_stream->free_buffers_lifo, &file_stream->completed_read_buffers );
+    file_stream->free_buffers_count += file_stream->completed_read_buffer_count;
+    file_stream->completed_read_buffer_count = 0;
 
     file_stream_issue_read_commands_using_all_free_buffers( file_stream );
 
