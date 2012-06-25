@@ -533,7 +533,7 @@ class Stream(object):
     @mix_mat.setter
     def mix_mat(self, val):
        self.fade_mix_mat_to( val, self.__mix_mat_fade_duration )
-                                                        
+       
     @mix_mat.deleter
     def mix_mat(self):
         del self.__mix_mat
@@ -914,6 +914,10 @@ class ToneStream(Stream):
         individual channel levels. To change the overall level (of all 
         channels, leaving the relative channel levels unchanged), you can do 
         something like stream.mix_mat *= .5.
+    mix_mat_fade_duration : float
+        When mix_mat is changed, the changes in level are faded linearly from 
+        those in the old to those in the new mix_mat. This property sets the 
+        duration of the fade. Set this to zero for no fade. 
     tone_freq : float
         The frequency, in Hz, of the tone.
 
@@ -1006,6 +1010,10 @@ class WhiteStream(Stream):
         individual channel levels. To change the overall level (of all 
         channels, leaving the relative channel levels unchanged), you can do 
         something like stream.mix_mat *= .5.
+    mix_mat_fade_duration : float
+        When mix_mat is changed, the changes in level are faded linearly from 
+        those in the old to those in the new mix_mat. This property sets the 
+        duration of the fade. Set this to zero for no fade. 
 
     """
     _instances = set()
@@ -1089,6 +1097,10 @@ class PinkStream(Stream):
         individual channel levels. To change the overall level (of all 
         channels, leaving the relative channel levels unchanged), you can do 
         something like stream.mix_mat *= .5.
+    mix_mat_fade_duration : float
+        When mix_mat is changed, the changes in level are faded linearly from 
+        those in the old to those in the new mix_mat. This property sets the 
+        duration of the fade. Set this to zero for no fade. 
 
     """
     _instances = set()
@@ -1402,6 +1414,10 @@ class ArrayStream(FiniteStream):
         individual channel levels. To change the overall level (of all 
         channels, leaving the relative channel levels unchanged), you can do 
         something like stream.mix_mat *= .5.
+    mix_mat_fade_duration : float
+        When mix_mat is changed, the changes in level are faded linearly from 
+        those in the old to those in the new mix_mat. This property sets the 
+        duration of the fade. Set this to zero for no fade. 
 
     """
     _instances = set()
@@ -1520,6 +1536,10 @@ class SoundfileStream(FiniteStream):
         individual channel levels. To change the overall level (of all 
         channels, leaving the relative channel levels unchanged), you can do 
         something like stream.mix_mat *= .5.
+    mix_mat_fade_duration : float
+        When mix_mat is changed, the changes in level are faded linearly from 
+        those in the old to those in the new mix_mat. This property sets the 
+        duration of the fade. Set this to zero for no fade. 
 
     Notes
     -----
@@ -1649,7 +1669,7 @@ def get_default_output_device_index():
 
     Parameters
     ----------
-    None.
+    None
 
     Returns
     -------
@@ -1674,7 +1694,7 @@ def get_default_input_device_index():
 
     Parameters
     ----------
-    None.
+    None
 
     Returns
     -------

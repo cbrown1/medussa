@@ -1,0 +1,6 @@
+include AUTHORS
+include COPYING
+include INSTALL
+include NEWS
+include USAGE
+include lib/build/linux/py*/libmedussa.so

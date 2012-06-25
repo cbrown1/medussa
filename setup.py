@@ -25,8 +25,6 @@ from distutils.sysconfig import get_python_lib
 import os
 import sys
 import platform
-import subprocess
-import shutil
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
@@ -44,7 +42,7 @@ medussa_package_dir = 'src'
 medussa_package_data = ['*.py']
 medussa_data_files = []
 medussa_data_files_path = ''
-medussa_requires = ['numpy (>=1.2)',]
+medussa_requires = ['numpy (>=1.3)',]
 
 if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
@@ -81,7 +79,7 @@ setup(name=docs.package_name,
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.1",
+        #"Programming Language :: Python :: 3.1",
         "Programming Language :: Python :: 3.2",
         "Environment :: Console",
         "Development Status :: 4 - Beta",
