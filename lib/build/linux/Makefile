@@ -55,8 +55,8 @@ randomkit.o: $(SRCDIR)/randomkit.c
 pink.o: $(SRCDIR)/pink.c
 	gcc -c -fPIC $(SRCDIR)/pink.c $(FLAGS)
 
-pa_ringbuffer.o: $(ROOTDIR)/lib/pa_ringbuffer/pa_ringbuffer.c
-	gcc -c -fPIC $(ROOTDIR)/lib/pa_ringbuffer/pa_ringbuffer.c $(FLAGS)
+pa_ringbuffer.o: $(SRCDIR)/pa_ringbuffer.c
+	gcc -c -fPIC $(SRCDIR)/pa_ringbuffer.c $(FLAGS)
 
 disk_streaming.o: $(SRCDIR)/disk_streaming.c
 	gcc -c -fPIC -lpthread -lrt $(SRCDIR)/disk_streaming.c $(FLAGS)

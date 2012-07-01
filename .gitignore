@@ -1,0 +1,9 @@
+build/lib
+dist/
+*.*~
+*~
+lib/build/linux/*.so*
+*.o
+*.pyc
+MANIFEST
+

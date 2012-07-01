@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\lib\pa_ringbuffer\pa_ringbuffer.c" />
+    <ClCompile Include="..\..\..\src\pa_ringbuffer.c" />
     <ClCompile Include="..\..\..\src\disk_streaming.c" />
     <ClCompile Include="..\..\..\src\medussa.c" />
     <ClCompile Include="..\..\..\src\medussa_callbacks.c" />
