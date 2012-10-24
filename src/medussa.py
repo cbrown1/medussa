@@ -2061,6 +2061,11 @@ def read_file(file_name):
         for j in xrange(finfo.channels):
             arr[i][j] = buff[i*finfo.channels + j]
 
+    #Samples with 1 channel need to be reshaped, so that they can be directly
+    #passed to, for example, play_array.
+    if (len(arr.shape) == 2 and arr.shape[1] == 1):
+        arr = arr[:,0]
+
     return (arr, float(fs))
 
 
