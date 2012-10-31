@@ -1,0 +1,19 @@
+# .gitattributes: specify how git should deal with line endings across
+# platforms.
+#
+# A useful guide on building and modifying .gitattributes can be found at:
+# https://help.github.com/articles/dealing-with-line-endings
+
+# Set default behaviour, in case users don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files we want to always be normalized and converted
+# to native line endings on checkout. For now, we will assume that git does a
+# good enough job with its auto setting. If need be, we can force certain files
+# to have their line endings automatically converted to the native line ending
+# format.
+# *.c text
+# *.h text
+
+# Declare files that will always have CRLF line endings on checkout.
+*.sln text eol=crlf
