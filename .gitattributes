@@ -8,12 +8,12 @@
 * text=auto
 
 # Explicitly declare text files we want to always be normalized and converted
-# to native line endings on checkout. For now, we will assume that git does a
-# good enough job with its auto setting. If need be, we can force certain files
-# to have their line endings automatically converted to the native line ending
+# to native line endings on checkout. If need be, we can force certain files to
+# have their line endings automatically converted to the native line ending
 # format.
-# *.c text
-# *.h text
+*.c text
+*.h text
+*.py text
 
 # Declare files that will always have CRLF line endings on checkout.
 *.sln text eol=crlf
