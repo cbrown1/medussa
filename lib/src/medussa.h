@@ -30,10 +30,15 @@
 
 #include "medussa_callbacks.h"
 
+//Requires that the function using this macro has a local PyGILState_STATE
+//variable called gstate (e.g., for use with PyGILState_Ensure and
+//PyGILState_Release).
+
 #define ERROR_CHECK \
 { \
 if (err < 0) { \
     PyErr_SetString(PyExc_RuntimeError, Pa_GetErrorText(err)); \
+    PyGILState_Release(gstate); \
     return NULL; \
 } \
 }

@@ -51,6 +51,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     if (PyObject_HasAttrString(self, "_callback_user_data")) {
         attr = PyObject_GetAttrString(self, "_callback_user_data");
         if (attr == NULL) {
+            PyGILState_Release(gstate);
             return NULL;
         }
         else if (attr == Py_None) {
@@ -64,6 +65,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         }
     }
     else {
+        PyGILState_Release(gstate);
         return NULL;
     }
 
@@ -71,6 +73,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     if (PyObject_HasAttrString(self, "_stream_ptr")) {
         attr = PyObject_GetAttrString(self, "_stream_ptr");
         if (attr == NULL) {
+            PyGILState_Release(gstate);
             return NULL;
         }
         else if (attr == Py_None) {
@@ -84,6 +87,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         }
     }
     else {
+        PyGILState_Release(gstate);
         return NULL;
     }
 
@@ -91,6 +95,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     if (PyObject_HasAttrString(self, "fs")) {
         attr = PyObject_GetAttrString(self, "fs");
         if (attr == NULL) {
+            PyGILState_Release(gstate);
             return NULL;
         }
         Py_INCREF(attr);
@@ -98,6 +103,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         Py_CLEAR(attr);
     }
     else {
+        PyGILState_Release(gstate);
         return NULL;
     }
 
@@ -105,6 +111,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     if (PyObject_HasAttrString(self, "_pa_fpb")) {
         attr = PyObject_GetAttrString(self, "_pa_fpb");
         if (attr == NULL) {
+            PyGILState_Release(gstate);
             return NULL;
         }
         Py_INCREF(attr);
@@ -112,14 +119,15 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         Py_CLEAR(attr);
     }
     else {
+        PyGILState_Release(gstate);
         return NULL;
     }
-    PyGILState_Release(gstate);
     //
     // ...end pulling values from calling object.
     //
 
     // Attempt to open the stream
+
     err = Pa_OpenStream(&stream,
                         spin,
                         spout,
@@ -128,7 +136,10 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
                         paNoFlag,
                         callback_ptr,
                         user_data);
+
     ERROR_CHECK;
+    
+    PyGILState_Release(gstate);
 
     // Return the new integer value of the mutated `PaStream *` back to Python
     return stream;
