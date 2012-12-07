@@ -20,11 +20,12 @@
 # Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
 #
 
-from distutils.core import setup
+from setuptools import setup, Extension
 from distutils.sysconfig import get_python_lib
+import glob
 import os
-import sys
 import platform
+import sys
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
@@ -42,6 +43,7 @@ medussa_package_dir = 'src'
 medussa_package_data = ['*.py']
 medussa_data_files = []
 medussa_data_files_path = ''
+medussa_install_requires = ['numpy >=1.3']
 medussa_requires = ['numpy (>=1.3)',]
 
 if platform.system() == "Windows":
@@ -50,8 +52,12 @@ if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/libsndfile-1.dll')
     medussa_data_files_path = os.path.join(get_python_lib(prefix=''), 'medussa')
 else:
-    medussa_data_files.append('lib/build/linux/py%s/libmedussa.so' % pyver)
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
+
+cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
+    include_dirs=[os.path.join('lib', 'include')],
+    libraries=['portaudio', 'sndfile'],
+    sources=glob.glob(os.path.join('lib', 'src', '*.c')))
 
 setup(name=docs.package_name,
     version=docs.version,
@@ -62,6 +68,7 @@ setup(name=docs.package_name,
     maintainer_email = docs.maintainer_email,
     url=docs.url,
     packages = medussa_package,
+    install_requires = medussa_install_requires,
     requires = medussa_requires,
     package_dir={docs.package_name: medussa_package_dir},
     package_data={docs.package_name: medussa_package_data},
@@ -70,6 +77,7 @@ setup(name=docs.package_name,
     license = docs.license,
     platforms = docs.platforms,
     long_description = docs.long_description,
+    ext_modules = [cmedussa],
     classifiers=[
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Programming Language :: Python",

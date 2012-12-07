@@ -38,11 +38,13 @@ if pymaj == "3":
 
 
 if platform.system() == "Windows":
-    libname = os.path.join(get_python_lib(), 'medussa', 'medussa.dll')
-    if not os.path.exists(libname):
-        raise RuntimeError("Unable to locate library: " + libname)
+    libname_base = 'libmedussa.dll'
 elif platform.system() == "Linux":
-    libname = os.path.join(get_python_lib(), 'medussa', 'libmedussa.so')
+    libname_base = 'libmedussa.so'
+
+if platform.system() == "Windows" or platform.system() == "Linux":
+    libname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+            libname_base)
     if not os.path.exists(libname):
         raise RuntimeError("Unable to locate library: " + libname)
 else:
