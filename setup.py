@@ -25,6 +25,8 @@ from distutils.sysconfig import get_python_lib
 import glob
 import os
 import platform
+import distutils
+from distutils.command.build_ext import build_ext
 import sys
 
 pymaj = platform.python_version_tuple()[0]
@@ -45,6 +47,7 @@ medussa_data_files = []
 medussa_data_files_path = ''
 medussa_install_requires = ['numpy >=1.3']
 medussa_requires = ['numpy (>=1.3)',]
+medussa_setup_requires = ['numpy >=1.3']
 
 if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
@@ -53,6 +56,30 @@ if platform.system() == "Windows":
     medussa_data_files_path = os.path.join(get_python_lib(prefix=''), 'medussa')
 else:
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
+
+class build_medussa_c_extension(build_ext):
+    """This seems unnecessarily complex, but: We want to add
+    numpy.get_include() as an include directory for the libmedussa extension.
+    But, numpy might not be installed at the time that the Extension object is
+    constructed. Instead, we delay adding numpy's include directory until right
+    before we build the Extension. By the time the Extension is built,
+    setuptools will have ensured that numpy is installed (via setup_requires).
+    This code will then be able to import numpy and add its include directory
+    to the include directory search paths."""
+
+    def run(self):
+        if (self.include_dirs is not None):
+            try:
+                import numpy as np
+                self.include_dirs.append(np.get_include())
+            except ImportError as e:
+                raise distutils.errors.DistutilsSetupError(
+                    "error occured finding numpy include directory: "+\
+                    "this should not occur: " + str(e))
+
+        #Continue with the build as normal.
+        build_ext.run(self)
+
 
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
     include_dirs=[os.path.join('lib', 'include')],
@@ -68,7 +95,9 @@ setup(name=docs.package_name,
     maintainer_email = docs.maintainer_email,
     url=docs.url,
     packages = medussa_package,
+    cmdclass=dict(build_ext=build_medussa_c_extension),
     install_requires = medussa_install_requires,
+    setup_requires = medussa_setup_requires,
     requires = medussa_requires,
     package_dir={docs.package_name: medussa_package_dir},
     package_data={docs.package_name: medussa_package_data},
