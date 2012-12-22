@@ -58,7 +58,11 @@ else:
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
 
 class build_medussa_c_extension(build_ext):
-    """This seems unnecessarily complex, but: We want to add
+    """CURRENTLY BROKEN: setuptools will automatically download and build
+    numpy, but then the numpy get_include call will fail. Be sure to install
+    numpy first.
+    
+    This seems unnecessarily complex, but: We want to add
     numpy.get_include() as an include directory for the libmedussa extension.
     But, numpy might not be installed at the time that the Extension object is
     constructed. Instead, we delay adding numpy's include directory until right
@@ -74,15 +78,16 @@ class build_medussa_c_extension(build_ext):
                 self.include_dirs.append(np.get_include())
             except ImportError as e:
                 raise distutils.errors.DistutilsSetupError(
-                    "error occured finding numpy include directory: "+\
-                    "this should not occur: " + str(e))
+                    "Error occured finding numpy include directory. " +\
+                    "Be sure to install numpy first. "+\
+                    "This should not occur: " + str(e))
 
         #Continue with the build as normal.
         build_ext.run(self)
 
 
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
-    include_dirs=[os.path.join('lib', 'include')],
+    include_dirs=['lib', os.path.join('lib', 'include')],
     libraries=['portaudio', 'sndfile'],
     sources=glob.glob(os.path.join('lib', 'src', '*.c')))
 

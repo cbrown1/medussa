@@ -3,3 +3,5 @@ include COPYING
 include INSTALL
 include NEWS
 include USAGE
+include lib/src/*.h
+include lib/include/*.h
