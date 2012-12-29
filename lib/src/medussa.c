@@ -40,7 +40,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     //PaStreamParameters *spout;
     double fs;
     unsigned long fpb;
-    void *user_data;
+    void *user_data = NULL;
     //PaStreamCallback *callback_ptr;
 
     gstate = PyGILState_Ensure();

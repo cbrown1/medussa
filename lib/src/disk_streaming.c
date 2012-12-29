@@ -607,7 +607,7 @@ typedef struct IOThread{
 static IOThread *iothread_ = NULL; // singleton
 static int iothread_refcount_ = 0;
 
-static void iothread_process_commands()
+static void iothread_process_commands(void)
 {
     IOCommand cmd;
     int i;
@@ -651,7 +651,7 @@ static void iothread_process_commands()
     }
 }
 
-static void iothread_process_pending_io() // returns when there is nothing left to do
+static void iothread_process_pending_io(void) // returns when there is nothing left to do
 {
     iothread_process_commands();
 
@@ -723,7 +723,7 @@ static void *io_thread_func( void *param )
 
 #endif
 
-static int create_iothread() // returns 0 on success
+static int create_iothread(void) // returns 0 on success
 {
     void *ringbuffer_data = 0;
     int i;
@@ -819,7 +819,7 @@ fail:
     return IOTHREAD_FAIL;
 }
 
-static void destroy_iothread()
+static void destroy_iothread(void)
 {
     int i;
 

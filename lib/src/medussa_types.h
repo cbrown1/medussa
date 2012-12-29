@@ -62,7 +62,7 @@ struct stream_command_queues{
 };
 typedef struct stream_command_queues stream_command_queues;
 
-stream_command_queues* alloc_stream_command_queues();
+stream_command_queues* alloc_stream_command_queues(void);
 void free_stream_command_queues( stream_command_queues* qs );
 
 /* copy cmd into queue that sends to callback. returns 1 on success, 0 on fail */

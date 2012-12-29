@@ -23,6 +23,7 @@
 #ifndef INCLUDED_DISKSTREAMING_H
 #define INCLUDED_DISKSTREAMING_H
 
+#include <stdint.h>
 #include <sndfile.h>
 #include "pa_ringbuffer.h"
 
@@ -162,8 +163,8 @@ typedef struct IOCommand{
 // i/o thread is reference counted. each stream should acquire it before use and release it afterwards
 // ***
 // Threading: acquire and release from main (Python) thread. Usually this is handled by the streams.
-int acquire_iothread(); // returns IOTHREAD_SUCCESS on success
-void release_iothread();
+int acquire_iothread(void); // returns IOTHREAD_SUCCESS on success
+void release_iothread(void);
 
 // ***
 // Threading: enqueue an i/o command from the PA callback thread
