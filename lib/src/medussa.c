@@ -186,3 +186,10 @@ int writefile_helper (char *foutpath, SF_INFO *finfo, double *arr, int format, i
 
     return frames_written;
 }
+
+void initlibmedussa(void)
+{
+    //Empty function. Needed by distutils or else when building it throws
+    //errors.
+}
+
