@@ -22,6 +22,13 @@
 
 #include "disk_streaming.h"
 
+//Suppport multiple methods of checking for Windows compilation.
+#ifdef _WIN32
+#ifndef WIN32
+#define WIN32
+#endif
+#endif
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
