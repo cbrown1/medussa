@@ -50,6 +50,7 @@ medussa_requires = ['numpy (>=1.3)',]
 medussa_setup_requires = ['numpy >=1.3']
 
 library_dirs = []
+libraries = ['portaudio', 'sndfile']
 
 if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
@@ -57,6 +58,8 @@ if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/libsndfile-1.dll')
     medussa_data_files_path = os.path.join(get_python_lib(prefix=''), 'medussa')
     library_dirs.append('./lib/lib')
+
+    libraries.append('advapi32')
 else:
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
 
@@ -91,7 +94,7 @@ class build_medussa_c_extension(build_ext):
 
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
     include_dirs=['lib', os.path.join('lib', 'include')],
-    libraries=['portaudio', 'sndfile'],
+    libraries=libraries,
     library_dirs=library_dirs,
     sources=glob.glob(os.path.join('lib', 'src', '*.c')))
 
