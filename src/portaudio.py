@@ -29,10 +29,21 @@ from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = os.path.join(get_python_lib(), "medussa", "portaudio_x86.dll")
-    if not os.path.exists(libname):
-        raise RuntimeError("Unable to locate library: " + libname)
-	
+	libsearchpath = [
+		get_python_lib() + "\\medussa\\portaudio_x86.dll",
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), "portaudio_x86.dll"),
+		os.path.join(os.environ["ProgramFiles"], "portaudio", "portaudio_x86.dll")
+		]
+	libname = ""
+	foundlib = False
+	for libpath in libsearchpath:
+		libname = libpath
+		if os.path.exists(libname):
+			foundlib = True
+			break
+	if not foundlib:
+		raise RuntimeError("Unable to locate library: portaudio")
+
 else:
     libname = find_library("portaudio")
     if libname == None:

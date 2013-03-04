@@ -24,18 +24,28 @@ from .sndfile_formats import sndfile_formats
 
 sf_formats = sndfile_formats()
 
+import os
 import platform
 from ctypes.util import find_library
 from distutils.sysconfig import get_python_lib
-from os.path import exists
 from ctypes import *
-
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    libname = get_python_lib() + "\\medussa\\libsndfile-1.dll"
-    if not exists(libname):
-	    raise RuntimeError("Unable to locate library: " + libname)
+	libsearchpath = [
+		get_python_lib() + "\\medussa\\libsndfile-1.dll",
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), "libsndfile-1.dll"),
+		os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin","libsndfile-1.dll")
+		]
+	libname = ""
+	foundlib = False
+	for libpath in libsearchpath:
+		libname = libpath
+		if os.path.exists(libname):
+			foundlib = True
+			break
+	if not foundlib:
+		raise RuntimeError("Unable to locate library: libsndfile")
 else:
     libname = find_library("sndfile")
     if libname == None:
