@@ -25,24 +25,29 @@ import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
 import os
+import pkg_resources
 from distutils.sysconfig import get_python_lib
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-	libsearchpath = [
-		get_python_lib() + "\\medussa\\portaudio_x86.dll",
-		os.path.join(os.path.dirname(os.path.abspath(__file__)), "portaudio_x86.dll"),
-		os.path.join(os.environ["ProgramFiles"], "portaudio", "portaudio_x86.dll")
-		]
-	libname = ""
-	foundlib = False
-	for libpath in libsearchpath:
-		libname = libpath
-		if os.path.exists(libname):
-			foundlib = True
-			break
-	if not foundlib:
-		raise RuntimeError("Unable to locate library: portaudio")
+
+    PORTAUDIO_X86 = "portaudio_x86.dll"
+
+    libsearchpath = [
+        pkg_resources.resource_filename("medussa", PORTAUDIO_X86),
+        os.path.join(get_python_lib(), "medussa", PORTAUDIO_X86),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), PORTAUDIO_X86),
+        os.path.join(os.environ["ProgramFiles"], "portaudio", PORTAUDIO_X86)
+        ]
+    libname = ""
+    foundlib = False
+    for libpath in libsearchpath:
+        libname = libpath
+        if os.path.exists(libname):
+            foundlib = True
+            break
+    if not foundlib:
+        raise RuntimeError("Unable to locate library: portaudio")
 
 else:
     libname = find_library("portaudio")
