@@ -38,7 +38,7 @@ if pymaj == "3":
 
 
 if platform.system() == "Windows":
-    libname_base = 'libmedussa.dll'
+    libname_base = 'libmedussa.pyd'
 elif platform.system() == "Linux":
     libname_base = 'libmedussa.so'
 
