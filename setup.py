@@ -56,7 +56,8 @@ if platform.system() == "Windows":
     medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
     medussa_data_files.append('lib/build/win/portaudio_x86.dll')
     medussa_data_files.append('lib/build/win/libsndfile-1.dll')
-    medussa_data_files_path = os.path.join(get_python_lib(prefix=''), 'medussa')
+    medussa_data_files_path = 'medussa'
+
     library_dirs.append('./lib/lib')
 
     libraries.append('advapi32')
