@@ -751,7 +751,7 @@ class Stream(object):
             self._is_muted = False
             
         except:
-            self.__free_command_queues(self)
+            self.__free_command_queues()
             raise
         
     def _init2(self, device, fs, callback_ptr, callback_command_exec_ptr, callback_user_data, mix_mat, source_channels):
@@ -828,7 +828,7 @@ class Stream(object):
         self._stream_user_data.target_mix_mat = None
 
     def _free_init_resources(self): # derived classes should call this if they catch an error in __init__
-        self.__free_command_queues(self)
+        self.__free_command_queues()
         self.__free_dmatrices()
         
     def __del__(self):
