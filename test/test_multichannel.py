@@ -10,7 +10,8 @@ import time
 import numpy as np
 import medussa as m
 
-d = m.open_default_device()
+#d = m.open_default_device()
+d = m.open_device()
 tone = d.create_tone(500)
 tone.mix_mat_fade_duration = 1.
 
