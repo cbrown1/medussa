@@ -20,12 +20,13 @@
 # Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
 #
 
-import time
-import os
-import numpy as np
 import atexit
-import weakref
+import datetime
+import numpy as np
+import os
 import platform
+import time
+import weakref
 
 from .portaudio import *
 from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
@@ -546,7 +547,7 @@ class Stream(object):
 
     @mix_mat.setter
     def mix_mat(self, val):
-       self.fade_mix_mat_to( val, self.__mix_mat_fade_duration )
+        self.fade_mix_mat_to( val, self.__mix_mat_fade_duration )
        
     @mix_mat.deleter
     def mix_mat(self):
@@ -558,6 +559,10 @@ class Stream(object):
     # note that irrespective of the fade duration, s.mix_mat reflects
     # the target value immediately.
     def fade_mix_mat_to(self, val, fade_duration ):
+
+        self.fade_mix_mat_start_time = datetime.datetime.now()
+        self.fade_mix_mat_fade_duration = fade_duration
+
         if hasattr(self,'_Stream__mix_mat'): # must use mangled name here http://bugs.python.org/issue8264
             # if we already have a __mix_mat (i.e. any time after construction)
             # then conform the new mix_mat to the correct shape
@@ -689,6 +694,20 @@ class Stream(object):
             raise RuntimeError("Error indicated by `Pa_GetStreamTime()` -> 0")
 
     @property
+    def is_fading(self):
+        """
+        Returns whether the stream is currently fading from one mix_mat value
+        to another.
+        """
+
+        if (self.fade_mix_mat_start_time == None or
+                self.fade_mix_mat_fade_duration == None):
+            return false
+
+        td = datetime.timedelta(seconds=self.fade_mix_mat_fade_duration)
+        return self.fade_mix_mat_start_time + td >= datetime.datetime.now()
+
+    @property
     def is_muted(self):
         return self._is_muted
 
@@ -753,6 +772,7 @@ class Stream(object):
         
         self._stream_ptr = None
         
+
         try:
             self._stream_user_data.command_queues = cmedussa.alloc_stream_command_queues();
             if not self._stream_user_data.command_queues:
@@ -761,7 +781,10 @@ class Stream(object):
             self._stream_user_data.is_muted = 0;
             self._stream_user_data.mix_mat_fade_countdown_frames = 0;
             self._is_muted = False
-            
+
+            self.fade_mix_mat_start_time = None
+            self.fade_mix_mat_fade_duration = None
+           
         except:
             self.__free_command_queues()
             raise
@@ -802,6 +825,10 @@ class Stream(object):
             self._pa_fpb = 1024
 
             self._instances.add(weakref.ref(self))
+
+            self.fade_mix_mat_start_time = None
+            self.fade_mix_mat_fade_duration = self.mix_mat_fade_duration
+
         except:
             self._free_init_resources()
             raise
