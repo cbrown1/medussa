@@ -32,6 +32,10 @@ from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
 from .pink import Pink_noise_t
 from .rkit import Rk_state
 
+#Some portaudio calls may return "paNoDevice" on error (e.g., no default device
+#is available). In port audio, this value is #define'd to ((PaDeviceIndex)-1).
+PA_NODEVICE = -1
+
 pymaj = platform.python_version_tuple()[0]
 if pymaj == "3":
     xrange = range
@@ -361,9 +365,17 @@ class Device(object):
 
     def __init__(self, in_index=None, out_index=None, out_channels=None):
         if in_index != None:
+            if (in_index < 0):
+                raise ValueError("input device must be >= 0: found {ind}".format(ind=in_index))
+
             self.in_index = in_index
+
         if out_index != None:
+            if (out_index < 0):
+                raise ValueError("output device must be >= 0: found {ind}".format(ind=out_index))
+
             self.out_index = out_index
+
         if out_channels != None:
             self.out_channels = out_channels
 
@@ -1681,13 +1693,15 @@ def get_default_output_device_index():
     """
     devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
     if devices == []:
-        return pa.Pa_GetDefaultOutputDevice()
+        output_device = pa.Pa_GetDefaultOutputDevice()
+        return output_device if output_device != PA_NODEVICE else None
     else:
         i,d = devices[0]
         if d.maxOutputChannels > 0:
             return i
         else:
-            return pa.Pa_GetDefaultOutputDevice()
+            output_device = pa.Pa_GetDefaultOutputDevice()
+            return output_device if output_device != PA_NODEVICE else None
 
 
 def get_default_input_device_index():
@@ -1710,13 +1724,15 @@ def get_default_input_device_index():
 	"""
     devices = [(i,x) for (i,x) in enumerate(get_available_devices()) if x.name == 'default']
     if devices == []:
-        return pa.Pa_GetDefaultInputDevice()
+        input_device = pa.Pa_GetDefaultInputDevice()
+        return input_device if input_device != PA_NODEVICE else None
     else:
         i,d = devices[0]
         if d.maxInputChannels > 0:
             return i
         else:
-            return pa.Pa_GetDefaultInputDevice()
+            input_device = pa.Pa_GetDefaultInputDevice()
+            return input_device if input_device != PA_NODEVICE else None
 
 
 def generate_hostapi_info():
