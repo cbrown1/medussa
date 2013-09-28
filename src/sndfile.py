@@ -32,10 +32,12 @@ from ctypes import *
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
+        LIBSNDFILE = 'libsndfile-1.dll'
 	libsearchpath = [
 		get_python_lib() + "\\medussa\\libsndfile-1.dll",
-		os.path.join(os.path.dirname(os.path.abspath(__file__)), "libsndfile-1.dll"),
-		os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin","libsndfile-1.dll")
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), LIBSNDFILE),
+		os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin",LIBSNDFILE),
+                os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', LIBSNDFILE)
 		]
 	libname = ""
 	foundlib = False

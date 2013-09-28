@@ -3,5 +3,8 @@ include COPYING
 include INSTALL
 include NEWS
 include USAGE
-include lib/src/*.h
+recursive-include lib/build *
 include lib/include/*.h
+include lib/lib/*
+include lib/src/*.h
+include symbols.lst

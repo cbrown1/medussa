@@ -43,8 +43,8 @@ del sys.path[0]
 medussa_package = [docs.package_name]
 medussa_package_dir = 'src'
 medussa_package_data = ['*.py']
-medussa_data_files = []
-medussa_data_files_path = ''
+medussa_data_files = ['symbols.lst']
+medussa_data_files_path = 'medussa'
 medussa_install_requires = ['numpy >=1.3']
 medussa_requires = ['numpy (>=1.3)',]
 medussa_setup_requires = ['numpy >=1.3']
@@ -56,6 +56,8 @@ if platform.system() == "Windows":
     #medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
     medussa_data_files.append('lib/build/win/portaudio_x86.dll')
     medussa_data_files.append('lib/build/win/libsndfile-1.dll')
+    medussa_data_files.append('lib/lib/libsndfile.a')
+    medussa_data_files.append('lib/lib/libportaudio.a')
     medussa_data_files_path = 'medussa'
 
     library_dirs.append('./lib/lib')
@@ -95,7 +97,6 @@ class build_medussa_c_extension(build_ext):
 def get_exported_symbols():
     return [l.strip() for l in open('symbols.lst')]
 
-
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
     include_dirs=['lib', os.path.join('lib', 'include')],
     libraries=libraries,
@@ -113,9 +114,11 @@ setup(name=docs.package_name,
     url=docs.url,
     packages = medussa_package,
     cmdclass=dict(build_ext=build_medussa_c_extension),
+    include_package_data=True,
     install_requires = medussa_install_requires,
     setup_requires = medussa_setup_requires,
     requires = medussa_requires,
+    eager_resources = ['setup.lst', 'lib/lib'],
     package_dir={docs.package_name: medussa_package_dir},
     package_data={docs.package_name: medussa_package_data},
     data_files=[(medussa_data_files_path, medussa_data_files)],
