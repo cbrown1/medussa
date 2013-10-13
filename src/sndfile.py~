@@ -32,22 +32,22 @@ from ctypes import *
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    LIBSNDFILE = 'libsndfile-1.dll'
-    libsearchpath = [
-        os.path.join(get_python_lib(), "medussa", LIBSNDFILE),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), LIBSNDFILE),
-        os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin",LIBSNDFILE),
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', LIBSNDFILE)
+        LIBSNDFILE = 'libsndfile-1.dll'
+	libsearchpath = [
+		os.path.join(get_python_lib(), "medussa", LIBSNDFILE),
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), LIBSNDFILE),
+		os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin",LIBSNDFILE),
+                os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', LIBSNDFILE)
 		]
-    libname = ""
-    foundlib = False
-    for libpath in libsearchpath:
-        libname = libpath
-        if os.path.exists(libname):
-            foundlib = True
-            break
-    if not foundlib:
-        raise RuntimeError("Unable to locate library: libsndfile")
+	libname = ""
+	foundlib = False
+	for libpath in libsearchpath:
+		libname = libpath
+		if os.path.exists(libname):
+			foundlib = True
+			break
+	if not foundlib:
+		raise RuntimeError("Unable to locate library: libsndfile")
 else:
     libname = find_library("sndfile")
     if libname == None:
