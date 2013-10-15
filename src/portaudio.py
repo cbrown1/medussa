@@ -38,6 +38,7 @@ if platform.system() == "Windows":
         pkg_resources.resource_filename("medussa", PORTAUDIO_X86),
         os.path.join(get_python_lib(), "medussa", PORTAUDIO_X86),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), PORTAUDIO_X86),
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlls', PORTAUDIO_X86),
         os.path.join(os.environ["ProgramFiles"], "portaudio", PORTAUDIO_X86),
         pkg_resources.resource_filename(__name__, PORTAUDIO_X86),
         os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', PORTAUDIO_X86)

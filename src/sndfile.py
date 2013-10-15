@@ -37,6 +37,7 @@ if platform.system() == "Windows":
         os.path.join(get_python_lib(), "medussa", "dlls", LIBSNDFILE),
         os.path.join(get_python_lib(), "medussa", LIBSNDFILE),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), LIBSNDFILE),
+		os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlls', LIBSNDFILE),
         os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin",LIBSNDFILE),
         os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', LIBSNDFILE)
 		]

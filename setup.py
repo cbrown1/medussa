@@ -27,6 +27,7 @@ import os
 import platform
 import distutils
 from distutils.command.build_ext import build_ext
+import numpy
 import sys
 
 pymaj = platform.python_version_tuple()[0]
@@ -52,13 +53,17 @@ medussa_setup_requires = ['numpy >=1.3']
 library_dirs = []
 libraries = ['portaudio', 'sndfile']
 
+#An sdist should include any DLLs necessary because it doesn't know whether
+#the module will be built, eventually, on a Windows machine or not.
+medussa_data_files.append('lib/build/win/portaudio_x86.dll')
+medussa_data_files.append('lib/build/win/libsndfile-1.dll')	
+
 if platform.system() == "Windows":
     #medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
     medussa_package_data.append('dlls/portaudio_x86.dll')
     medussa_package_data.append('dlls/libsndfile-1.dll')
 #    medussa_data_files.append('lib/lib/libsndfile.a')
 #    medussa_data_files.append('lib/lib/libportaudio.a')
-#    medussa_data_files_path = 'medussa'
 
     library_dirs.append('./lib/lib')
 
@@ -66,39 +71,11 @@ if platform.system() == "Windows":
 else:
     medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
 
-class build_medussa_c_extension(build_ext):
-    """CURRENTLY BROKEN: setuptools will automatically download and build
-    numpy, but then the numpy get_include call will fail. Be sure to install
-    numpy first.
-    
-    This seems unnecessarily complex, but: We want to add
-    numpy.get_include() as an include directory for the libmedussa extension.
-    But, numpy might not be installed at the time that the Extension object is
-    constructed. Instead, we delay adding numpy's include directory until right
-    before we build the Extension. By the time the Extension is built,
-    setuptools will have ensured that numpy is installed (via setup_requires).
-    This code will then be able to import numpy and add its include directory
-    to the include directory search paths."""
-
-    def run(self):
-        if (self.include_dirs is not None):
-            try:
-                import numpy as np
-                self.include_dirs.append(np.get_include())
-            except ImportError as e:
-                raise distutils.errors.DistutilsSetupError(
-                    "Error occured finding numpy include directory. " +\
-                    "Be sure to install numpy first. "+\
-                    "This should not occur: " + str(e))
-
-        #Continue with the build as normal.
-        build_ext.run(self)
-
 def get_exported_symbols():
     return [l.strip() for l in open('symbols.lst')]
 
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
-    include_dirs=['lib', os.path.join('lib', 'include')],
+    include_dirs=[numpy.get_include(), 'lib', os.path.join('lib', 'include')],
     libraries=libraries,
     library_dirs=library_dirs,
     export_symbols=get_exported_symbols(),
@@ -113,7 +90,6 @@ setup(name=docs.package_name,
     maintainer_email = docs.maintainer_email,
     url=docs.url,
     packages = medussa_package,
-    cmdclass=dict(build_ext=build_medussa_c_extension),
     include_package_data=True,
     install_requires = medussa_install_requires,
     setup_requires = medussa_setup_requires,
@@ -121,7 +97,7 @@ setup(name=docs.package_name,
     eager_resources = ['setup.lst', 'lib/lib'],
     package_dir={docs.package_name: medussa_package_dir},
     package_data={docs.package_name: medussa_package_data},
-#    data_files=[(medussa_data_files_path, medussa_data_files)],
+    data_files=[(medussa_data_files_path, medussa_data_files)],
     keywords = docs.keywords,
     license = docs.license,
     platforms = docs.platforms,
