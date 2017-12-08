@@ -1,7 +1,7 @@
 language: python
 
 # Run jobs on container-based infrastructure, can be overridden per job
-sudo: false
+sudo: true
 
 python:
   - "2.7"
@@ -14,8 +14,8 @@ before_install:
 
 install:
   - pip install --only-binary=numpy,scipy numpy scipy
-  - apt-get install portaudio19-dev
-  - apt-get install libsndfile1-dev
+  - sudo apt-get install portaudio19-dev
+  - sudo apt-get install libsndfile1-dev
 
 before_script:
   - python -V
