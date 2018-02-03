@@ -9,21 +9,16 @@ wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -
 for PYBIN in /opt/python/*/bin; do
     if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
         "${PYBIN}/pip" install -U --only-binary=numpy numpy twine
-        "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+        "${PYBIN}/pip" wheel /io/ -w /wheelhouse
     fi
 done
 
-ls /wheelhouse
-
-#
 find /wheelhouse -name 'numpy*' -exec rm {} \;
 
-ls /wheelhouse
-
-#for whl in wheelhouse/*.whl; do
-##    # Bundle external shared libraries into the wheels
-##    auditwheel repair "$whl" -w /io/wheelhouse/
-#done
+for whl in /wheelhouse/*.whl; do
+    # Bundle external shared libraries into the wheels
+    auditwheel repair "$whl" -w /wheelhouse/
+done
 
 ## Install packages and test
 #for PYBIN in /opt/python/*/bin; do
@@ -33,5 +28,5 @@ ls /wheelhouse
 ##    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
 #done
 
-git config --global user.email "cbrown1@pitt.edu"
-git config --global user.name "cbrown1"
+#git config --global user.email "cbrown1@pitt.edu"
+#git config --global user.name "cbrown1"
