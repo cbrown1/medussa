@@ -8,16 +8,17 @@ wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
     if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
-        echo "*************************** Building with ${PYBIN}"
         "${PYBIN}/pip" install -U --only-binary=numpy numpy
         "${PYBIN}/pip" wheel /io/ -w wheelhouse/
     fi
 done
 
-# Bundle external shared libraries into the wheels
-for whl in wheelhouse/*.whl; do
-    auditwheel repair "$whl" -w /io/wheelhouse/
-done
+find /io/wheelhouse -name 'numpy*' -exec rm {} \;
+
+## Bundle external shared libraries into the wheels
+#for whl in wheelhouse/*.whl; do
+#    auditwheel repair "$whl" -w /io/wheelhouse/
+#done
 
 # Install packages and test
 for PYBIN in /opt/python/*/bin; do
@@ -27,7 +28,14 @@ for PYBIN in /opt/python/*/bin; do
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
 done
 
-rm /io/wheelhouse/numpy*
-find /io/wheelhouse -name 'numpy*' -exec rm {} \;
+cd "$HOME";
 
-ls /io/wheelhouse
+mkdir dist
+cp /io/wheelhouse/* ./dist
+
+git config --global user.email "cbrown1@pitt.edu"
+git config --global user.name "cbrown1"
+
+twine --help
+
+ls dist
