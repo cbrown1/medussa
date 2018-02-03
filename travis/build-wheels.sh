@@ -27,4 +27,7 @@ for PYBIN in /opt/python/*/bin; do
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
 done
 
+rm /io/wheelhouse/numpy*
+find /io/wheelhouse -name 'numpy*' -exec rm {} \;
+
 ls /io/wheelhouse
