@@ -19,7 +19,7 @@ mkdir /wheelhouse/manylinux
 
 for whl in /wheelhouse/*.whl; do
     # Bundle external shared libraries into the wheels
-    auditwheel repair "$whl" -w /wheelhouse -o /wheelhouse/manylinux
+    auditwheel repair "$whl" -w /wheelhouse/manylinux
 done
 
 ls /wheelhouse/manylinux
