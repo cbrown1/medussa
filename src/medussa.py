@@ -494,14 +494,23 @@ def _util_allocate_or_conform_mix_mat( mix_mat, out_channels, source_channels ):
     
     shape = (out_channels, source_channels)
 
-    if mix_mat == None:
-        mix_mat = np.zeros(shape)
-        for i in range( 0, min(shape) ):
-            mix_mat[i,i] = 1.0
-    else:
+    if isinstance(mix_mat,np.ndarray):
         if mix_mat.shape != shape:
             mix_mat = np.copy(mix_mat)
             mix_mat.resize( shape ) # fills missing entries with zeros
+    else:
+        mix_mat = np.zeros(shape)
+        for i in range( 0, min(shape) ):
+            mix_mat[i,i] = 1.0
+
+#    if mix_mat == None:
+#        mix_mat = np.zeros(shape)
+#        for i in range( 0, min(shape) ):
+#            mix_mat[i,i] = 1.0
+#    else:
+#        if mix_mat.shape != shape:
+#            mix_mat = np.copy(mix_mat)
+#            mix_mat.resize( shape ) # fills missing entries with zeros
 
     return mix_mat
 
