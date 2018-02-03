@@ -13,7 +13,7 @@ for PYBIN in /opt/python/*/bin; do
     fi
 done
 
-ls /io/wheelhouse
+ls ./wheelhouse
 
 #
 #find wheelhouse -name 'numpy*' -exec rm {} \;
