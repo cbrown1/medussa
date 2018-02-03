@@ -11,9 +11,9 @@ pwd
 for PYBIN in /opt/python/*/bin; do
     if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
         "${PYBIN}/pip" install -U --only-binary=numpy numpy twine
-        "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+#        "${PYBIN}/pip" wheel /io/ -w wheelhouse/
     fi
-#done
+done
 #
 #find wheelhouse -name 'numpy*' -exec rm {} \;
 
