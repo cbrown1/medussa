@@ -20,8 +20,9 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-for PYBIN in /opt/python/*/bin/; do
+for PYBIN in /opt/python/*/bin; do
     if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
+
         "${PYBIN}/pip" install medussa --no-index -f /io/wheelhouse
     fi
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
