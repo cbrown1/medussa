@@ -7,9 +7,11 @@ wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-	echo "*************************** Building with ${PYBIN}"
-    "${PYBIN}/pip" install -U --only-binary=numpy,scipy numpy scipy pip
-    "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+    if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
+        echo "*************************** Building with ${PYBIN}"
+        "${PYBIN}/pip" install -U --only-binary=numpy numpy
+        "${PYBIN}/pip" wheel /io/ -w wheelhouse/
+    fi
 done
 
 # Bundle external shared libraries into the wheels
@@ -19,6 +21,8 @@ done
 
 # Install packages and test
 for PYBIN in /opt/python/*/bin/; do
-    "${PYBIN}/pip" install medussa --no-index -f /io/wheelhouse
+    if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
+        "${PYBIN}/pip" install medussa --no-index -f /io/wheelhouse
+    fi
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
 done
