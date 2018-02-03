@@ -13,10 +13,12 @@ for PYBIN in /opt/python/*/bin; do
     fi
 done
 
-ls ./wheelhouse
+ls /wheelhouse
 
 #
-#find wheelhouse -name 'numpy*' -exec rm {} \;
+find /wheelhouse -name 'numpy*' -exec rm {} \;
+
+ls /wheelhouse
 
 #for whl in wheelhouse/*.whl; do
 ##    # Bundle external shared libraries into the wheels
