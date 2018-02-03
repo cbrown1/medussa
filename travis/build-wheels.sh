@@ -7,7 +7,7 @@ wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-#    "${PYBIN}/pip" install --only-binary=numpy,scipy numpy scipy
+    "${PYBIN}/pip" install -U --only-binary=numpy,scipy numpy scipy
     "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done
 
