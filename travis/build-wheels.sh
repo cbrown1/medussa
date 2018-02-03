@@ -2,8 +2,8 @@
 set -e -x
 
 # Install system packages required by our library
-yum install -y portaudio19-devel
-yum install -y libsndfile1-devel
+wget http://www.portaudio.com/archives/pa_stable_v19_20140130.tgz && tar -xzvf pa_stable_v19_20140130.tgz && cd portaudio && ./configure && make && sudo make install
+wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -xzvf libsndfile-1.0.27.tar.gz && cd libsndfile-1.0.27 && ./configure && make && sudo make install
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
