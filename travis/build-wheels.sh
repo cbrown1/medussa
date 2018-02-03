@@ -13,11 +13,11 @@ for PYBIN in /opt/python/*/bin; do
     fi
 done
 
-find /io/wheelhouse -name 'numpy*' -exec rm {} \;
+find wheelhouse -name 'numpy*' -exec rm {} \;
 
-## Bundle external shared libraries into the wheels
 #for whl in wheelhouse/*.whl; do
-#    auditwheel repair "$whl" -w /io/wheelhouse/
+##    # Bundle external shared libraries into the wheels
+##    auditwheel repair "$whl" -w /io/wheelhouse/
 #done
 
 # Install packages and test
@@ -27,11 +27,6 @@ for PYBIN in /opt/python/*/bin; do
     fi
 #    (cd "$HOME"; "${PYBIN}/nosetests" pymanylinuxdemo)
 done
-
-cd "$HOME";
-
-mkdir dist
-cp /io/wheelhouse/* ./dist
 
 git config --global user.email "cbrown1@pitt.edu"
 git config --global user.name "cbrown1"
