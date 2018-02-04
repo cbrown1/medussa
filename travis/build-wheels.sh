@@ -22,7 +22,7 @@ for whl in /wheelhouse/*.whl; do
     auditwheel repair "$whl" -w /wheelhouse/manylinux
 done
 
-ls /wheelhouse/manylinux
+twine upload -u $PYPI_USER -p $PYPI_PASS /wheelhouse/manylinux/*.whl
 
 ## Install packages and test
 #for PYBIN in /opt/python/*/bin; do

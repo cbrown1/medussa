@@ -1,7 +1,7 @@
 env:
   global:
-  user: "code-breaker"
-  password:
+  PYPI_USER: "code-breaker"
+  PYPI_PASS:
     secure: "bBkXzaKcldO3SumsTsxfx8pXyyNEu287OuXbzMdiUQwAEgOdfC5cfeit14ct92Y8rPmkTt28YK5UBqAUAjMEm+wMXyefdNeubMLd6B3coI8RA2WmEoA8VesuLk4qIZ8XbO+Pu2aVQZ19bbLTcJr8ykuasEFV1/nDAMOJ1uy1ib8bLbdK41phF9wvhR8rUfV3CqnravFULRTkr0lLtV1TNuOqfKHHZG5Eshzb2jrrbWvppUDchS34HGJnhk8DmYmnPETnApeaAyYfA4oSdNwqL1myeVEzoP8W2GP0gO9TxjnkSGnLZ6XwURB01/1KMdjv2s/X4uxrC00RRyoX6rwGqxXlAdJI3rgSREEWXdzm63XVC3Xz2D0TdIWzZjoEwLZF7uBbeYct8t+Moaj8ZwlWOHPTpevK3prqyftbuSLXEUN7P4B7EghCP6Yuhs9IhjiA+RMKga3XHmEV4yka2P5duP9E2jcF5VCiEDZ7k2qnrcXmoQkFb1dDeQcJ2FBj69Yhpsb4LAVLM15rNtB2HaVhstk0hjj/9W1n6TJyK3f5mIG+txIKfjeGz07r27mw4/eCV61L1VFaiASnrDB5nb7vDszY42jJLyrv9pl2x4jBcfXr+S0e62qGscxXLM7EDBC4rqMcWbXNxS7a8ZZvpVVWFb89xuVm9BBlNAtu+/E3hSA="
 #  - GH_USER: cbrown1
 #  - GH_REPO: medussa

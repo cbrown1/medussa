@@ -1,0 +1,21 @@
+language: python
+sudo: false
+python:
+- '2.7'
+- '3.4'
+- '3.5'
+- '3.6'
+
+matrix:
+  include:
+    - sudo: required
+      services:
+        - docker
+      env: PIP=pip
+#    - os: osx
+#      language: generic
+#      env: PIP=pip2
+
+script:
+  - pip install -U --only-binary=numpy numpy cibuildwheel==0.7.0
+  - cibuildwheel --output-dir wheelhouse

@@ -1,21 +1,41 @@
-language: python
-sudo: false
-python:
-- '2.7'
-- '3.4'
-- '3.5'
-- '3.6'
+env:
+  global:
+  PYPI_USER: "code-breaker"
+  PYPI_PASS:
+    secure: "bBkXzaKcldO3SumsTsxfx8pXyyNEu287OuXbzMdiUQwAEgOdfC5cfeit14ct92Y8rPmkTt28YK5UBqAUAjMEm+wMXyefdNeubMLd6B3coI8RA2WmEoA8VesuLk4qIZ8XbO+Pu2aVQZ19bbLTcJr8ykuasEFV1/nDAMOJ1uy1ib8bLbdK41phF9wvhR8rUfV3CqnravFULRTkr0lLtV1TNuOqfKHHZG5Eshzb2jrrbWvppUDchS34HGJnhk8DmYmnPETnApeaAyYfA4oSdNwqL1myeVEzoP8W2GP0gO9TxjnkSGnLZ6XwURB01/1KMdjv2s/X4uxrC00RRyoX6rwGqxXlAdJI3rgSREEWXdzm63XVC3Xz2D0TdIWzZjoEwLZF7uBbeYct8t+Moaj8ZwlWOHPTpevK3prqyftbuSLXEUN7P4B7EghCP6Yuhs9IhjiA+RMKga3XHmEV4yka2P5duP9E2jcF5VCiEDZ7k2qnrcXmoQkFb1dDeQcJ2FBj69Yhpsb4LAVLM15rNtB2HaVhstk0hjj/9W1n6TJyK3f5mIG+txIKfjeGz07r27mw4/eCV61L1VFaiASnrDB5nb7vDszY42jJLyrv9pl2x4jBcfXr+S0e62qGscxXLM7EDBC4rqMcWbXNxS7a8ZZvpVVWFb89xuVm9BBlNAtu+/E3hSA="
+#  - GH_USER: cbrown1
+#  - GH_REPO: medussa
+#  - secure: kUUbfO4CE4WiGlZhPH30rMOg1TWDj+aEKSfoKdHOKbqPQ4ApnqES6wU8uwDiUnduAqjwDtxhVscqKMZzldQaAK+XXOcJvOrEmu96NFbdB9nnjbP17CPZ6UR2AvbT+SwLtNRI1tIe/dH23xd6VmdHiI1HnnKRJ3bupgNsbdgRQhtJ4rBG2Gfxw2+MhBldhWAJ29vq0oMT215EA6F1e3sWooZ98aVL38vDNrPOVDqVHcWwlO+4SrZR32NDP8yuZleQqLGlSjukkpELjZsS6LyjkEF8aOBGA/WDLOJCmxbvfKVpG8e90x3hZU4p16yK4MdhBk+FcwX24s1MLKnSASzlrWjAFxs5SjvvlsRYiroqgm5unCbnzgTtt6hIZINeDpOj6DUK8dZI7/xtdypWWqcKuZtTM2AOxrSNjsivCIvdJgBTVmuXfjxw00yiWlZNzblbCiwcB1j5AHqLp68nVWDiT2tRenNiS6TtKFPOjsNgLzC3x+jmggIeFs3wNAi5QzPMAO+Csi5fnPxtpWZdApSJtRBwugdg3rw6TYNRm3QdXI3NaxW24XjYMD4kq3UV+iZEnTiyHlbR6jKCsz8tZjbCvR3fVeOyRpe/bIghs50Sdmiy1tUre+vFfBDcVzqZBnQ+fTENMkbo0LJkIesRfC8Pd+fAlLdZ6e7h7fprg5HO9Og=
+
+notifications:
+  email: false
 
 matrix:
   include:
-    - sudo: required
-      services:
-        - docker
-      env: PIP=pip
-#    - os: osx
-#      language: generic
-#      env: PIP=pip2
+  - sudo: required
+    services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+  - sudo: required
+    services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32
+
+install:
+  - docker pull $DOCKER_IMAGE
 
 script:
-  - pip install -U --only-binary=numpy numpy cibuildwheel==0.7.0
-  - cibuildwheel --output-dir wheelhouse
+  - docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD bash /io/travis/build-wheels.sh
+
+#after_success:
+#  - bash ./travis/deploy.sh
+#
+#
+#deploy:
+#  provider: pypi
+#  user: "code-breaker"
+#  password:
+#    secure: "bBkXzaKcldO3SumsTsxfx8pXyyNEu287OuXbzMdiUQwAEgOdfC5cfeit14ct92Y8rPmkTt28YK5UBqAUAjMEm+wMXyefdNeubMLd6B3coI8RA2WmEoA8VesuLk4qIZ8XbO+Pu2aVQZ19bbLTcJr8ykuasEFV1/nDAMOJ1uy1ib8bLbdK41phF9wvhR8rUfV3CqnravFULRTkr0lLtV1TNuOqfKHHZG5Eshzb2jrrbWvppUDchS34HGJnhk8DmYmnPETnApeaAyYfA4oSdNwqL1myeVEzoP8W2GP0gO9TxjnkSGnLZ6XwURB01/1KMdjv2s/X4uxrC00RRyoX6rwGqxXlAdJI3rgSREEWXdzm63XVC3Xz2D0TdIWzZjoEwLZF7uBbeYct8t+Moaj8ZwlWOHPTpevK3prqyftbuSLXEUN7P4B7EghCP6Yuhs9IhjiA+RMKga3XHmEV4yka2P5duP9E2jcF5VCiEDZ7k2qnrcXmoQkFb1dDeQcJ2FBj69Yhpsb4LAVLM15rNtB2HaVhstk0hjj/9W1n6TJyK3f5mIG+txIKfjeGz07r27mw4/eCV61L1VFaiASnrDB5nb7vDszY42jJLyrv9pl2x4jBcfXr+S0e62qGscxXLM7EDBC4rqMcWbXNxS7a8ZZvpVVWFb89xuVm9BBlNAtu+/E3hSA="
+#  file: ${RELEASE_PKG_FILE}
+#  on:
+#    tags: false
