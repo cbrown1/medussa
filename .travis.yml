@@ -26,11 +26,12 @@ matrix:
         - make
         - sudo make install
         - cd ..
-        - pip install -U --only-binary=numpy numpy cibuildwheel==0.7.0
+        - pip install -U --only-binary=numpy numpy
 
 #    - os: osx
 #      language: generic
 #      env: PIP=pip2
 
 script:
+  - pip install -U cibuildwheel==0.7.0
   - cibuildwheel --output-dir wheelhouse
