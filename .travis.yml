@@ -1,4 +1,10 @@
 language: python
+sudo: false
+python:
+- '2.7'
+- '3.4'
+- '3.5'
+- '3.6'
 
 matrix:
   include:
@@ -11,5 +17,5 @@ matrix:
 #      env: PIP=pip2
 
 script:
-  - $PIP install -U --only-binary=numpy numpy cibuildwheel==0.7.0
+  - $PIP install -U --only-binary=numpy numpy cibuildwheel
   - cibuildwheel --output-dir wheelhouse
