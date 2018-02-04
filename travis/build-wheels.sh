@@ -22,8 +22,8 @@ for whl in /wheelhouse/*.whl; do
     auditwheel repair "$whl" -w /wheelhouse/manylinux
 done
 
-pip install twine
-twine upload -u $PYPI_USER -p $PYPI_PASS /wheelhouse/manylinux/*.whl
+"${PYBIN}/pip" install twine
+"${PYBIN}/twine" upload -u $PYPI_USER -p $PYPI_PASS /wheelhouse/manylinux/*.whl
 
 ## Install packages and test
 #for PYBIN in /opt/python/*/bin; do
