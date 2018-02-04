@@ -19,18 +19,18 @@ matrix:
   - sudo: required
     services:
     - docker
-    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32 PYPI_USER=$PYPI_USER PYPI_PASS=$PYPI_PASS
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32
 
-before_install:
-  - docker --version
-  - echo "ENV PYPI_PASS=${PYPI_PASS}" >> Dockerfile
-  - echo "ENV PYPI_USER=${PYPI_USER}" >> Dockerfile
+#before_install:
+#  - docker --version
+#  - echo "ENV PYPI_PASS=${PYPI_PASS}" >> Dockerfile
+#  - echo "ENV PYPI_USER=${PYPI_USER}" >> Dockerfile
 
 install:
   - docker pull $DOCKER_IMAGE
 
 script:
-  - docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD bash /io/travis/build-wheels.sh
+  - docker run -e  PYPI_USER="${PYPI_USER}" -e PYPI_PASS="${PYPI_PASS}" --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD bash /io/travis/build-wheels.sh
 
 #after_success:
 #  - bash ./travis/deploy.sh
