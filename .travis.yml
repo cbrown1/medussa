@@ -15,11 +15,16 @@ matrix:
   - sudo: required
     services:
     - docker
-    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64 PYPI_USER=$PYPI_USER PYPI_PASS=$PYPI_PASS
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
   - sudo: required
     services:
     - docker
     env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32 PYPI_USER=$PYPI_USER PYPI_PASS=$PYPI_PASS
+
+before_install:
+  - docker --version
+  - echo "ENV PYPI_PASS=${PYPI_PASS}" >> Dockerfile
+  - echo "ENV PYPI_USER=${PYPI_USER}" >> Dockerfile
 
 install:
   - docker pull $DOCKER_IMAGE
