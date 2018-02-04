@@ -8,7 +8,7 @@ wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz && tar -
 ## Compile wheels
 for PYBIN in /opt/python/*/bin; do
     if [ "$PYBIN" != "/opt/python/cp33-cp33m/bin" ]; then
-        "${PYBIN}/pip" install -U --only-binary=numpy numpy twine
+        "${PYBIN}/pip" install -U --only-binary=numpy numpy
         "${PYBIN}/pip" wheel /io/ -w /wheelhouse
     fi
 done
@@ -22,6 +22,7 @@ for whl in /wheelhouse/*.whl; do
     auditwheel repair "$whl" -w /wheelhouse/manylinux
 done
 
+pip install twine
 twine upload -u $PYPI_USER -p $PYPI_PASS /wheelhouse/manylinux/*.whl
 
 ## Install packages and test
