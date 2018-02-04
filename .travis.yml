@@ -17,5 +17,6 @@ matrix:
 #      env: PIP=pip2
 
 script:
+  - $PIP install --upgrade pip
   - $PIP install -U --only-binary=numpy numpy cibuildwheel==0.7.0
   - cibuildwheel --output-dir wheelhouse
