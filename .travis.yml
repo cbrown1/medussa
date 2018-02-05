@@ -1,11 +1,10 @@
 language: python
 sudo: required
-python:
-  - '2.7'
 
 matrix:
   include:
-    - sudo: required
+    - python: 2.7
+      sudo: false
       services:
         - docker
       env: CIBW_BEFORE_BUILD='/project/travis/build_deps.sh'
