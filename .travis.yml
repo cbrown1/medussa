@@ -1,6 +1,6 @@
 env:
   global:
-    - CIBW_SKIP="cp33-* cp34-* cp35-* cp36-*"
+    - CIBW_SKIP="cp27-* cp33-* cp34-* cp35-*"
       CIBW_BEFORE_BUILD='/project/travis/build_deps.sh'
 
 language: python
