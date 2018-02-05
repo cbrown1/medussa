@@ -1,18 +1,16 @@
 env:
   global:
-  # websockets only works on Python >= 3.4.
     - CIBW_SKIP="cp33-* cp34-* cp35-* cp36-*"
+      CIBW_BEFORE_BUILD='/project/travis/build_deps.sh'
 
 language: python
 sudo: required
 
 matrix:
   include:
-    - python: 2.7
-      sudo: false
+    - sudo: false
       services:
         - docker
-      env: CIBW_BEFORE_BUILD='/project/travis/build_deps.sh'
       install:
         - pip install cibuildwheel==0.7.0
       script:
