@@ -8,7 +8,7 @@ sudo: required
 
 matrix:
   include:
-    - sudo: false
+    - sudo: required
       services:
         - docker
       install:
