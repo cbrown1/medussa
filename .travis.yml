@@ -11,12 +11,8 @@ matrix:
     - sudo: required
       services:
         - docker
-        env: CIBW_BEFORE_BUILD='travis/build.deps.sh'
-
-#    - os: osx
-#      language: generic
-#      env: PIP=pip2
-
-script:
-  - pip install -U cibuildwheel==0.7.0
-  - cibuildwheel --output-dir wheelhouse
+      env: CIBW_BEFORE_BUILD='travis/build.deps.sh'
+      install:
+        - pip install cibuildwheel==0.7.0
+      script:
+        - cibuildwheel --output-dir dist
