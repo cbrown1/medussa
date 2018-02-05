@@ -8,7 +8,7 @@ matrix:
     - sudo: required
       services:
         - docker
-      env: CIBW_BEFORE_BUILD='ls travis'
+      env: CIBW_BEFORE_BUILD='/project/travis/build_deps.sh'
       install:
         - pip install cibuildwheel==0.7.0
       script:
