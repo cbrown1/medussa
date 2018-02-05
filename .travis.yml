@@ -18,14 +18,14 @@ matrix:
         - cd portaudio
         - ./configure
         - make
-        - make install
+        - sudo make install
         - cd ..
         - wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz
         - tar -xzvf libsndfile-1.0.27.tar.gz
         - cd libsndfile-1.0.27
         - ./configure 
         - make
-        - make install
+        - sudo make install
         - cd ..
 
       script:
