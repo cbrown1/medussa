@@ -1,4 +1,4 @@
-if [ ! -f built-lib]; then
+if [ ! -f built-lib ]; then
     wget http://www.portaudio.com/archives/pa_stable_v19_20140130.tgz
     tar -xzvf pa_stable_v19_20140130.tgz
     cd portaudio
