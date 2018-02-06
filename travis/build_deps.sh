@@ -4,14 +4,12 @@ if [ ! -f built-lib ]; then
     cd portaudio
     ./configure
     make
-    make install
     cd ..
     wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz
     tar -xzvf libsndfile-1.0.27.tar.gz
     cd libsndfile-1.0.27
-    ./configure 
+    ./configure
     make
-    make install
     cd ..
     touch built-lib
 fi
