@@ -1,7 +1,7 @@
 env:
   global:
     - CIBW_SKIP="cp27-* cp33-* cp34-* cp35-*"
-      CIBW_BEFORE_BUILD='pwd'
+      CIBW_BEFORE_BUILD='travis/build_deps.sh'
 
 language: python
 sudo: required
@@ -13,20 +13,6 @@ matrix:
         - docker
       install:
         - pip install cibuildwheel==0.7.0
-        - wget http://www.portaudio.com/archives/pa_stable_v19_20140130.tgz
-        - tar -xzvf pa_stable_v19_20140130.tgz
-        - cd portaudio
-        - ./configure
-        - make
-        - sudo make install
-        - cd ..
-        - wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz
-        - tar -xzvf libsndfile-1.0.27.tar.gz
-        - cd libsndfile-1.0.27
-        - ./configure 
-        - make
-        - sudo make install
-        - cd ..
 
       script:
         - cibuildwheel --output-dir dist
