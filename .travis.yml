@@ -1,7 +1,7 @@
 env:
   global:
     - CIBW_SKIP="cp27-* cp33-* cp34-* cp35-*"
-      CIBW_BEFORE_BUILD='pip install -U numpy'
+      CIBW_BEFORE_BUILD='pwd'
 
 language: python
 sudo: required
