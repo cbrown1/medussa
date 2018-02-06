@@ -15,4 +15,10 @@ if [ ! -f built-lib ]; then
     cd ..
     touch built-lib
 fi
+cd portaudio
+make install
+cd ..
+cd libsndfile-1.0.27
+make install
+cd ..
 pip install -U --only-binary=numpy numpy
