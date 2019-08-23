@@ -21,6 +21,7 @@
 */
 
 #include "medussa.h"
+#include "log.h"
 
 #if PY_MAJOR_VERSION >= 3
   #define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
@@ -158,11 +159,16 @@ int readfile_helper (SNDFILE *fin, double *arr, int frames)
 {
     int frames_read;
     int err;
-
+    debug("BEFORE sf_seek");
     err = sf_seek(fin, 0, 0);
-    if (err != 0) { return err; }
+    if (err != 0) {
+        error("sf_seek=%d", err);
+        return err;
+    }
 
+    debug("BEFORE sf_readf_double");
     frames_read = sf_readf_double(fin, arr, frames);
+    debug("sf_readf_double=%d", frames_read);
     return frames_read;
 }
 
