@@ -29,6 +29,7 @@ import distutils
 from distutils.command.build_ext import build_ext
 import numpy
 import sys
+import sysconfig
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
@@ -74,12 +75,28 @@ else:
 def get_exported_symbols():
     return [l.strip() for l in open('symbols.lst')]
 
+_DEBUG = False
+if "--debug" in sys.argv:
+    _DEBUG = True
+    sys.argv.remove("--debug")
+
+extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+extra_compile_args += ["-Wall", "-Wextra"]
+if _DEBUG:
+    extra_compile_args += ["-ggdb3", "-O0", "-UNDEBUG"]
+else:
+    extra_compile_args += ["-DNDEBUG", "-O3"]
+
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
     include_dirs=[numpy.get_include(), 'lib', os.path.join('lib', 'include')],
     libraries=libraries,
     library_dirs=library_dirs,
+    language="c++",
     export_symbols=get_exported_symbols(),
-    sources=glob.glob(os.path.join('lib', 'src', '*.c')))
+    extra_compile_args=extra_compile_args,
+    sources=glob.glob(os.path.join('lib', 'src', '*.c')) +
+            glob.glob(os.path.join('lib', 'src', '*.cpp'))
+    )
 
 setup(name=docs.package_name,
     version=docs.version,

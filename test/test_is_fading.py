@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 """
 Play a tone, fading from complete silence to full volume. The program will
 continuously print out whether the fade is occuring or not, by calling
-is_fading. 
+is_fading.
 """
 
 import time
@@ -25,4 +26,4 @@ tone.mix_mat = full_volume_mix_mat
 
 
 while True:
-    print "Hit ctrl-c to end -- tone.is_fading = {val}".format(val=tone.is_fading)
+    print("Hit ctrl-c to end -- tone.is_fading = {val}".format(val=tone.is_fading))

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import medussa
 import numpy as np
 from time import sleep

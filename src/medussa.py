@@ -41,22 +41,23 @@ pymaj = platform.python_version_tuple()[0]
 if pymaj == "3":
     xrange = range
 
+def __abi_suffix():
+    if "2" == pymaj:
+        return ".pyd" if platform.system() == "Windows" else ".so"
+    import sysconfig
+    return sysconfig.get_config_var('EXT_SUFFIX')
 
-if platform.system() == "Windows":
-    libname_base = 'libmedussa.pyd'
-elif platform.system() == "Linux":
-    libname_base = 'libmedussa.so'
+libname_base = 'libmedussa{}'.format(__abi_suffix())
+# distutils behavior across platforms is fairly portable, no need to overcomplicate this
+libname = os.path.join(os.path.dirname(os.path.abspath(__file__)), libname_base)
+if not os.path.exists(libname):
+    raise RuntimeError("Unable to locate library: " + libname)
 
-if platform.system() == "Windows" or platform.system() == "Linux":
-    libname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-            libname_base)
-    if not os.path.exists(libname):
-        raise RuntimeError("Unable to locate library: " + libname)
-else:
-    libname = find_library("medussa")
-    if libname == None:
-        raise RuntimeError("Unable to locate library `medussa`")
+def __to_cstr(s):
+    return s if pymaj == "2" else bytes(s, "utf-8")
 
+def __from_cstr(b):
+    return b if pymaj == "2" else b.decode("utf-8")
 
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
@@ -711,7 +712,7 @@ class Stream(object):
 
         if (self.fade_mix_mat_start_time == None or
                 self.fade_mix_mat_fade_duration == None):
-            return false
+            return False
 
         td = datetime.timedelta(seconds=self.fade_mix_mat_fade_duration)
         return self.fade_mix_mat_start_time + td >= datetime.datetime.now()
@@ -1613,22 +1614,15 @@ class SoundfileStream(FiniteStream):
 
     @property
     def file_name(self):
-        if pymaj == '3':
-            return self.__file_name.decode('utf-8')
-        else:
-            return self.__file_name
+        return __from_cstr(self.__file_name)
 
     @file_name.setter
     def file_name(self, val):
         raise AttributeError( "can't set attribute (stream.file_name is read only)" )
 
     def __set_file_name(self, val): 
-        if pymaj == '3':
-            self.__file_name = bytes(val, 'utf-8')
-            self._sndfile_user_data.file_name = c_char_p(self.__file_name)
-        else:
-            self.__file_name = val
-            self._sndfile_user_data.file_name = c_char_p(self.__file_name)
+        self.__file_name = __to_cstr(val)
+        self._sndfile_user_data.file_name = c_char_p(self.__file_name)
 
     def __init__(self, device, mix_mat, file_name, is_looping=False):
         super(SoundfileStream, self).__init__()
@@ -1655,14 +1649,9 @@ class SoundfileStream(FiniteStream):
                                                            POINTER(SF_INFO))
             # self.sndfile_user_data.finfo = ctypes.addressof(self._finfo)
 
-            if pymaj == '3':
-                self._fin = csndfile.sf_open(bytes(file_name, 'utf-8'),
-                                            SFM_READ,
-                                            byref(self._finfo))
-            else:
-                self._fin = csndfile.sf_open(file_name,
-                                            SFM_READ,
-                                            byref(self._finfo))
+            self._fin = csndfile.sf_open(__to_cstr(file_name),
+                                        SFM_READ,
+                                        byref(self._finfo))
 
             if not self._fin:
                 raise RuntimeError("Error opening soundfile: %s" % csndfile.sf_strerror( self._fin ))
@@ -2092,10 +2081,7 @@ def read_file(file_name):
         raise IOError('File not found: %s' % file_name)
 
     finfo = SF_INFO(0,0,0,0,0,0)
-    if pymaj == '3':
-        fin = csndfile.sf_open(bytes(file_name, 'utf-8'), SFM_READ, byref(finfo))
-    else:
-        fin = csndfile.sf_open(file_name, SFM_READ, byref(finfo))
+    fin = csndfile.sf_open(__to_cstr(file_name), SFM_READ, byref(finfo))
 
     if not fin:
         raise RuntimeError("Error opening soundfile: %s" % csndfile.sf_strerror( self._fin ))
@@ -2182,18 +2168,11 @@ def write_file(file_name, arr, fs,
     arr = np.ascontiguousarray(arr)
     _arr = arr.ctypes.data_as(POINTER(c_double))
 
-    if pymaj == '3':
-        frames_written = cmedussa.writefile_helper(bytes(file_name, 'utf-8'),
-                                                   byref(finfo),
-                                                   _arr,
-                                                   fmt,
-                                                   frames)
-    else:
-        frames_written = cmedussa.writefile_helper(file_name,
-                                                   byref(finfo),
-                                                   _arr,
-                                                   fmt,
-                                                   frames)
+    frames_written = cmedussa.writefile_helper(__to_cstr(file_name),
+                                                byref(finfo),
+                                                _arr,
+                                                fmt,
+                                                frames)
 
     return frames_written
 

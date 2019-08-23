@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 """
 On multichannel hardware, this will play a tone and update mix_mat to simulate 
@@ -26,7 +27,7 @@ mmlocal = np.array([[.25],[0.]])
 tone.mix_mat = mmlocal
 tone.play()
 
-print "Hit ctrl-c to end"
+print("Hit ctrl-c to end")
 
 # This loop turns on the next channel, turns off the current channel,
 # (wrapping when needed), and waits until fading is done.
