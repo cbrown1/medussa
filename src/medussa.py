@@ -41,22 +41,17 @@ pymaj = platform.python_version_tuple()[0]
 if pymaj == "3":
     xrange = range
 
+def __abi_suffix():
+    if "2" == pymaj:
+        return ".pyd" if platform.system() == "Windows" else ".so"
+    import sysconfig
+    return sysconfig.get_config_var('EXT_SUFFIX')
 
-if platform.system() == "Windows":
-    libname_base = 'libmedussa.pyd'
-elif platform.system() == "Linux":
-    libname_base = 'libmedussa.so'
-
-if platform.system() == "Windows" or platform.system() == "Linux":
-    libname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-            libname_base)
-    if not os.path.exists(libname):
-        raise RuntimeError("Unable to locate library: " + libname)
-else:
-    libname = find_library("medussa")
-    if libname == None:
-        raise RuntimeError("Unable to locate library `medussa`")
-
+libname_base = 'libmedussa{}'.format(__abi_suffix())
+# distutils behavior across platforms is fairly portable, no need to overcomplicate this
+libname = os.path.join(os.path.dirname(os.path.abspath(__file__)), libname_base)
+if not os.path.exists(libname):
+    raise RuntimeError("Unable to locate library: " + libname)
 
 # Instantiate FFI reference to libmedussa
 cmedussa = ctypes.CDLL(libname)
