@@ -706,7 +706,7 @@ class Stream(object):
 
         if (self.fade_mix_mat_start_time == None or
                 self.fade_mix_mat_fade_duration == None):
-            return false
+            return False
 
         td = datetime.timedelta(seconds=self.fade_mix_mat_fade_duration)
         return self.fade_mix_mat_start_time + td >= datetime.datetime.now()
