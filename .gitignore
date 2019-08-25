@@ -8,6 +8,8 @@
 *.egg-info
 dist
 build
+build (2)
+package
 eggs
 parts
 bin
