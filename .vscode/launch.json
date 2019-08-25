@@ -10,6 +10,27 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: test_run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_run.py",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: test_is_fading",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_is_fading.py",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: test_multichannel",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_multichannel.py",
+            "console": "integratedTerminal",
         }
     ]
 }
