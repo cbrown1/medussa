@@ -21,6 +21,7 @@
 */
 
 #include "disk_streaming.h"
+#include "log.h"
 
 //Suppport multiple methods of checking for Windows compilation.
 #ifdef _WIN32
@@ -33,20 +34,53 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef WIN32
 #include <Windows.h>
 #include <process.h>
-#else 
+#else
 // posix
 #include <pthread.h>
-#include <semaphore.h>
 #include <unistd.h>
+
+/* XXX os X doesn't implement POSIX semaphores */
+#ifdef __APPLE__
+  #include <dispatch/dispatch.h>
+  #define sem_t dispatch_semaphore_t
+
+
+static inline int osx_sem_init(sem_t* sem, int pshared, unsigned int value) {
+    assert(sem != NULL);
+    assert(0 == pshared);
+    *sem = dispatch_semaphore_create(value);
+    return (*sem == NULL);
+}
+
+static inline void osx_sem_destroy(sem_t* sem) {
+    assert(sem != NULL);
+    dispatch_release(*sem);
+}
+
+static inline void osx_sem_post(sem_t* sem) {
+    assert(sem != NULL);
+    dispatch_semaphore_signal(*sem);
+}
+
+static inline void osx_sem_wait(sem_t* sem) {
+    assert(sem != NULL);
+    dispatch_semaphore_wait(*sem, DISPATCH_TIME_FOREVER);
+}
+
+  #define sem_init osx_sem_init
+  #define sem_wait osx_sem_wait
+  #define sem_destroy osx_sem_destroy
+  #define sem_post osx_sem_post
+#else
+  #include <semaphore.h>
 #endif
 
-//#define TRACE( x ) printf x ;
-#define TRACE( x )
-
+#endif
 
 /*
     DISK STREAMING OVERVIEW
@@ -287,20 +321,29 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     int ringbuffer_item_count = round_up_to_next_power_of_2( buffer_count );
     FileStream *result = NULL;
 
-    if( sfinfo->frames == 0 )
+    debug("ENTER allocate_file_stream sndfile=%p, sfinfo=%p, buffer_count=%d, buffer_frame_count=%d",
+            sndfile, sfinfo, buffer_count, buffer_frame_count);
+    if( sfinfo->frames == 0 ) {
+        error("sfinfo->frames == 0");
         return NULL; // don't even try to play a zero length file
+    }
 
-    if( acquire_iothread() != IOTHREAD_SUCCESS )
+    if( acquire_iothread() != IOTHREAD_SUCCESS ) {
+        error("acquire_iothread failed");
         return NULL;
+    }
 
     result = (FileStream*)malloc(sizeof(FileStream));
-    if( !result )
+    if( !result ) {
+        error("failed to alloc FileStream");
         return NULL;
+    }
 
     memset( result, 0, sizeof(FileStream) );
 
     ringbuffer_data = malloc( ringbuffer_item_count * sizeof(IOBuffer*) );
     if( !ringbuffer_data ){
+        error("failed to alloc ringbuffer_data");
         free( result );
         return NULL;
     }
@@ -314,7 +357,7 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     IOBufferList_initialize( &result->free_buffers_lifo );
     result->free_buffers_count = 0;
 
-    TRACE(("ringbuffer_item_count: %d\n", ringbuffer_item_count))
+    debug("ringbuffer_item_count: %d", ringbuffer_item_count);
     PaUtil_InitializeRingBuffer( &result->buffers_from_io_thread, sizeof(IOBuffer*), ringbuffer_item_count, ringbuffer_data );
 
     IOBufferList_initialize( &result->completed_read_buffers );
@@ -331,6 +374,7 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     for( i=0; i < buffer_count; ++i ){
         IOBuffer *b = allocate_iobuffer( result, buffer_frame_count );
         if( !b ){
+            error("failed to allocate IOBuffer");
             free_file_stream( result );
             return NULL;
         }
@@ -341,7 +385,7 @@ FileStream *allocate_file_stream( SNDFILE *sndfile, const SF_INFO *sfinfo, int b
     result->sndfile = sndfile;
     sf_seek(sndfile, 0, SEEK_SET); // assume sf_seek succeeds. if the file doesn't support seeking it will be at the start anyway
     result->sndfile_position_frames = 0;
-
+    debug("RETURN allocate_file_stream=%p", result);
     return result;
 }
 
@@ -416,12 +460,12 @@ void file_stream_issue_read_commands_using_all_free_buffers( FileStream *file_st
 
 void file_stream_seek( FileStream *file_stream, sf_count_t position )
 {
-    TRACE(("file_stream_seek: %d\n", position))
+    debug("file_stream_seek: %d", position);
 
     if( (file_stream->state == FILESTREAM_STATE_BUFFERING || file_stream->state == FILESTREAM_STATE_STREAMING) 
             && position == file_stream->current_position_frames ){
 
-        TRACE(("file_stream_seek: redundant seek\n"))
+        debug("file_stream_seek: redundant seek");
         return;
     }
     
@@ -461,7 +505,7 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
 
     IOBuffer *b;
 
-    TRACE(("file_stream_process_buffers_from_io_thread\n"))
+    debug("file_stream_process_buffers_from_io_thread");
     while( PaUtil_ReadRingBuffer( &file_stream->buffers_from_io_thread, &b, 1) ){
         // we expect to receive buffers back from the i/o thread in the order they were issued
         // based on this we can filter buffers before the last seek based on sequence number
@@ -472,13 +516,13 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
         if( b->sequence_number == file_stream->next_completed_read_sequence_number ){
 
             if( b->valid_frame_count > 0 ){
-                TRACE(("file_stream_process_buffers_from_io_thread: OK %p\n", b))
+                debug("file_stream_process_buffers_from_io_thread: OK %p", b);
 
                 IOBufferList_insert_ordered_by_sequence_number( &file_stream->completed_read_buffers, b );
                 ++file_stream->completed_read_buffer_count;
             }else{
-                TRACE(("file_stream_process_buffers_from_io_thread: FREE b->valid_frame_count == 0 %p\n", b))
-                
+                debug("file_stream_process_buffers_from_io_thread: FREE b->valid_frame_count == 0 %p", b);
+
                 IOBufferList_push_head( &file_stream->free_buffers_lifo, b );
                 ++file_stream->free_buffers_count;
 
@@ -488,7 +532,7 @@ static void file_stream_process_buffers_from_io_thread( FileStream *file_stream 
             ++file_stream->next_completed_read_sequence_number;
 
         }else{
-            TRACE(("file_stream_process_buffers_from_io_thread: FREE %p\n", b))
+            debug("file_stream_process_buffers_from_io_thread: FREE %p", b);
 
             IOBufferList_push_head( &file_stream->free_buffers_lifo, b );
             ++file_stream->free_buffers_count;
@@ -521,7 +565,7 @@ sf_count_t file_stream_get_read_buffer_ptr( FileStream *file_stream, double **pt
             // read buffer under run. switch back to buffering state
             file_stream->state = FILESTREAM_STATE_BUFFERING;
             *ptr = NULL;
-            TRACE(("file_stream_get_read_buffer_ptr 0\n"))
+            debug("file_stream_get_read_buffer_ptr 0");
             return 0;
 
         }else{
@@ -532,12 +576,12 @@ sf_count_t file_stream_get_read_buffer_ptr( FileStream *file_stream, double **pt
             assert( file_stream->current_position_frames >= b->position_frames );
 
             *ptr = b->data + (frame_offset * file_stream->channel_count);
-            TRACE(("file_stream_get_read_buffer_ptr %d\n",  b->valid_frame_count - frame_offset))
+            debug("file_stream_get_read_buffer_ptr %d",  b->valid_frame_count - frame_offset);
             return b->valid_frame_count - frame_offset;
         }
     }else{
         *ptr = NULL;
-        TRACE(("file_stream_get_read_buffer_ptr 0\n"))
+        debug("file_stream_get_read_buffer_ptr 0");
         return 0;
     }
 }
@@ -623,7 +667,7 @@ static void iothread_process_commands(void)
         while( PaUtil_ReadRingBuffer( &iothread_->incoming_commands[i], &cmd, 1) ){
             switch( cmd.action ){
             case IO_COMMAND_READ:
-                TRACE(("iothread_process_commands: IO_COMMAND_READ %p\n", cmd.data.buffer))
+                debug("iothread_process_commands: IO_COMMAND_READ %p", cmd.data.buffer);
                 IOBufferList_push_tail( &iothread_->pending_reads_fifo, cmd.data.buffer );
                 break;
             case IO_COMMAND_CANCEL:
@@ -641,7 +685,7 @@ static void iothread_process_commands(void)
                             b->next = NULL;
                             b->position_frames = IOBUFFER_INVALID_POSITION;
                             b->valid_frame_count = 0;
-                            TRACE(("iothread_process_commands: IO_COMMAND_CANCEL %p\n", b))
+                            debug("iothread_process_commands: IO_COMMAND_CANCEL %p", b);
                             file_stream_post_buffer_from_iothread( b->file_stream, b );
                             b = next;
                         }else{
@@ -676,7 +720,7 @@ static void iothread_process_pending_io(void) // returns when there is nothing l
             seek_ok = 1;
         }else{
             if( sf_seek(b->file_stream->sndfile, b->position_frames, SEEK_SET) == -1 ){
-                TRACE(("sf_seek FAIL\n"))
+                debug("sf_seek FAIL");
                 seek_ok = 0;
             }else{
                 // seek OK
@@ -687,7 +731,7 @@ static void iothread_process_pending_io(void) // returns when there is nothing l
 
         if( seek_ok ){
             b->valid_frame_count = sf_readf_double( b->file_stream->sndfile, b->data, b->capacity_frames );
-            TRACE(("sf_readf_double requested:%d read:%d\n", b->capacity_frames, b->valid_frame_count))
+            debug("sf_readf_double requested:%d read:%d", b->capacity_frames, b->valid_frame_count);
             b->file_stream->sndfile_position_frames += b->valid_frame_count;
         }else{
             b->valid_frame_count = 0;
@@ -735,11 +779,14 @@ static int create_iothread(void) // returns 0 on success
     void *ringbuffer_data = 0;
     int i;
 
+    debug("ENTER create_iothread");
     assert( iothread_ == NULL );
 
     iothread_ = (IOThread*)malloc( sizeof(IOThread) );
-    if( !iothread_ )
+    if( !iothread_ ) {
+        error("failed to alloc IOThread");
         goto fail;
+    }
 
     memset( iothread_, 0, sizeof(IOThread) );
 
@@ -748,8 +795,10 @@ static int create_iothread(void) // returns 0 on success
 
     for( i=0; i < 2; ++i ){
         ringbuffer_data = malloc( IOTHREAD_COMMAND_QUEUE_COMMAND_COUNT * sizeof(IOCommand) );
-        if( !ringbuffer_data )
+        if( !ringbuffer_data ) {
+            error("failed to alloc ringbuffer_data");
             goto fail;
+        }
 
         PaUtil_InitializeRingBuffer( &iothread_->incoming_commands[i], sizeof(IOCommand), IOTHREAD_COMMAND_QUEUE_COMMAND_COUNT, ringbuffer_data );
     }
@@ -779,8 +828,10 @@ static int create_iothread(void) // returns 0 on success
 
         iothread_->command_semaphore_inited = 0;
 
-        if( sem_init( &iothread_->command_semaphore, 0, 0 ) != 0 )
+        if( sem_init( &iothread_->command_semaphore, 0, 0 ) != 0 ) {
+            error("failed command_semaphore sem_init errno=%d (%s)", errno, strerror(errno));
             goto fail;
+        }
 
         iothread_->command_semaphore_inited = 1;
 
@@ -790,18 +841,18 @@ static int create_iothread(void) // returns 0 on success
 
         pthread_result = pthread_create( &iothread_->thread, &attr, io_thread_func, iothread_ );
         pthread_attr_destroy( &attr );
-        if( pthread_result != 0 )
+        if( pthread_result != 0 ) {
+            error("failed pthread_create=%d", pthread_result);
             goto fail;
+        }
     }
 #endif
-
+    debug("RETURN create_iothread IOTHREAD_SUCCESS");
     return IOTHREAD_SUCCESS;
 
 fail:
-    TRACE(("create_iothread: FAIL"))
-
     if( iothread_ ){
-        
+        debug("iothread_ exists, releasing commands");
         for( i=0; i < 2; ++i ){
             if( iothread_->incoming_commands[i].buffer )
                 free( iothread_->incoming_commands[i].buffer );
@@ -815,14 +866,17 @@ fail:
 #else
         // posix
 
-        if( iothread_->command_semaphore_inited )
+        if( iothread_->command_semaphore_inited ) {
+            debug("destroying command_semaphore");
             sem_destroy( &iothread_->command_semaphore );
+        }
 #endif
-
+        debug("releasing iothread_");
         free( iothread_ );
         iothread_ = NULL;
     }
 
+    debug("RETURN create_iothread IOTHREAD_FAIL");
     return IOTHREAD_FAIL;
 }
 
@@ -862,17 +916,19 @@ static void destroy_iothread(void)
 int acquire_iothread()
 {
     int result = IOTHREAD_SUCCESS;
-
+    debug("ENTER acquire_iothread");
     if( iothread_refcount_ == 0 ){ // thread not running
-
+        debug("no refs, creating iothread");
         result = create_iothread();
-        if( result == IOTHREAD_SUCCESS )
+        if( result == IOTHREAD_SUCCESS ) {
+            debug("iothread created, increffing");
             ++iothread_refcount_; // only inc refcount if the thread was created
-
+        }
     }else{
+        debug("iothread exists, increffing");
         ++iothread_refcount_;
     }
-
+    debug("RETURN acquire_iothread=%d", result);
     return result;
 }
 
