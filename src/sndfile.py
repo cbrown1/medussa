@@ -60,6 +60,8 @@ else:
 #su -c "echo '/usr/local/lib' >> /etc/ld.so.conf"
 csndfile = CDLL(libname)
 
+sf_count_t = c_longlong
+
 class SF_INFO (Structure):
     """
     See: http://www.mega-nerd.com/libsndfile/api.html#open
@@ -74,12 +76,13 @@ class SF_INFO (Structure):
     } SF_INFO ;
     """
 
-    _fields_ = (("frames",     c_longlong),
+    _fields_ = (("frames",     sf_count_t),
                 ("samplerate", c_int),
                 ("channels",   c_int),
                 ("format",     c_int),
                 ("sections",   c_int),
                 ("seekable",   c_int))
+SF_INFO_p = POINTER(SF_INFO)
 
 # sndfile.h `#define` macros
 SFM_READ  = c_int(0x10)
@@ -88,13 +91,24 @@ SFM_RDWR  = c_int(0x30)
 
 SFC_GET_LIB_VERSION = c_int(0x1000)
 
+class SNDFILE (Structure):
+    pass
+SNDFILE_p = POINTER(SNDFILE)
+
+# XXX 64-bit platforms except ILP64 require pointer returns to be marked as such,
+# otherwise truncation occurs on casting to c_int which is the default restype.
+# This in most cases leads to the segfault on first use of such int-disguised-pointer.
+csndfile.sf_seek.restype = sf_count_t
+csndfile.sf_seek.argtypes = [SNDFILE_p, sf_count_t, c_int]
+csndfile.sf_strerror.restype = c_char_p
+csndfile.sf_strerror.argtypes = [SNDFILE_p]
+csndfile.sf_open.restype = SNDFILE_p
+csndfile.sf_close.argtypes = [SNDFILE_p]
+csndfile.sf_command.argtypes = [SNDFILE_p, c_int, c_void_p, c_int]
+
+
 def get_libsndfile_version():
 	s = create_string_buffer(128)
 	csndfile.sf_command (None, SFC_GET_LIB_VERSION, s, len(s))
 	return string_at(s)
 
-# set argument and return types for relevant `libsndfile' functions
-#csndfile.sf_seek.restype =
-csndfile.sf_seek.argtypes = [c_void_p, c_uint, c_int]
-
-csndfile.sf_strerror.restype   = c_char_p

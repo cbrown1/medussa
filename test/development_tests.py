@@ -36,12 +36,12 @@ if TEST_ALL or 0:
     print("create_pink() DONE")
 
     print("open_file()") # this used to crash when the SFINFO layout was broken
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     del s
     print("open_file() DONE")
 
     print("open_array()")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     del s
     print("open_array() DONE")
@@ -248,7 +248,7 @@ def printFiniteStreamPositionAttributes( s ):
 # play soundfile (from array)
 if TEST_ALL or 0:
     print("testing: basic soundfile playback (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
@@ -259,7 +259,7 @@ if TEST_ALL or 0:
 # play soundfile (streaming from file)
 if TEST_ALL or 0:
     print("testing: basic soundfile playback (file)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
     print("s.file_name: " + s.file_name)
@@ -281,7 +281,7 @@ def playStopPlayStopEtc( s ):
 if TEST_ALL or 0:
     print("testing: restarting playback (array stream)")
     print("each time the stream starts it should play from the start")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     playStopPlayStopEtc( s )
     # this one doesn't crash at end
@@ -290,7 +290,7 @@ if TEST_ALL or 0:
 if TEST_ALL or 0:
     print("testing: restarting playback (file stream)")
     print("each time the stream starts it should play from the start")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     print("s.file_name: " + s.file_name)
     playStopPlayStopEtc( s )
     # BUG CRASHES AT END OF THIS TEST -- rossb 10 April 2012 [FIXED May 4]
@@ -360,13 +360,13 @@ def testCursorBehavior( s ):
 
 if TEST_ALL or 0:
     print("testing: cursor behavior (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     testCursorBehavior( s )
 
 if TEST_ALL or 0:
     print("testing: cursor behavior (streaming)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     testCursorBehavior( s )
 
 
@@ -404,14 +404,14 @@ def playLoopedStopLoopThenStop( s ):
 # play an array looped
 if TEST_ALL or 1:
     print("testing: looped playback (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     playLoopedStopLoopThenStop( s )
 
 # play soundfile (streaming) looped
 if TEST_ALL or 0:
     print("testing: looped playback (streaming)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     print("s.file_name: " + s.file_name)
     playLoopedStopLoopThenStop( s )
 
@@ -419,27 +419,27 @@ if TEST_ALL or 0:
 # test fading on looped file streams
 if TEST_ALL or 0:
     print("testing: fading (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     s.loop( True )
     testLinearAmplitudeRamp( s )
 
 if TEST_ALL or 0:
     print("testing: fading (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     s.loop( True )
     testFadeDuration( s )
 
 if TEST_ALL or 0:
     print("testing: fading (streaming)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     s.loop( True )
     testLinearAmplitudeRamp( s )
 
 if TEST_ALL or 0:
     print("testing: fading (streaming)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     s.loop( True )
     testFadeDuration( s )
 
@@ -452,7 +452,7 @@ if TEST_ALL or 0:
 # play soundfile (from array)
 if TEST_ALL or 0:
     print("testing: dynamic update of stream position (array)")
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s = d.open_array(x, fs)
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
@@ -471,7 +471,7 @@ if TEST_ALL or 0:
 # play soundfile (streaming)
 if TEST_ALL or 0:
     print("testing: dynamic update of stream position (streaming)")
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
     printFiniteStreamLengthAttributes(s)
     printFiniteStreamPositionAttributes(s)
 
@@ -500,7 +500,7 @@ if TEST_ALL or 0:
     # seek using a random choice of assiging to cursor or
     # calling the time property
 
-    s = d.open_file("clean.wav")
+    s = d.open_file("test/clean.wav")
 
     fileDurationSeconds = s.duration
     print(str(fileDurationSeconds))
@@ -560,7 +560,7 @@ if TEST_ALL or 0:
     print("OK")
 
 
-    x,fs = medussa.read_file("clean.wav")
+    x,fs = medussa.read_file("test/clean.wav")
     s2 = d.open_array(x, fs)
 
     print("testing: s2.arr (read only)")
@@ -575,7 +575,7 @@ if TEST_ALL or 0:
     print("OK")
 
 
-    s3 = d.open_file("clean.wav")
+    s3 = d.open_file("test/clean.wav")
 
     print("testing: s3.file_name (read only)")
     # read:

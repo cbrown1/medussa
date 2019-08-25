@@ -24,7 +24,10 @@
 #include "log.h"
 
 #if PY_MAJOR_VERSION >= 3
+  #define PyInt_AsVoidPtr(p) PyLong_AsVoidPtr(p)
   #define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLongMask
+#else
+  #define PyInt_AsVoidPtr(p) ((void *)PyInt_AsUnsignedLongLongMask(p))
 #endif
 
 PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParameters *spout, PaStreamCallback *callback_ptr)
@@ -52,16 +55,24 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     if (PyObject_HasAttrString(self, "_callback_user_data")) {
         attr = PyObject_GetAttrString(self, "_callback_user_data");
         if (attr == NULL) {
+            error("no _callback_user_data");
             PyGILState_Release(gstate);
             return NULL;
         }
         else if (attr == Py_None) {
-            //printf("DEBUG: `user_data` is none\n");
+            debug("_callback_user_data == Py_None");
         }
         else {
             Py_INCREF(attr);
-            err = PyInt_AsUnsignedLongMask(attr);
-            user_data = (void *) PyInt_AsUnsignedLongMask(attr);
+            user_data = PyInt_AsVoidPtr(attr);
+            assert(!PyErr_Occurred());
+            /* XXX PyInt_ APIs signal errors with -1 value which never is a valid pointer */
+            assert(user_data != (void*)-1 && user_data != NULL);
+            if (PyErr_Occurred()) {
+                error("failed reading _callback_user_data from self");
+                PyErr_Print();
+                return NULL;
+            }
             Py_CLEAR(attr);
         }
     }
@@ -71,19 +82,21 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
     }
 
     // `PaStream *stream` from `Stream.stream_ptr`
-    if (PyObject_HasAttrString(self, "_stream_ptr")) {
-        attr = PyObject_GetAttrString(self, "_stream_ptr");
+    if (PyObject_HasAttrString(self, "_stream_ptr_addr")) {
+        attr = PyObject_GetAttrString(self, "_stream_ptr_addr");
         if (attr == NULL) {
+            error("no _stream_ptr_addr");
             PyGILState_Release(gstate);
             return NULL;
         }
         else if (attr == Py_None) {
-            //printf("DEBUG: _stream_ptr is none\n");
+            // debug("_stream_ptr_addr == Py_None");
         }
         else {
             Py_INCREF(attr);
-            err = PyInt_AsUnsignedLongMask(attr);
-            stream = (PaStream *) PyInt_AsUnsignedLongMask(attr);
+            stream = (PaStream *) PyInt_AsVoidPtr(attr);
+            assert(!PyErr_Occurred());
+            assert(stream != (void*)-1);
             Py_CLEAR(attr);
         }
     }
@@ -117,6 +130,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
         }
         Py_INCREF(attr);
         fpb = PyInt_AsUnsignedLongMask(attr); // Only func in C API returning `unsigned long`
+        assert(!PyErr_Occurred());
         Py_CLEAR(attr);
     }
     else {
@@ -180,7 +194,7 @@ int writefile_helper (char *foutpath, SF_INFO *finfo, double *arr, int format, i
     finfo->format = format;
 
     if (!sf_format_check(finfo)) {
-        printf("Bad SF_INFO struct.\n");
+        error("Bad SF_INFO struct");
         return -1;
     }
 

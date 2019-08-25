@@ -63,11 +63,6 @@ else:
 #su -c "echo '/usr/local/lib' >> /etc/ld.so.conf"
 pa = ctypes.CDLL(libname)
 
-# set `restype` return type values for some functions
-pa.Pa_GetStreamTime.restype  = c_double  # c_double ~ PaTime
-pa.Pa_GetErrorText.restype   = c_char_p
-pa.Pa_GetVersionText.restype = c_char_p
-
 # Alias `typedef int PaError`
 PaError = c_int
 
@@ -239,6 +234,7 @@ class PaHostApiInfo (ctypes.Structure):
                 ("deviceCount",         c_int),
                 ("defaultInputDevice",  c_int), # PaDeviceIndex
                 ("defaultOutputDevice", c_int)) # PaDeviceIndex
+HostApiInfoPointer = POINTER(PaHostApiInfo)
 
 
 # struct PaHostErrorInfo
@@ -252,6 +248,7 @@ class PaHostErrorInfo (ctypes.Structure):
     _fields_ = (("hostApiType", c_int), # PaHostApiTypeId
                 ("errorCode",   c_long),
                 ("errorText",   c_char_p))
+HostErrorInfoPointer = POINTER(PaHostErrorInfo)
 
 
 # struct PaDeviceInfo
@@ -311,6 +308,7 @@ class PaStreamCallbackTimeInfo (ctypes.Structure):
     _fields_ = (("inputBufferAdcTime",  c_double), # PaTime
                 ("currentTime",         c_double), # PaTime
                 ("outputBufferDacTime", c_double)) # PaTime
+StreamCallbackTimeInfoPointer = POINTER(PaStreamCallbackTimeInfo)
 
 
 # struct PaStreamInfo
@@ -326,6 +324,13 @@ class PaStreamInfo (ctypes.Structure):
                 ("inputLatency",  c_double), # PaTime
                 ("outputLatency", c_double), # PaTime
                 ("sampleRate",    c_double))
+StreamInfoPointer = POINTER(PaStreamInfo)
+
+
+# Opaque struct for enforcing API type validation only.
+class PaStream (ctypes.Structure):
+    pass
+StreamPointer = POINTER(PaStream)
 
 
 def PA_ERROR_CHECK(err):
@@ -333,5 +338,21 @@ def PA_ERROR_CHECK(err):
     If `err` is an actual Portaudio error (< 0), raises a RuntimeError whose message is the Portaudio error text.
     """
     if err < 0:
-        raise RuntimeError("PaError(%d): %s" % (err, pa.Pa_GetErrorText(c_int(err))))
+        raise RuntimeError("PaError(%d): %s" % (err, pa.Pa_GetErrorText(err)))
 
+# Explicitly mark pointer arguments for 64-bit compatibility
+pa.Pa_GetStreamTime.restype  = c_double  # c_double ~ PaTime
+pa.Pa_GetStreamTime.argtypes = [StreamPointer]
+pa.Pa_GetVersionText.restype = c_char_p
+pa.Pa_GetDeviceInfo.restype  = DeviceInfoPointer
+pa.Pa_GetHostApiInfo.restype = HostApiInfoPointer
+pa.Pa_GetErrorText.restype = c_char_p
+pa.Pa_GetLastHostErrorInfo.restype = HostErrorInfoPointer
+pa.Pa_GetStreamInfo.restype = StreamInfoPointer
+pa.Pa_GetStreamInfo.argtypes = [StreamPointer]
+pa.Pa_CloseStream.argtypes = [StreamPointer]
+pa.Pa_StartStream.argtypes = [StreamPointer]
+pa.Pa_StopStream.argtypes = [StreamPointer]
+pa.Pa_AbortStream.argtypes = [StreamPointer]
+pa.Pa_IsStreamStopped.argtypes = [StreamPointer]
+pa.Pa_IsStreamActive.argtypes = [StreamPointer]

@@ -27,11 +27,13 @@ import os
 import platform
 import time
 import weakref
+import ctypes
 
 from .portaudio import *
-from .sndfile import SF_INFO, csndfile, SFM_READ, sf_formats
+from .sndfile import SF_INFO, SF_INFO_p, csndfile, SFM_READ, sf_formats, SNDFILE, SNDFILE_p
 from .pink import Pink_noise_t
 from .rkit import Rk_state
+from ctypes import c_void_p, byref, cast
 
 #Some portaudio calls may return "paNoDevice" on error (e.g., no default device
 #is available). In port audio, this value is #define'd to ((PaDeviceIndex)-1).
@@ -40,6 +42,7 @@ PA_NODEVICE = -1
 pymaj = platform.python_version_tuple()[0]
 if pymaj == "3":
     xrange = range
+
 
 def __abi_suffix():
     if "2" == pymaj:
@@ -53,10 +56,12 @@ libname = os.path.join(os.path.dirname(os.path.abspath(__file__)), libname_base)
 if not os.path.exists(libname):
     raise RuntimeError("Unable to locate library: " + libname)
 
-def __to_cstr(s):
+
+def _to_cstr(s):
     return s if pymaj == "2" else bytes(s, "utf-8")
 
-def __from_cstr(b):
+
+def _from_cstr(b):
     return b if pymaj == "2" else b.decode("utf-8")
 
 # Instantiate FFI reference to libmedussa
@@ -69,6 +74,22 @@ stream_instances = lambda: list(Stream.instances())
 def medussa_exit():
     pa.Pa_Terminate()
 
+c_double_p = POINTER(c_double)
+
+
+class medussa_dmatrix (ctypes.Structure):
+    pass
+medussa_dmatrix_p = POINTER(medussa_dmatrix)
+
+
+class medussa_stream_command_queues (ctypes.Structure):
+    pass
+medussa_stream_command_queues_p = POINTER(medussa_stream_command_queues)
+
+
+class FileStream (ctypes.Structure):
+    pass
+FileStream_p = POINTER(FileStream)
 
 ###################
 ## Data Structs
@@ -93,8 +114,9 @@ class StreamCommand(ctypes.Structure):
                 ("data_ptr1",   c_void_p),
                 ("data_double", c_double),
                 ("data_uint",   c_uint))
-    
-        
+StreamCommandPointer = POINTER(StreamCommand)
+
+
 class StreamUserData(ctypes.Structure):
     """
     struct stream_user_data {
@@ -121,18 +143,19 @@ class StreamUserData(ctypes.Structure):
     """
     _fields_ = (("parent",    c_void_p),
                 ("device",    py_object),
-                ("stream",    c_void_p),
-                ("in_param",  c_void_p),
-                ("out_param", c_void_p),
+                ("stream",    StreamPointer),
+                ("in_param",  StreamParametersPointer),
+                ("out_param", StreamParametersPointer),
                 ("fs",        c_double),
-                ("command_queues", c_void_p),
+                ("command_queues", medussa_stream_command_queues_p),
                 ("is_muted",  c_int),
-                ("mix_mat",   c_void_p),
-                ("mute_mat",  c_void_p),
-                ("fade_inc_mat",  c_void_p),
-                ("target_mix_mat",  c_void_p),
+                ("mix_mat",   medussa_dmatrix_p),
+                ("mute_mat",  medussa_dmatrix_p),
+                ("fade_inc_mat",  medussa_dmatrix_p),
+                ("target_mix_mat",  medussa_dmatrix_p),
                 ("mix_mat_fade_countdown_frames",  c_int),
                 ("pa_fpb",    c_int))
+StreamUserDataPointer = POINTER(StreamUserData)
 
 
 class FiniteUserData(ctypes.Structure):
@@ -152,7 +175,7 @@ class FiniteUserData(ctypes.Structure):
                 ("cursor",   c_uint),
                 ("frames",   c_uint),
                 ("duration", c_double),
-                ("temp_mat", c_void_p))
+                ("temp_mat", medussa_dmatrix_p))
 
 
 class ArrayUserData(ctypes.Structure):
@@ -166,7 +189,7 @@ class ArrayUserData(ctypes.Structure):
     """
     _fields_ = (("parent", c_void_p),
                 ("self",   py_object),
-                ("ndarr",  POINTER(c_double)),
+                ("ndarr",  c_double_p),
                 ("ndarr_0", c_int),
                 ("ndarr_1", c_int))
 
@@ -184,10 +207,10 @@ class SndfileUserData(ctypes.Structure):
     """
     _fields_ = (("parent",  c_void_p),
                 ("self",    py_object),
-                ("fin",     c_void_p),
+                ("fin",     SNDFILE_p),
                 ("file_name", c_char_p),
-                ("finfo",   POINTER(SF_INFO)),
-                ("file_stream", c_void_p))
+                ("finfo",   SF_INFO_p),
+                ("file_stream", FileStream_p))
 
 class ToneUserData(ctypes.Structure):
     """
@@ -232,6 +255,36 @@ class PinkUserData(ctypes.Structure):
                 ("self",   py_object),
                 ("pn",     c_void_p))
 
+_cm = cmedussa
+_cm.readfile_helper.argtypes = [SNDFILE_p, c_double_p, c_int]
+_cm.writefile_helper.argtypes = [c_char_p, SF_INFO_p, c_double_p, c_int, c_int]
+_cm.alloc_medussa_dmatrix.restype = medussa_dmatrix_p
+_cm.free_medussa_dmatrix.argtypes = [medussa_dmatrix_p]
+_cm.alloc_stream_command_queues.restype = medussa_stream_command_queues_p
+_cm.free_stream_command_queues.argtypes = [medussa_stream_command_queues_p]
+_cm.post_command_to_pa_callback.argtypes = [medussa_stream_command_queues_p, StreamCommandPointer]
+_cm.process_results_from_pa_callback.argtypes = [medussa_stream_command_queues_p]
+_cm.execute_commands_in_pa_callback.argtypes = [medussa_stream_command_queues_p, c_void_p, c_void_p]
+_cm.open_stream.restype = StreamPointer
+_cm.open_stream.argtypes = [py_object, StreamParametersPointer, StreamParametersPointer, c_void_p]
+_cm.start_streams.argtypes = [POINTER(StreamPointer), c_int]
+_cm.allocate_file_stream.restype = FileStream_p
+_cm.allocate_file_stream.argtypes = [SNDFILE_p, SF_INFO_p, c_int, c_int]
+_cm.free_file_stream.argtypes = [FileStream_p]
+_cm.initialize_pink_noise.argtypes = [c_void_p, c_int]
+_cm.rk_randomseed.argtypes = [POINTER(Rk_state)]
+
+# The following don't need prototypes, they are passed as pointer values only (not called)
+# _cm.callback_tone
+# _cm.execute_tone_user_data_command
+# _cm.callback_white
+# _cm.execute_white_user_data_command
+# _cm.callback_pink
+# _cm.execute_pink_user_data_command
+# _cm.callback_ndarray
+# _cm.execute_array_user_data_command
+# _cm.callback_sndfile_read
+# _cm.execute_sndfile_read_user_data_command
 
 ###################
 ## Object Classes
@@ -307,7 +360,7 @@ class Device(object):
             raise RuntimeError("Device index out of range")
 
         # Get the `DeviceInfo` for this index
-        ptr = ctypes.cast(pa.Pa_GetDeviceInfo(val), DeviceInfoPointer) # get pointer to DeviceInfo
+        ptr = pa.Pa_GetDeviceInfo(val) # get pointer to DeviceInfo
         di = ptr[0] # dereference pointer, using a local variable for convenient access in this function
 
         self.in_device_info = di
@@ -334,7 +387,7 @@ class Device(object):
             raise RuntimeError("Device index out of range")
 
         # Get the `DeviceInfo` for this index
-        ptr = ctypes.cast(pa.Pa_GetDeviceInfo(value), DeviceInfoPointer) # get pointer to DeviceInfo
+        ptr = pa.Pa_GetDeviceInfo(value) # get pointer to DeviceInfo
 
         di = ptr[0] # dereference pointer, using a local variable for convenient access in this function
 
@@ -585,8 +638,10 @@ class Stream(object):
         
         cmd = StreamCommand()
         cmd.command = STREAM_COMMAND_SET_MATRICES
-        cmd.data_ptr0 = cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], self.mix_mat.ctypes.data_as(POINTER(c_double)) )
-        cmd.data_ptr1 = 0 
+        cmd.data_ptr0 = ctypes.cast(
+                cmedussa.alloc_medussa_dmatrix( self.mix_mat.shape[0], self.mix_mat.shape[1], self.mix_mat.ctypes.data_as(c_double_p)),
+                c_void_p)
+        cmd.data_ptr1 = 0
         cmd.data_uint = int(fade_duration * self.fs)
         self._post_command_to_pa_callback( cmd )
                                                         
@@ -601,11 +656,13 @@ class Stream(object):
 
     def open(self):
         self._stream_ptr = cmedussa.open_stream(py_object(self),
-                                               self._stream_user_data.in_param,
-                                               self._stream_user_data.out_param,
-                                               self._callback_ptr)
-        if self._stream_ptr == 0:
+                                                self._stream_user_data.in_param,
+                                                self._stream_user_data.out_param,
+                                                self._callback_ptr)
+        if not self._stream_ptr:
             raise RuntimeError("Failed to open stream.")
+        # Save address of stream as python int to ease recovering the pointer value on the C side
+        self._stream_ptr_addr = ctypes.addressof(self._stream_ptr[0])
     
     def start(self):
         """
@@ -779,9 +836,9 @@ class Stream(object):
         self._stream_user_data.mute_mat = None;
         self._stream_user_data.fade_inc_mat = None;
         self._stream_user_data.target_mix_mat = None;
-        
+
         self._stream_ptr = None
-        
+        self._stream_ptr_addr = 0
 
         try:
             self._stream_user_data.command_queues = cmedussa.alloc_stream_command_queues();
@@ -805,6 +862,7 @@ class Stream(object):
             self._stream_user_data.fs = fs
             self._callback_ptr = callback_ptr
             self._callback_command_exec_ptr = callback_command_exec_ptr
+            # XXX This is read as int in C and should not be represented by c_void_p
             self._callback_user_data = ctypes.addressof(callback_user_data)
 
             if device.out_channels == None:
@@ -824,12 +882,12 @@ class Stream(object):
             self.fade_mix_mat_to( _util_allocate_or_conform_mix_mat( mix_mat, self._out_channels, source_channels ), 0 )
 
             self._out_param = PaStreamParameters(self._device.out_index,
-                                                self._out_channels,
-                                                paFloat32,
-                                                self._device.out_device_info.defaultLowOutputLatency,
-                                                None)
-            self._stream_user_data.out_param = ctypes.addressof(self._out_param)
-            
+                                                 self._out_channels,
+                                                 paFloat32,
+                                                 self._device.out_device_info.defaultLowOutputLatency,
+                                                 None)
+            self._stream_user_data.out_param = ctypes.pointer(self._out_param)
+
             # Find a smart way to determine this value,
             # which has to be hardcoded into the callback
             self._pa_fpb = 1024
@@ -905,12 +963,12 @@ class Stream(object):
             cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
  
         # post our message to the callback
-        if cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, ctypes.addressof(cmd) ) != 1:
+        if cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, byref(cmd) ) != 1:
 
             # if the command queue is full, we wait for it to have space
             if self.is_playing:
-                while cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, ctypes.addressof(cmd) ) != 1:                           
-                    time.sleep(.01) 
+                while cmedussa.post_command_to_pa_callback( self._stream_user_data.command_queues, byref(cmd) ) != 1:
+                    time.sleep(.01)
                     cmedussa.process_results_from_pa_callback( self._stream_user_data.command_queues )
             else:
                 assert( False ) # we should never get here. the queue should not be full if the stream isn't running
@@ -998,7 +1056,7 @@ class ToneStream(Stream):
         super(ToneStream, self).__init__()
         try:
             self._tone_user_data = ToneUserData()
-            self._tone_user_data.parent = ctypes.addressof(self._stream_user_data)
+            self._tone_user_data.parent = cast(byref(self._stream_user_data), c_void_p)
             self._tone_user_data.t = 0
 
             super(ToneStream, self)._init2( device, fs, cmedussa.callback_tone, \
@@ -1084,12 +1142,12 @@ class WhiteStream(Stream):
         super(WhiteStream, self).__init__()
         try:
             self._white_user_data = WhiteUserData()
-            self._white_user_data.parent = ctypes.addressof(self._stream_user_data)
-            
+            self._white_user_data.parent = cast(byref(self._stream_user_data), c_void_p)
+
             self._rk_state = Rk_state()
             cmedussa.rk_randomseed(byref(self._rk_state))
-            self._white_user_data.rks = ctypes.addressof(self._rk_state)
-                
+            self._white_user_data.rks = cast(byref(self._rk_state), c_void_p)
+
             super(WhiteStream, self)._init2( device, fs, cmedussa.callback_white, \
                                              cmedussa.execute_white_user_data_command, \
                                              self._white_user_data, mix_mat, 1 )
@@ -1171,11 +1229,11 @@ class PinkStream(Stream):
         super(PinkStream, self).__init__()
         try:
             self._pink_user_data = PinkUserData()
-            self._pink_user_data.parent = ctypes.addressof(self._stream_user_data)
-            
+            self._pink_user_data.parent = cast(byref(self._stream_user_data), c_void_p)
+
             self._pn = Pink_noise_t()
-            self._pink_user_data.pn = ctypes.addressof(self._pn)
-            cmedussa.initialize_pink_noise(self._pink_user_data.pn, 24)
+            self._pink_user_data.pn = cast(byref(self._pn), c_void_p)
+            cmedussa.initialize_pink_noise(byref(self._pn), 24)
 
             super(PinkStream, self)._init2( device, fs, cmedussa.callback_pink, \
                                             cmedussa.execute_pink_user_data_command, \
@@ -1364,7 +1422,7 @@ class FiniteStream(Stream):
         super(FiniteStream, self).__init__()
         try:
             self._finite_user_data = FiniteUserData()
-            self._finite_user_data.parent = ctypes.addressof(self._stream_user_data)
+            self._finite_user_data.parent = cast(byref(self._stream_user_data), c_void_p)
             self._finite_user_data.temp_mat = None
             self._finite_user_data.cursor = 0
             self._finite_user_data.loop = 0
@@ -1496,7 +1554,7 @@ class ArrayStream(FiniteStream):
         if not val.dtype == np.dtype('double'):
             raise TypeError('Array must have `double` dtype.')
         self.__arr = np.ascontiguousarray(val)
-        self._array_user_data.ndarr = self.__arr.ctypes.data_as(POINTER(c_double))
+        self._array_user_data.ndarr = self.__arr.ctypes.data_as(c_double_p)
         self._array_user_data.ndarr_0 = val.shape[0]
         self._array_user_data.ndarr_1 = val.shape[1]
 
@@ -1504,8 +1562,8 @@ class ArrayStream(FiniteStream):
         super(ArrayStream, self).__init__()
         try:
             self._array_user_data = ArrayUserData()
-            self._array_user_data.parent = ctypes.addressof(self._finite_user_data)
-            
+            self._array_user_data.parent = cast(byref(self._finite_user_data), c_void_p)
+
             if len(arr.shape) == 1:
                 arr = arr.reshape(arr.size, 1)
 
@@ -1614,14 +1672,14 @@ class SoundfileStream(FiniteStream):
 
     @property
     def file_name(self):
-        return __from_cstr(self.__file_name)
+        return _from_cstr(self.__file_name)
 
     @file_name.setter
     def file_name(self, val):
         raise AttributeError( "can't set attribute (stream.file_name is read only)" )
 
-    def __set_file_name(self, val): 
-        self.__file_name = __to_cstr(val)
+    def __set_file_name(self, val):
+        self.__file_name = _to_cstr(val)
         self._sndfile_user_data.file_name = c_char_p(self.__file_name)
 
     def __init__(self, device, mix_mat, file_name, is_looping=False):
@@ -1635,8 +1693,8 @@ class SoundfileStream(FiniteStream):
             raise
             
         try:
-            self._sndfile_user_data.parent = ctypes.addressof(self._finite_user_data)
-            
+            self._sndfile_user_data.parent = cast(byref(self._finite_user_data), c_void_p)
+
             # Initialize this class' attributes
 
             if not os.path.isfile(file_name):
@@ -1645,11 +1703,9 @@ class SoundfileStream(FiniteStream):
             self.__set_file_name( file_name )
             
             self._finfo = SF_INFO(0,0,0,0,0,0)
-            self._sndfile_user_data.finfo = ctypes.cast(ctypes.pointer(self._finfo),
-                                                           POINTER(SF_INFO))
-            # self.sndfile_user_data.finfo = ctypes.addressof(self._finfo)
+            self._sndfile_user_data.finfo = ctypes.pointer(self._finfo)
 
-            self._fin = csndfile.sf_open(__to_cstr(file_name),
+            self._fin = csndfile.sf_open(_to_cstr(file_name),
                                         SFM_READ,
                                         byref(self._finfo))
 
@@ -1662,8 +1718,8 @@ class SoundfileStream(FiniteStream):
             buffer_queue_duration_seconds = 5 # 5 seconds read ahead
             buffer_queue_duration_frames = self._finfo.samplerate * buffer_queue_duration_seconds
             buffer_count = max( 5, int(buffer_queue_duration_frames / buffer_size_frames) + 1 )
-            
-            self._sndfile_user_data.file_stream = cmedussa.allocate_file_stream( self._fin, ctypes.pointer(self._finfo), buffer_count, buffer_size_frames )
+
+            self._sndfile_user_data.file_stream = cmedussa.allocate_file_stream(self._fin, self._sndfile_user_data.finfo, buffer_count, buffer_size_frames)
 
             if not self._sndfile_user_data.file_stream:
                 raise RuntimeError("Error allocating async. file stream")
@@ -1686,7 +1742,7 @@ class SoundfileStream(FiniteStream):
 
     def _free_sndfile_and_file_stream( self ):
         if self._fin:
-            csndfile.sf_close(c_void_p(self._fin))
+            csndfile.sf_close(self._fin)
             self._fin = None
             
         if self._sndfile_user_data.file_stream:
@@ -1761,16 +1817,14 @@ def get_default_input_device_index():
 
 
 def generate_hostapi_info():
-    HostApiInfoPointer = POINTER(PaHostApiInfo)
     api_count = pa.Pa_GetHostApiCount()
     for i in xrange(api_count):
-        p = ctypes.cast(pa.Pa_GetHostApiInfo(i), HostApiInfoPointer)
+        p = pa.Pa_GetHostApiInfo(i)
         hai = p[0]
         yield hai
 
 
 def generate_device_info():
-    DeviceInfoPointer = POINTER(PaDeviceInfo)
     device_count = pa.Pa_GetDeviceCount()
 
     PA_ERROR_CHECK(device_count)
@@ -1779,7 +1833,7 @@ def generate_device_info():
         raise RuntimeError("No devices found")
 
     for i in xrange(device_count):
-        p = ctypes.cast(pa.Pa_GetDeviceInfo(i), DeviceInfoPointer)
+        p = pa.Pa_GetDeviceInfo(i)
         di = p[0]
         yield di
 
@@ -2081,7 +2135,7 @@ def read_file(file_name):
         raise IOError('File not found: %s' % file_name)
 
     finfo = SF_INFO(0,0,0,0,0,0)
-    fin = csndfile.sf_open(__to_cstr(file_name), SFM_READ, byref(finfo))
+    fin = csndfile.sf_open(_to_cstr(file_name), SFM_READ, byref(finfo))
 
     if not fin:
         raise RuntimeError("Error opening soundfile: %s" % csndfile.sf_strerror( self._fin ))
@@ -2091,9 +2145,9 @@ def read_file(file_name):
     BUFFTYPE = ctypes.c_double * (finfo.frames * finfo.channels)
     buff = BUFFTYPE()
 
-    frames_read = cmedussa.readfile_helper(fin, byref(buff), finfo.frames)
+    frames_read = cmedussa.readfile_helper(fin, buff, finfo.frames)
 
-    err = csndfile.sf_close(c_void_p(fin))
+    err = csndfile.sf_close(fin)
 
     arr = np.ascontiguousarray(np.zeros((finfo.frames, finfo.channels)))
 
@@ -2166,13 +2220,13 @@ def write_file(file_name, arr, fs,
     finfo.format = c_int(fmt)
 
     arr = np.ascontiguousarray(arr)
-    _arr = arr.ctypes.data_as(POINTER(c_double))
+    _arr = arr.ctypes.data_as(c_double_p)
 
-    frames_written = cmedussa.writefile_helper(__to_cstr(file_name),
-                                                byref(finfo),
-                                                _arr,
-                                                fmt,
-                                                frames)
+    frames_written = cmedussa.writefile_helper(_to_cstr(file_name),
+                                               byref(finfo),
+                                               _arr,
+                                               fmt,
+                                               frames)
 
     return frames_written
 
