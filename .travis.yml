@@ -1,9 +1,12 @@
 env:
   global:
-    - CIBW_SKIP="cp27-* cp33-* cp34-* cp35-* cp36-manylinux1-i686 cp36-win32 cp36-win_amd64 cp36-macosx_*"
-      CIBW_BEFORE_BUILD='travis/build_deps.sh'
+    - CIBW_BEFORE_BUILD='travis/install_deps.sh'
+    - CIBW_TEST_COMMAND='python {project}/test/test_smoke.py'
 
 language: python
+cache:
+  - pip
+  - ccache
 sudo: required
 
 matrix:
@@ -11,8 +14,13 @@ matrix:
     - sudo: required
       services:
         - docker
-      install:
-        - pip install cibuildwheel==0.7.0
-
-      script:
-        - cibuildwheel --output-dir dist
+      env:
+        - PIP=pip
+    - os: osx
+      language: generic
+      env:
+        - PIP=pip2
+script:
+  - $PIP install -U pip
+  - $PIP install cibuildwheel
+  - cibuildwheel --output-dir wheelhouse .
