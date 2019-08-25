@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2010-2012 Christopher Brown
+# Copyright (c) 2010-2019 Christopher Brown
 #
 # This file is part of Medussa.
 #
@@ -33,7 +33,7 @@ import sysconfig
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
-pyver = "%s.%s" % (pymaj, pymin)
+pyver = "{}.{}".format(pymaj, pymin)
 
 sys.path.insert(0,os.path.abspath(r'./src'))
 docs =  __import__('docs', fromlist=['package_name', 'version', 'url', 
@@ -54,10 +54,10 @@ medussa_setup_requires = ['numpy >=1.3']
 library_dirs = []
 libraries = ['portaudio', 'sndfile']
 
-#An sdist should include any DLLs necessary because it doesn't know whether
-#the module will be built, eventually, on a Windows machine or not.
-medussa_data_files.append('lib/build/win/portaudio_x86.dll')
-medussa_data_files.append('lib/build/win/libsndfile-1.dll')	
+##An sdist should include any DLLs necessary because it doesn't know whether
+##the module will be built, eventually, on a Windows machine or not.
+#medussa_data_files.append('lib/build/win/portaudio_x86.dll')
+#medussa_data_files.append('lib/build/win/libsndfile-1.dll')	
 
 if platform.system() == "Windows":
     #medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
@@ -121,21 +121,23 @@ setup(name=docs.package_name,
     long_description = docs.long_description,
     ext_modules = [cmedussa],
     classifiers=[
-        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Programming Language :: Python",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX",
         #"Operating System :: MacOS :: MacOS X",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
-        #"Programming Language :: Python :: 3.1",
-        "Programming Language :: Python :: 3.2",
+        "Programming Language :: Python :: 3.5",
         "Environment :: Console",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "Topic :: Multimedia :: Sound/Audio",
+        "Topic :: Multimedia :: Sound/Audio :: Mixers",
+        "Topic :: Multimedia :: Sound/Audio :: Players",
         "Topic :: Scientific/Engineering",
-    ],
+        "Topic :: Scientific/Engineering :: Physics",
+        "Natural Language :: English",
+        ],
 )

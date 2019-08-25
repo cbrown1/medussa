@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2010-2012 Christopher Brown
+# Copyright (c) 2010-2019 Christopher Brown
 #
 # This file is part of Medussa.
 #
@@ -22,13 +22,13 @@
 
 package_name = "medussa"
 version = "1.0.2"
-author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina"
+author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina, Ryan W. Moore, Kutay B. Sezginel, Andrzej Ciarkowski"
 author_email = "cbrown1@pitt.edu"
 maintainer = "Christopher Brown"
 maintainer_email = "cbrown1@pitt.edu"
-url = "http://www.medussa.us"
+url = "https://github.com/cbrown1/medussa"
 keywords = "sound audio signal wavplay"
-license = "GPL"
+license = "GNU General Public License v3 or later"
 platforms = "Win32, Linux"
 short_description = "Medussa: A cross-platform high-level audio library for Python"
 long_description = """\

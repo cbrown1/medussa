@@ -1,11 +1,10 @@
 [![Build Status](https://travis-ci.org/psylab16/medussa.svg?branch=master)](https://travis-ci.org/psylab16/medussa)
 
-Medussa: A cross-platform high-level audio library for Python
--------------------------------------------------------------
+# Medussa: A cross-platform high-level audio library for Python
 
-### Copyright & License
+## Copyright & License
 
-*Copyright (c) 2010-2012 Christopher A. Brown*
+*Copyright (c) 2010-2019 Christopher A. Brown*
 
 Medussa is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/.
 
-### About
+## About
 
 Medussa is an easy to use high-level cross-platform audio library for Python
 based on Port Audio and libsndfile. You can play NumPy arrays, stream sound
@@ -30,8 +29,9 @@ matlab's wavplay). Or you can access specific host api's or devices, create
 streams as needed, and control them all asynchronously. Or for the most
 control, you can access the port audio library directly. Sweet!
 
-  - *Current version*: 1.0
-  - *Website*: http://www.medussa.us
-  - *Wiki*: http://code.google.com/p/medussa/w
-
-For installation instructions, see [INSTALL](INSTALL). For usage examples, see [USAGE](USAGE).
+- Current version: 1.0
+- [License](COPYING.md)
+- [Website](https://github.com/cbrown1/medussa)
+- [Authors](AUTHORS.md)
+- [installation instructions](INSTALL.md)
+- [Usage examples](USAGE.md)
