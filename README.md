@@ -29,9 +29,9 @@ matlab's wavplay). Or you can access specific host api's or devices, create
 streams as needed, and control them all asynchronously. Or for the most
 control, you can access the port audio library directly. Sweet!
 
-- Current version: 1.0
+- Current version: 2.0
 - [License](COPYING.md)
 - [Website](https://github.com/cbrown1/medussa)
 - [Authors](AUTHORS.md)
-- [installation instructions](INSTALL.md)
+- [Installation instructions](INSTALL.md)
 - [Usage examples](USAGE.md)

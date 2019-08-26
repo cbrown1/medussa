@@ -21,7 +21,7 @@
 #
 
 package_name = "medussa"
-version = "1.0.2"
+version = "2.0.0"
 author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina, Ryan W. Moore, Kutay B. Sezginel, Andrzej Ciarkowski"
 author_email = "cbrown1@pitt.edu"
 maintainer = "Christopher Brown"
