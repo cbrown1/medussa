@@ -26,34 +26,24 @@ sf_formats = sndfile_formats()
 
 import os
 import platform
+import sys
 from ctypes.util import find_library
-from distutils.sysconfig import get_python_lib
 from ctypes import *
+from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
     LIBSNDFILE = 'libsndfile-1.dll'
-    libsearchpath = [
-        os.path.join(get_python_lib(), "medussa", "dlls", LIBSNDFILE),
-        os.path.join(get_python_lib(), "medussa", LIBSNDFILE),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), LIBSNDFILE),
-		os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlls', LIBSNDFILE),
-        os.path.join(os.environ["ProgramFiles"], "Mega-Nerd", "libsndfile","bin",LIBSNDFILE),
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', LIBSNDFILE)
-		]
-    libname = ""
-    foundlib = False
-    for libpath in libsearchpath:
-        libname = libpath
-        if os.path.exists(libname):
-            foundlib = True
-            break
-    if not foundlib:
-        raise RuntimeError("Unable to locate library: libsndfile")
+    _D = _p.dirname
+    # when deployed - pkg_resources doesn't work because of circular dep at medussa,
+    # use this primitive heuristics which seems to work an all modern python versions
+    # TODO investigate if this changes in virtualenv
+    libpath = _p.join(_D(_D(_D(_D(_p.abspath(__file__))))), "medussa", LIBSNDFILE)
 else:
-    libname = find_library("sndfile")
-    if libname == None:
-        raise RuntimeError("Unable to locate library `libsndfile`")
+    libpath = "sndfile"
+libname = find_library(libpath)
+if libname == None:
+    raise RuntimeError("Unable to locate library `{}`".format(libpath))
 
 # Load the shared library
 # In linux, if this doesn't work try:

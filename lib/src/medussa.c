@@ -153,7 +153,7 @@ PaStream *open_stream (PyObject *self, PaStreamParameters *spin, PaStreamParamet
                         user_data);
 
     ERROR_CHECK;
-    
+
     PyGILState_Release(gstate);
 
     // Return the new integer value of the mutated `PaStream *` back to Python
@@ -207,9 +207,35 @@ int writefile_helper (char *foutpath, SF_INFO *finfo, double *arr, int format, i
     return frames_written;
 }
 
-void initlibmedussa(void)
-{
-    //Empty function. Needed by distutils or else when building it throws
-    //errors.
-}
+#if PY_MAJOR_VERSION >= 3
+  #define MOD_ERROR_VAL NULL
+  #define MOD_SUCCESS_VAL(val) val
+  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          static struct PyModuleDef moduledef = { \
+            PyModuleDef_HEAD_INIT, name, doc, -1, methods, 0 }; \
+          ob = PyModule_Create(&moduledef)
+#else
+  #define MOD_ERROR_VAL
+  #define MOD_SUCCESS_VAL(val)
+  #define MOD_INIT(name) void init##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          ob = Py_InitModule3(name, methods, doc)
+#endif
 
+static PyMethodDef module_functions[] = {
+    {NULL, NULL}
+};
+
+extern MOD_INIT(libmedussa);
+MOD_INIT(libmedussa) {
+    PyObject *m;
+    debug("ENTER initlibmedussa");
+    MOD_DEF(m, "cmedussa", "medussa C extension library", module_functions);
+    if (m == NULL) {
+        error("PyModuleCreate/PyInitModule3 failed");
+        return MOD_ERROR_VAL;
+    }
+    debug("RETURN initlibmedussa=%p", m);
+    return MOD_SUCCESS_VAL(m);
+}

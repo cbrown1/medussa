@@ -25,38 +25,21 @@ import ctypes
 from ctypes.util import find_library
 from ctypes import c_int, c_uint, c_long, c_ulong, c_float, c_double, c_char_p, c_void_p, py_object, byref, POINTER
 import os
-import pkg_resources
-from distutils.sysconfig import get_python_lib
+import sys
+from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-
-    PORTAUDIO_X86 = "portaudio_x86.dll"
-
-    libsearchpath = [
-        os.path.join(get_python_lib(), "medussa", "dlls", PORTAUDIO_X86),
-        pkg_resources.resource_filename("medussa", PORTAUDIO_X86),
-        os.path.join(get_python_lib(), "medussa", PORTAUDIO_X86),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), PORTAUDIO_X86),
-		os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dlls', PORTAUDIO_X86),
-        os.path.join(os.environ["ProgramFiles"], "portaudio", PORTAUDIO_X86),
-        pkg_resources.resource_filename(__name__, PORTAUDIO_X86),
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', 'medussa', PORTAUDIO_X86)
-        ]
-    libname = ""
-    foundlib = False
-    for libpath in libsearchpath:
-        libname = libpath
-        if os.path.exists(libname):
-            foundlib = True
-            break
-    if not foundlib:
-        raise RuntimeError("Unable to locate library: portaudio")
-
+    import struct
+    _BITS = 8 * struct.calcsize("P")
+    PORTAUDIO_DLL = "portaudio_{arch}.dll".format(arch="x86" if _BITS == 32 else "x64")
+    _D = _p.dirname
+    libpath = _p.join(_D(_D(_D(_D(_p.abspath(__file__))))), "medussa", PORTAUDIO_DLL)
 else:
-    libname = find_library("portaudio")
-    if libname == None:
-        raise RuntimeError("Unable to locate library: `portaudio`")
+    libpath = "portaudio"
+libname = find_library(libpath)
+if libname == None:
+    raise RuntimeError("Unable to locate library: `{}`".format(libpath))
 
 # Load the shared library
 # In linux, if this doesn't work try:

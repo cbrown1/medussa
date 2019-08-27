@@ -48,7 +48,11 @@ def __abi_suffix():
     if "2" == pymaj:
         return ".pyd" if platform.system() == "Windows" else ".so"
     import sysconfig
-    return sysconfig.get_config_var('EXT_SUFFIX')
+    # XXX This is broken on Python 3.7.4 on Windows
+    return (sysconfig.get_config_var('EXT_SUFFIX') if platform.system() != "Windows"
+                else ".cp{maj}{min}-win_amd64.pyd".format(maj=pymaj,
+                        min=platform.python_version_tuple()[1])
+            )
 
 libname_base = 'libmedussa{}'.format(__abi_suffix())
 # distutils behavior across platforms is fairly portable, no need to overcomplicate this
