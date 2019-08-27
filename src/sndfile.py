@@ -33,7 +33,7 @@ from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    LIBSNDFILE = 'libsndfile-1.dll'
+    LIBSNDFILE = 'sndfile.dll'
     _D = _p.dirname
     # when deployed - pkg_resources doesn't work because of circular dep at medussa,
     # use this primitive heuristics which seems to work an all modern python versions

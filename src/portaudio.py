@@ -30,9 +30,7 @@ from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    import struct
-    _BITS = 8 * struct.calcsize("P")
-    PORTAUDIO_DLL = "portaudio_{arch}.dll".format(arch="x86" if _BITS == 32 else "x64")
+    PORTAUDIO_DLL = "portaudio.dll"
     _D = _p.dirname
     libpath = _p.join(_D(_D(_D(_D(_p.abspath(__file__))))), "medussa", PORTAUDIO_DLL)
 else:
