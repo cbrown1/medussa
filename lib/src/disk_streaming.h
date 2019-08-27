@@ -23,7 +23,7 @@
 #ifndef INCLUDED_DISKSTREAMING_H
 #define INCLUDED_DISKSTREAMING_H
 
-#include <stdint.h>
+#include <stddef.h>
 #include <sndfile.h>
 #include "pa_ringbuffer.h"
 

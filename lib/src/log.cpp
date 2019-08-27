@@ -17,7 +17,7 @@ const char* const level_labels[] = {
     MEDUSSA_LOGLEVEL_LABELS(STRINGIFY)
 };
 
-extern "C" void vlogf_(loglevel l, const char* source, unsigned line, const char* format, va_list va) {
+extern "C" void med_vlogf_(loglevel l, const char* source, unsigned line, const char* format, va_list va) {
     if (l <= level) {
         fprintf(stderr, "%s:%u: %s ", source, line, level_labels[l]);
         vfprintf(stderr, format, va);
@@ -25,10 +25,10 @@ extern "C" void vlogf_(loglevel l, const char* source, unsigned line, const char
     }
 }
 
-extern "C" void logf_(loglevel l, const char* source, unsigned line, const char* format, ...) {
+extern "C" void med_logf_(loglevel l, const char* source, unsigned line, const char* format, ...) {
     va_list va;
     va_start(va, format);
-    ::vlogf_(l, source, line, format, va);
+    ::med_vlogf_(l, source, line, format, va);
     va_end(va);
 }
 }}

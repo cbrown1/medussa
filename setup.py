@@ -30,15 +30,17 @@ from distutils.command.build_ext import build_ext
 import numpy
 import sys
 import sysconfig
+import struct
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
 pyver = "{}.{}".format(pymaj, pymin)
+_BITS = 8 * struct.calcsize("P")
 
 sys.path.insert(0,os.path.abspath(r'./src'))
-docs =  __import__('docs', fromlist=['package_name', 'version', 'url', 
-                    'author', 'author_email', 'long_help', 
-                    'short_description', 'long_description', 'maintainer', 
+docs =  __import__('docs', fromlist=['package_name', 'version', 'url',
+                    'author', 'author_email', 'long_help',
+                    'short_description', 'long_description', 'maintainer',
                     'maintain_email', 'keywords', 'platforms'])
 del sys.path[0]
 
@@ -54,40 +56,36 @@ medussa_setup_requires = ['numpy >=1.3']
 library_dirs = []
 libraries = ['portaudio', 'sndfile']
 
-##An sdist should include any DLLs necessary because it doesn't know whether
-##the module will be built, eventually, on a Windows machine or not.
-#medussa_data_files.append('lib/build/win/portaudio_x86.dll')
-#medussa_data_files.append('lib/build/win/libsndfile-1.dll')	
-
-if platform.system() == "Windows":
-    #medussa_data_files.append('lib/build/win/py%s/medussa.dll' % pyver)
-    medussa_package_data.append('dlls/portaudio_x86.dll')
-    medussa_package_data.append('dlls/libsndfile-1.dll')
-#    medussa_data_files.append('lib/lib/libsndfile.a')
-#    medussa_data_files.append('lib/lib/libportaudio.a')
-
-    library_dirs.append('./lib/lib')
-
-    libraries.append('advapi32')
-else:
-    medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
-
-def get_exported_symbols():
-    return [l.strip() for l in open('symbols.lst')]
-
 _DEBUG = False
 if "--debug" in sys.argv:
     _DEBUG = True
     sys.argv.remove("--debug")
 
-extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-extra_compile_args += ["-Wall", "-Wextra"]
-if _DEBUG:
-    extra_compile_args += ["-ggdb3", "-O0", "-UNDEBUG"]
-else:
-    extra_compile_args += ["-DNDEBUG", "-O3"]
+if platform.system() == "Windows":
+    # cibuildwheel uses target python version for running setup.py so this will indicate arch
+    # of .dll files to bundle
+    arch = "x86" if _BITS == 32 else "x64"
+    medussa_data_files.append('lib/build/win/{arch}/portaudio_{arch}.dll'.format(arch=arch))
+    medussa_data_files.append('lib/build/win/{arch}/libsndfile-1.dll'.format(arch=arch))
+    library_dirs.append('lib/lib/{arch}'.format(arch=arch))
+    libraries.append('advapi32')
 
-cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']), 
+    # TODO support debug builds
+    extra_compile_args = []
+else:
+    medussa_data_files_path = os.path.join(get_python_lib(), 'medussa')
+    extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+    extra_compile_args += ["-Wall", "-Wextra"]
+    if _DEBUG:
+        extra_compile_args += ["-ggdb3", "-O0", "-UNDEBUG"]
+    else:
+        extra_compile_args += ["-DNDEBUG", "-O3"]
+
+def get_exported_symbols():
+    return [l.strip() for l in open('symbols.lst')]
+
+
+cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']),
     include_dirs=[numpy.get_include(), 'lib', os.path.join('lib', 'include')],
     libraries=libraries,
     library_dirs=library_dirs,

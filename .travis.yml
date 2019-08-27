@@ -1,26 +1,46 @@
+language: python
+cache:
+  pip: true
+  ccache: true
+sudo: required
 env:
   global:
     - CIBW_BEFORE_BUILD='travis/install_deps.sh'
     - CIBW_TEST_COMMAND='python {project}/test/test_smoke.py'
-
-language: python
-cache:
-  - pip
-  - ccache
-sudo: required
+script:
+  - python -m pip install --upgrade pip wheel cibuildwheel
+  - cibuildwheel --output-dir wheelhouse .
+  - if [[ "${TRAVIS_TAG:-}" != "" ]]; then
+      python -m pip install --upgrade twine;
+      python -m twine upload --skip-existing wheelhouse/*.whl;
+    fi
 
 matrix:
   include:
     - sudo: required
       services:
         - docker
-      env:
-        - PIP=pip
     - os: osx
-      language: generic
+      language: shell
+      install:
+        - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio ccache
+        # TODO ccache breaks building of python extension, investigate this if you care
+        # about using ccache
+        # - export PATH="/usr/local/opt/ccache/libexec:$PATH"
+    - os: windows
+      language: shell
+      install:
+         # XXX vcredist2012 is required by bundled portaudio_x64.dll only - to be removed
+         - choco install vcredist2012
+         #  - choco install vcredist2008
+         #  - choco install --ignore-dependencies vcpython27
+         # XXX cibuildwheel on windows expects x64 Pythons to be in *-x64 dirs and fails if missing
+         # TODO setup multiple python3 versions using option -m to choco
+         - choco install python3 --version=3.7.4 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python37-x64'"
+        #  - choco install python2 --version=2.7.16 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python27-x64'"
+         - export PATH="/c/Python37-x64:/c/Python37-x64/Scripts:$PATH"
       env:
-        - PIP=pip2
-script:
-  - $PIP install -U pip
-  - $PIP install cibuildwheel
-  - cibuildwheel --output-dir wheelhouse .
+        - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
+        - CIBW_PLATFORM=windows
+        # - CIBW_BUILD='cp37-win_amd64 cp27-win_amd64'
+        - CIBW_BUILD='cp37-win_amd64'
