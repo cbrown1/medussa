@@ -11,7 +11,7 @@ function install_dll {
     local url="$2"
     local rename_as="$3"
     local dll_name="${url##*/}"
-    local tmp_dir="build/temp.win${bits}"
+    local tmp_dir="temp.win${bits}"
     local stem
     stem=$( basename "${rename_as}" )
 
