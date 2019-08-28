@@ -20,7 +20,7 @@ function install_dll {
     [[ -f "${dll_name}" ]] || wget "${url}"
     [[ -f "${dll_name}" ]] || { >&2 echo "failed to download ${tmp_dir}/${dll_name}" && return 1; }
 
-    mv "${dll_name}" "${stem}.dll"
+    cp "${dll_name}" "${stem}.dll"
     dll_name="${stem}.dll"
     local lib_name="${stem}.lib"
     [[ -f "${lib_name}" ]] || "${DLL2LIB}" "${bits}" "${dll_name}"
