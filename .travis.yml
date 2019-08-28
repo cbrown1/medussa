@@ -2,6 +2,8 @@ language: python
 cache:
   pip: true
   ccache: true
+git:
+  depth: 3
 env:
   global:
     - CIBW_BEFORE_BUILD='travis/install_deps.sh'
