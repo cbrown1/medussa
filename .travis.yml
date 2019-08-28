@@ -25,37 +25,31 @@ matrix:
     - name: manylinux
       os: linux
       sudo: required
-      services:
-        - docker
+      services: docker
     - os: osx
       name: cp27-macosx
       language: shell
-      install:
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
+      install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
       env: CIBW_BUILD='cp27-*'
     - os: osx
       name: cp37-macosx
       language: shell
-      install:
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
+      install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
       env: CIBW_BUILD='cp37-*'
     # - os: osx
     #   name: cp36-macosx
     #   language: shell
-    #   install:
-    #     - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
+    #   install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
     #   env: CIBW_BUILD='cp36-*'
     # - os: osx
     #   name: cp35-macosx
     #   language: shell
-    #   install:
-    #     - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
+    #   install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
     #   env: CIBW_BUILD='cp35-*'
     # - os: osx
     #   name: cp34-macosx
     #   language: shell
-    #   install:
-    #     - HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
+    #   install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
     #   env: CIBW_BUILD='cp34-*'
     # - os: windows
     #   name: cp27-win_amd64
@@ -63,29 +57,20 @@ matrix:
     #   install:
     #     - choco install vcredist2008
     #     - choco install --ignore-dependencies vcpython27
-    #     - choco install python2 --version=2.7.16 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python27-x64'"
-    #     - export PATH="/c/Python27-x64:/c/Python27-x64/Scripts:$PATH"
-    #   env:
-    #     - CIBW_PLATFORM=windows
-    #     - CIBW_BUILD='cp27-win_amd64'
+    #     - ource travis/setup_python.windows.sh 2.7.16
+    #   env: CIBW_PLATFORM=windows CIBW_BUILD='cp27-win_amd64'
     - os: windows
       name: cp35-win_amd64
       language: shell
-      install:
-        - choco install python3 --version=3.5.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python35-x64'"
-        - export PATH="/c/Python35-x64:/c/Python35-x64/Scripts:$PATH"
+      install: source travis/setup_python.windows.sh 3.5.4
       env: CIBW_PLATFORM=windows CIBW_BUILD='cp35-win_amd64'
     - os: windows
       name: cp36-win_amd64
       language: shell
-      install:
-        - choco install python3 --version=3.6.8 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python36-x64'"
-        - export PATH="/c/Python36-x64:/c/Python36-x64/Scripts:$PATH"
+      install: source travis/setup_python.windows.sh 3.6.8
       env: CIBW_PLATFORM=windows CIBW_BUILD='cp36-win_amd64'
     - os: windows
       name: cp37-win_amd64
       language: shell
-      install:
-        - choco install python3 --version=3.7.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python37-x64'"
-        - export PATH="/c/Python37-x64:/c/Python37-x64/Scripts:$PATH"
+      install: source travis/setup_python.windows.sh 3.7.4
       env: CIBW_PLATFORM=windows CIBW_BUILD='cp37-win_amd64'
