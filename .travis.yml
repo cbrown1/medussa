@@ -6,7 +6,7 @@ git:
   depth: 3
 env:
   global:
-    - CIBW_BEFORE_BUILD='travis/install_deps.sh'
+    - CIBW_BEFORE_BUILD='bash travis/cibw_before_build.sh'
     - CIBW_TEST_COMMAND='python {project}/test/test_smoke.py'
 script:
   - python -m pip install --upgrade pip wheel cibuildwheel
@@ -51,7 +51,6 @@ matrix:
     #     - choco install python2 --version=2.7.16 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python27-x64'"
     #     - export PATH="/c/Python27-x64:/c/Python27-x64/Scripts:$PATH"
     #   env:
-    #     - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
     #     - CIBW_PLATFORM=windows
     #     - CIBW_BUILD='cp27-win_amd64'
     - os: windows
@@ -60,27 +59,18 @@ matrix:
       install:
         - choco install python3 --version=3.5.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python35-x64'"
         - export PATH="/c/Python35-x64:/c/Python35-x64/Scripts:$PATH"
-      env:
-        - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
-        - CIBW_PLATFORM=windows
-        - CIBW_BUILD='cp35-win_amd64'
+      env: CIBW_PLATFORM=windows CIBW_BUILD='cp35-win_amd64'
     - os: windows
       name: cp36-win_amd64
       language: shell
       install:
         - choco install python3 --version=3.6.8 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python36-x64'"
         - export PATH="/c/Python36-x64:/c/Python36-x64/Scripts:$PATH"
-      env:
-        - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
-        - CIBW_PLATFORM=windows
-        - CIBW_BUILD='cp36-win_amd64'
+      env: CIBW_PLATFORM=windows CIBW_BUILD='cp36-win_amd64'
     - os: windows
       name: cp37-win_amd64
       language: shell
       install:
         - choco install python3 --version=3.7.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python37-x64'"
         - export PATH="/c/Python37-x64:/c/Python37-x64/Scripts:$PATH"
-      env:
-        - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
-        - CIBW_PLATFORM=windows
-        - CIBW_BUILD='cp37-win_amd64'
+      env: CIBW_PLATFORM=windows CIBW_BUILD='cp37-win_amd64'

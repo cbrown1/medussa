@@ -2,9 +2,7 @@
 set -eux
 set -o pipefail
 
-python -m pip install --upgrade --only-binary=numpy numpy
-
-DLL2LIB="${PWD}/travis/dll2lib.cmd"
+DLL2LIB="${PWD}/travis/dll2lib_vcrun.cmd"
 
 function install_dll {
     local bits="$1"
