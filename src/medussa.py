@@ -40,6 +40,7 @@ from ctypes import c_void_p, byref, cast
 PA_NODEVICE = -1
 
 pymaj = platform.python_version_tuple()[0]
+pymin = platform.python_version_tuple()[1]
 if pymaj == "3":
     xrange = range
 
@@ -48,10 +49,9 @@ def __abi_suffix():
     if "2" == pymaj:
         return ".pyd" if platform.system() == "Windows" else ".so"
     import sysconfig
-    # XXX This is broken on Python 3.7.4 on Windows
     return (sysconfig.get_config_var('EXT_SUFFIX') if platform.system() != "Windows"
-                else ".cp{maj}{min}-win_amd64.pyd".format(maj=pymaj,
-                        min=platform.python_version_tuple()[1])
+                # XXX get_config_var('EXT_SUFFIX') is broken on Python 3.7.4 on Windows
+                else ".cp{maj}{min}-win_amd64.pyd".format(maj=pymaj, min=pymin)
             )
 
 libname_base = 'libmedussa{}'.format(__abi_suffix())

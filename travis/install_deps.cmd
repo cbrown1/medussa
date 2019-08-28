@@ -1,4 +1,3 @@
-:: Windows-only variant of before build script for cibuildwheel
-python -m pip install --upgrade --only-binary=numpy numpy
-
-:: TODO build portaudio/libsndfile instead of bundling in the repo?
+:: We only need this to have paths to dumpbin & lib in PATH
+call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+bash travis/install_deps.windows.sh

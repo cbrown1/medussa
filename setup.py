@@ -64,12 +64,11 @@ if "--debug" in sys.argv:
 if platform.system() == "Windows":
     # cibuildwheel uses target python version for running setup.py so this will indicate arch
     # of .dll files to bundle
-    arch = "x86" if _BITS == 32 else "x64"
-    medussa_data_files.append('lib/build/win/{arch}/portaudio_{arch}.dll'.format(arch=arch))
-    medussa_data_files.append('lib/build/win/{arch}/libsndfile-1.dll'.format(arch=arch))
-    library_dirs.append('lib/lib/{arch}'.format(arch=arch))
+    library_dirs.append('build/lib/{bits}'.format(bits=_BITS))
+    # TODO find way to ship them as package_data, will ease finding
+    medussa_data_files.append('build/lib/{bits}/portaudio.dll'.format(bits=_BITS))
+    medussa_data_files.append('build/lib/{bits}/sndfile.dll'.format(bits=_BITS))
     libraries.append('advapi32')
-
     # TODO support debug builds
     extra_compile_args = []
 else:
@@ -109,7 +108,7 @@ setup(name=docs.package_name,
     install_requires = medussa_install_requires,
     setup_requires = medussa_setup_requires,
     requires = medussa_requires,
-    eager_resources = ['setup.lst', 'lib/lib'],
+    eager_resources = ['setup.lst'],
     package_dir={docs.package_name: medussa_package_dir},
     package_data={docs.package_name: medussa_package_data},
     data_files=[(medussa_data_files_path, medussa_data_files)],
@@ -123,10 +122,12 @@ setup(name=docs.package_name,
         "Programming Language :: Python",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX",
-        #"Operating System :: MacOS :: MacOS X",
+        "Operating System :: MacOS :: MacOS X",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
+        # "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Environment :: Console",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

@@ -30,17 +30,16 @@ matrix:
     - os: windows
       language: shell
       install:
-         # XXX vcredist2012 is required by bundled portaudio_x64.dll only - to be removed
-         - choco install vcredist2012
+         # XXX uncomment to enable python2.7
          #  - choco install vcredist2008
          #  - choco install --ignore-dependencies vcpython27
+         #  - choco install python2 --version=2.7.16 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python27-x64'"
          # XXX cibuildwheel on windows expects x64 Pythons to be in *-x64 dirs and fails if missing
-         # TODO setup multiple python3 versions using option -m to choco
-         - choco install python3 --version=3.7.4 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python37-x64'"
-        #  - choco install python2 --version=2.7.16 -y --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python27-x64'"
+         - choco install python3 --version=3.7.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python37-x64'"
+         - choco install python3 --version=3.6.8 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python36-x64'"
+         - choco install python3 --version=3.5.4 -y -m --override --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\Python35-x64'"
          - export PATH="/c/Python37-x64:/c/Python37-x64/Scripts:$PATH"
       env:
         - CIBW_BEFORE_BUILD=travis\\install_deps.cmd
         - CIBW_PLATFORM=windows
-        # - CIBW_BUILD='cp37-win_amd64 cp27-win_amd64'
-        - CIBW_BUILD='cp37-win_amd64'
+        - CIBW_BUILD='cp37-win_amd64 cp36-win_amd64 cp35-win_amd64'
