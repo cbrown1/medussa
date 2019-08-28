@@ -11,9 +11,13 @@ env:
 script:
   - python -m pip install --upgrade pip wheel cibuildwheel
   - cibuildwheel --output-dir wheelhouse .
-  - if [[ "${TRAVIS_TAG:-}" != "" ]]; then
-      python -m pip install --upgrade twine;
-      python -m twine upload --skip-existing wheelhouse/*.whl;
+  # every maintainer wishing to do automatic release from the tag needs to setup
+  # TWINE_USERNAME and TWINE_PASSWORD env vars on CI
+  - |
+    if [[ -n "${TRAVIS_TAG}" && -n "${TWINE_USERNAME}" ]]
+    then
+      python -m pip install --upgrade twine
+      python -m twine upload --skip-existing wheelhouse/*.whl
     fi
 
 matrix:
