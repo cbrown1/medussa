@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/psylab16/medussa.svg?branch=master)](https://travis-ci.org/psylab16/medussa)
+[![Build Status](https://travis-ci.org/cbrown1/medussa.svg?branch=master)](https://travis-ci.org/cbrown1/medussa)
 
 # Medussa: A cross-platform high-level audio library for Python
 
