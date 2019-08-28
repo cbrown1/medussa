@@ -30,9 +30,7 @@ from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    PORTAUDIO_DLL = "portaudio.dll"
-    _D = _p.dirname
-    libpath = _p.join(_D(_D(_D(_D(_p.abspath(__file__))))), "medussa", PORTAUDIO_DLL)
+    libpath = _p.join(_p.dirname(_p.abspath(__file__)), "lib", "portaudio.dll")
 else:
     libpath = "portaudio"
 libname = find_library(libpath)
