@@ -19,9 +19,12 @@
 # Comments and/or additions are welcome. Send e-mail to: cbrown1@pitt.edu.
 #
 */
-
+#define _USE_MATH_DEFINES
 #include "medussa_callbacks.h"
 #include "medussa_matrix.h"
+#include "log.h"
+
+#include <math.h>
 
 #define TWOPI 6.2831853071795862
 
@@ -39,6 +42,9 @@ void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stre
             resultCommand.data_ptr1 = 0;
 
             sud->mix_mat_fade_countdown_frames = command->data_uint;
+            sud->mix_mat_fade_total_frames = sud->mix_mat_fade_countdown_frames;
+            debug("execute_stream_user_data_command SET_MATRICES frames=%u",
+                    sud->mix_mat_fade_total_frames);
             if( sud->mix_mat_fade_countdown_frames == 0 ){
 
                 /* no fade. send back the old mix and target matrices back and install a new mix matrix */
@@ -50,7 +56,6 @@ void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stre
 
             }else{
                 /* compute fade increment matrix into fade_mat. put new matrix into target_mix_mat */
-           
                 resultCommand.data_ptr0 = sud->target_mix_mat;
                 sud->target_mix_mat = (medussa_dmatrix*)command->data_ptr0;
                 /* fade_inc_mat = (target_mix_mat - mix_mat) * (1. / sud->mix_mat_fade_countdown_frames); */
@@ -59,9 +64,14 @@ void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stre
                                     sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
                                     sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1 );
 
-                dmatrix_scale( sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
-                                    (1. / sud->mix_mat_fade_countdown_frames),
-                                    sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1 );
+                if( !(sud->flags & STREAM_FLAG_COSINE_FADE) ){
+                    debug("using linear mix_mat fade");
+                    dmatrix_scale( sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
+                                        (1. / sud->mix_mat_fade_countdown_frames),
+                                        sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1 );
+                } else {
+                    debug("using cosine mix_mat fade");
+                }
             }
 
             /* post old matrices back to main python thread to be freed */
@@ -71,8 +81,13 @@ void execute_stream_user_data_command( PaUtilRingBuffer *resultQueue, const stre
 
     case STREAM_COMMAND_SET_IS_MUTED:
         sud->is_muted = command->data_uint;
+        debug("execute_stream_user_data_command SET_IS_MUTED=%d", sud->is_muted);
         break;
     }
+}
+
+static double half_hann(unsigned index, unsigned total) {
+    return 0.5 * (1. - cos(M_PI * index / total));
 }
 
 void increment_mix_mat_fade( stream_user_data *sud )
@@ -80,15 +95,31 @@ void increment_mix_mat_fade( stream_user_data *sud )
     if( sud->mix_mat_fade_countdown_frames == 0 )
         return;
 
-    // mix_mat += fade_inc_mat
-    dmatrix_add( sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
-        sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
-        sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1 );
+    unsigned index = sud->mix_mat_fade_total_frames - sud->mix_mat_fade_countdown_frames;
+    int cosine = (sud->flags & STREAM_FLAG_COSINE_FADE);
+    // debug("increment_mix_mat_fade index=%u total=%u cosine=%d",
+    //         index, sud->mix_mat_fade_total_frames, cosine);
 
+    if( !cosine ){
+        // mix_mat += fade_inc_mat
+        dmatrix_add( sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
+            sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
+            sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1 );
+    } else {
+        // XXX we never run for the case when index == total, so need to use index + 1 to
+        // avoid jumping over last cosine value when swapping target mat below
+        // mix_mat = target_mat - (1 - half_hann(index + 1, total)) * fade_mat
+        double y = half_hann(index + 1, sud->mix_mat_fade_total_frames);
+        dmatrix_scale( sud->fade_inc_mat->mat, sud->fade_inc_mat->mat_0, sud->fade_inc_mat->mat_1,
+            1. - y,
+            sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1 );
+        dmatrix_subtract( sud->target_mix_mat->mat, sud->target_mix_mat->mat_0, sud->target_mix_mat->mat_1,
+            sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1,
+            sud->mix_mat->mat, sud->mix_mat->mat_0, sud->mix_mat->mat_1 );
+    }
     --sud->mix_mat_fade_countdown_frames;
     if( sud->mix_mat_fade_countdown_frames == 0 ){
-
-        // Swap mix_mat and target_mix_mat. 
+        // Swap mix_mat and target_mix_mat.
         // old mix_mat (now stored in target_mix_mat) will be freed next time STREAM_COMMAND_SET_MATRICES executes
         medussa_dmatrix *temp_mat = sud->mix_mat;
         sud->mix_mat = sud->target_mix_mat;

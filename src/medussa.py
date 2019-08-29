@@ -108,6 +108,8 @@ STREAM_COMMAND_FREE_MATRICES = c_int(1)
 STREAM_COMMAND_SET_IS_MUTED = c_int(2)
 FINITE_STREAM_COMMAND_SET_CURSOR = c_int(3)
 
+STREAM_FLAG_COSINE_FADE = 1
+
 class StreamCommand(ctypes.Structure):
     """
     struct stream_command{
@@ -148,6 +150,9 @@ class StreamUserData(ctypes.Structure):
         int mix_mat_fade_countdown_frames;
         
         int pa_fpb;
+
+        int mix_mat_fade_total_frames;
+        unsigned flags;
     };
     """
     _fields_ = (("parent",    c_void_p),
@@ -163,7 +168,9 @@ class StreamUserData(ctypes.Structure):
                 ("fade_inc_mat",  medussa_dmatrix_p),
                 ("target_mix_mat",  medussa_dmatrix_p),
                 ("mix_mat_fade_countdown_frames",  c_int),
-                ("pa_fpb",    c_int))
+                ("pa_fpb",    c_int),
+                ("mix_mat_fade_total_frames", c_int),
+                ("flags", c_uint))
 StreamUserDataPointer = POINTER(StreamUserData)
 
 
@@ -791,6 +798,17 @@ class Stream(object):
     def is_muted(self, val):
         self.mute(bool(val))
 
+    @property
+    def use_cosine_fades(self):
+        return (self._stream_user_data.flags & STREAM_FLAG_COSINE_FADE) != 0
+
+    @use_cosine_fades.setter
+    def use_cosine_fades(self, val):
+        if val and not self.use_cosine_fades:
+            self._stream_user_data.flags += STREAM_FLAG_COSINE_FADE
+        elif not val and self.use_cosine_fades:
+            self._stream_user_data.flags -= STREAM_FLAG_COSINE_FADE
+
     def mute(self, val=None): #FIXME I think we should default val to True
         """
         Mutes or unmutes the stream.
@@ -845,6 +863,7 @@ class Stream(object):
         self._stream_user_data.mute_mat = None;
         self._stream_user_data.fade_inc_mat = None;
         self._stream_user_data.target_mix_mat = None;
+        self._stream_user_data.flags = 0
 
         self._stream_ptr = None
         self._stream_ptr_addr = 0

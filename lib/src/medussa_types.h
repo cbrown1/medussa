@@ -33,7 +33,7 @@
 
 /* -------------------------------------------------------------------- */
 
-typedef enum {
+enum {
     STREAM_COMMAND_SET_MATRICES,    /* mix_mat > data_ptr0, mute_mat > data_ptr1 */
     STREAM_COMMAND_FREE_MATRICES,   /* mix_mat > data_ptr0, mute_mat > data_ptr1 */
     STREAM_COMMAND_SET_IS_MUTED,    /* is_muted > data_uint */
@@ -41,6 +41,9 @@ typedef enum {
     FINITE_STREAM_COMMAND_SET_CURSOR /* cursor > data_uint */
 };
 
+enum {
+    STREAM_FLAG_COSINE_FADE = 1
+};
 
 /* generic command structure, used for all commands */
 struct stream_command{
@@ -122,6 +125,9 @@ struct stream_user_data {
     int mix_mat_fade_countdown_frames;
 
     int pa_fpb;
+
+    int mix_mat_fade_total_frames;
+    unsigned flags;
 };
 typedef struct stream_user_data stream_user_data;
 

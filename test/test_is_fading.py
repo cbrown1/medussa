@@ -13,6 +13,7 @@ import medussa as m
 
 d = m.open_default_device()
 tone = d.create_tone(500)
+tone.use_cosine_fades = True
 tone.mix_mat_fade_duration = 3.
 
 # Set up a dummy mix_mat array to work on
