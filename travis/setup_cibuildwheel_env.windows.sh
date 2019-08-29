@@ -1,5 +1,5 @@
 
-function _setup_python {
+function _setup_cibuildwheel_env {
     local ver=( ${1//./ } )
     local suffix
     [[ "${2:-}" == 32 ]] || suffix=-x64
@@ -13,6 +13,10 @@ function _setup_python {
         --override \
         --installarguments "'/quiet  InstallAllUsers=1 TargetDir=c:\\${py_dir}'"
     export PATH="/c/${py_dir}:/c/${py_dir}/Scripts:$PATH"
+    local platform
+    [[ "${2:-}" == 32 ]] && platform=win32 || platform=win_amd64
+    export CIBW_PLATFORM=windows
+    export CIBW_BUILD="cp${ver[0]}${ver[1]}-${platform}"
 }
 
-_setup_python "$@"
+_setup_cibuildwheel_env "$@"

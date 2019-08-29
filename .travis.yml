@@ -62,15 +62,12 @@ matrix:
     - os: windows
       name: cp35-win_amd64
       language: shell
-      install: source travis/setup_python.windows.sh 3.5.4
-      env: CIBW_PLATFORM=windows CIBW_BUILD='cp35-win_amd64'
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.5.4
     - os: windows
       name: cp36-win_amd64
       language: shell
-      install: source travis/setup_python.windows.sh 3.6.8
-      env: CIBW_PLATFORM=windows CIBW_BUILD='cp36-win_amd64'
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.6.8
     - os: windows
       name: cp37-win_amd64
       language: shell
-      install: source travis/setup_python.windows.sh 3.7.4
-      env: CIBW_PLATFORM=windows CIBW_BUILD='cp37-win_amd64'
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.7.4
