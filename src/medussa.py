@@ -49,9 +49,14 @@ def __abi_suffix():
     if "2" == pymaj:
         return ".pyd" if platform.system() == "Windows" else ".so"
     import sysconfig
+
+    def __win_platform():
+        import struct
+        return "win32" if struct.calcsize("P") * 8 == 32 else "win_amd64"
+
     return (sysconfig.get_config_var('EXT_SUFFIX') if platform.system() != "Windows"
                 # XXX get_config_var('EXT_SUFFIX') is broken on Python 3.7.4 on Windows
-                else ".cp{maj}{min}-win_amd64.pyd".format(maj=pymaj, min=pymin)
+                else ".cp{maj}{min}-{platform}.pyd".format(maj=pymaj, min=pymin, platform=__win_platform())
             )
 
 libname_base = 'libmedussa{}'.format(__abi_suffix())
