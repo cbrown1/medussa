@@ -6,6 +6,10 @@ function _setup_cibuildwheel_env {
     local x86_opt
     [[ "${2:-}" != 32 ]] || x86_opt=--x86
     local py_dir="Python${ver[0]}${ver[1]}${suffix}"
+    [[ 2 != "${ver[0]}" ]] || {
+        choco install --yes vcredist2008
+        choco install --yes --ignore-dependencies vcpython27
+    }
     choco install "python${ver[0]}" ${x86_opt} \
         "--version=${1}" \
         --yes \

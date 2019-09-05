@@ -55,11 +55,7 @@ matrix:
     # - os: windows
     #   name: cp27-win_amd64
     #   language: shell
-    #   install:
-    #     - choco install vcredist2008
-    #     - choco install --ignore-dependencies vcpython27
-    #     - ource travis/setup_python.windows.sh 2.7.16
-    #   env: CIBW_PLATFORM=windows CIBW_BUILD='cp27-win_amd64'
+    #   install: source travis/setup_cibuildwheel_env.windows.sh 2.7.16
     - os: windows
       name: cp35-win_amd64
       language: shell
