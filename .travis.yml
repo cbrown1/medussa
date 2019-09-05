@@ -8,6 +8,7 @@ env:
   global:
     - CIBW_BEFORE_BUILD='bash travis/cibw_before_build.sh'
     - CIBW_TEST_COMMAND='python {project}/test/test_smoke.py'
+    - CIBW_ENVIRONMENT_LINUX=TRAVIS_OS_NAME=${TRAVIS_OS_NAME}
 script:
   - python -m pip install --upgrade pip wheel cibuildwheel
   - cibuildwheel --output-dir wheelhouse .
