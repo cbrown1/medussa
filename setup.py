@@ -30,12 +30,10 @@ from distutils.command.build_ext import build_ext
 import numpy
 import sys
 import sysconfig
-import struct
 
 pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
 pyver = "{}.{}".format(pymaj, pymin)
-_BITS = 8 * struct.calcsize("P")
 
 sys.path.insert(0,os.path.abspath(r'./src'))
 docs =  __import__('docs', fromlist=['package_name', 'version', 'url',
@@ -62,13 +60,10 @@ if "--debug" in sys.argv:
     sys.argv.remove("--debug")
 
 if platform.system() == "Windows":
-    # cibuildwheel uses target python version for running setup.py so this will indicate arch
-    # of .dll files to bundle
-    library_dirs.append('build/lib/{bits}'.format(bits=_BITS))
-    # TODO find way to ship them as package_data, will ease finding
-    medussa_data_files.append('build/lib/{bits}/portaudio.dll'.format(bits=_BITS))
-    medussa_data_files.append('build/lib/{bits}/sndfile.dll'.format(bits=_BITS))
+    # install_deps.windows.sh puts correct arch libs in there
+    library_dirs.append('src/lib')
     libraries.append('advapi32')
+    medussa_package_data.append('lib/*.dll')
     # TODO support debug builds
     extra_compile_args = []
 else:

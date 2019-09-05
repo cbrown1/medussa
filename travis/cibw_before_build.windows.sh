@@ -2,9 +2,7 @@
 set -eux
 set -o pipefail
 
-python -m pip install --upgrade --only-binary=numpy numpy
-
-DLL2LIB="${PWD}/travis/dll2lib.cmd"
+DLL2LIB="${PWD}/travis/dll2lib_vcrun.cmd"
 
 function install_dll {
     local bits="$1"
@@ -31,14 +29,12 @@ function install_dll {
     cp "${tmp_dir}/${lib_name}" "${rename_as}.lib"
 }
 
-for bits in 32 64
-do
-    lib_dir="build/lib/${bits}"
-    mkdir -p "${lib_dir}"
-    install_dll "${bits}" \
-        "https://github.com/bastibe/libsndfile-binaries/raw/master/libsndfile${bits}bit.dll" \
-        "${lib_dir}/sndfile"
-    install_dll "${bits}" \
-        "https://github.com/spatialaudio/portaudio-binaries/raw/master/libportaudio${bits}bit.dll" \
-        "${lib_dir}/portaudio"
-done
+bits=$( python -c 'import struct; print(struct.calcsize("P") * 8)' )
+lib_dir="src/lib"
+mkdir -p "${lib_dir}"
+install_dll "${bits}" \
+    "https://github.com/bastibe/libsndfile-binaries/raw/master/libsndfile${bits}bit.dll" \
+    "${lib_dir}/sndfile"
+install_dll "${bits}" \
+    "https://github.com/spatialaudio/portaudio-binaries/raw/master/libportaudio${bits}bit.dll" \
+    "${lib_dir}/portaudio"

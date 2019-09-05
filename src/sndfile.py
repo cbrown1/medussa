@@ -33,12 +33,7 @@ from os import path as _p
 
 # Select the correct name for the shared library, dependent on platform
 if platform.system() == "Windows":
-    LIBSNDFILE = 'sndfile.dll'
-    _D = _p.dirname
-    # when deployed - pkg_resources doesn't work because of circular dep at medussa,
-    # use this primitive heuristics which seems to work an all modern python versions
-    # TODO investigate if this changes in virtualenv
-    libpath = _p.join(_D(_D(_D(_D(_p.abspath(__file__))))), "medussa", LIBSNDFILE)
+    libpath = _p.join(_p.dirname(_p.abspath(__file__)), 'lib', 'sndfile.dll')
 else:
     libpath = "sndfile"
 libname = find_library(libpath)
