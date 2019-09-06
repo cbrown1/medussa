@@ -1,10 +1,8 @@
-include AUTHORS
-include COPYING
-include INSTALL
-include NEWS
-include USAGE
-recursive-include lib/build *
+include AUTHORS.md
+include COPYING.md
+include INSTALL.md
+include NEWS.md
+include USAGE.md
 include lib/include/*.h
-include lib/lib/*
 include lib/src/*.h
 include symbols.lst

@@ -45,3 +45,9 @@ nosetests.xml
 
 # vscode noise
 /.vscode/c_cpp_properties.json
+
+# pytest cache
+/.pytest_cache
+
+# setuptools setup_requires eggs
+/.eggs

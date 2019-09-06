@@ -11,20 +11,24 @@ import time
 import numpy as np
 import medussa as m
 
-d = m.open_default_device()
-tone = d.create_tone(500)
-tone.use_cosine_fades = True
-tone.mix_mat_fade_duration = 3.
 
-# Set up a dummy mix_mat array to work on
-silence_mix_mat = np.array([[0.0],[0.0]])
-full_volume_mix_mat = np.array([[1.0],[1.0]])
-tone.mix_mat = silence_mix_mat
+def main():
+    d = m.open_default_device()
+    tone = d.create_tone(500)
+    tone.use_cosine_fades = True
+    tone.mix_mat_fade_duration = 3.
 
-tone.play()
+    # Set up a dummy mix_mat array to work on
+    silence_mix_mat = np.array([[0.0], [0.0]])
+    full_volume_mix_mat = np.array([[1.0], [1.0]])
+    tone.mix_mat = silence_mix_mat
 
-tone.mix_mat = full_volume_mix_mat
+    tone.play()
 
+    tone.mix_mat = full_volume_mix_mat
 
-while True:
-    print("Hit ctrl-c to end -- tone.is_fading = {val}".format(val=tone.is_fading))
+    while True:
+        print("Hit ctrl-c to end -- tone.is_fading = {val}".format(val=tone.is_fading))
+
+if __name__ == " __main__":
+    main()

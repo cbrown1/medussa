@@ -35,11 +35,11 @@ pymaj = platform.python_version_tuple()[0]
 pymin = platform.python_version_tuple()[1]
 pyver = "{}.{}".format(pymaj, pymin)
 
-sys.path.insert(0,os.path.abspath(r'./src'))
-docs =  __import__('docs', fromlist=['package_name', 'version', 'url',
-                    'author', 'author_email', 'long_help',
-                    'short_description', 'long_description', 'maintainer',
-                    'maintain_email', 'keywords', 'platforms'])
+sys.path.insert(0, os.path.abspath(r'./src'))
+docs = __import__('docs', fromlist=['package_name', 'version', 'url',
+                                    'author', 'author_email', 'long_help',
+                                    'short_description', 'long_description', 'maintainer',
+                                    'maintain_email', 'keywords', 'platforms'])
 del sys.path[0]
 
 medussa_package = [docs.package_name]
@@ -47,9 +47,9 @@ medussa_package_dir = 'src'
 medussa_package_data = ['*.py']
 medussa_data_files = ['symbols.lst']
 medussa_data_files_path = 'medussa'
-medussa_install_requires = ['numpy >=1.3']
-medussa_requires = ['numpy (>=1.3)',]
-medussa_setup_requires = ['numpy >=1.3']
+medussa_requires = ['numpy (>=1.3)']
+medussa_install_requires = medussa_requires
+medussa_setup_requires = medussa_requires + ['setuptools-pep8', 'pytest-runner']
 
 library_dirs = []
 libraries = ['portaudio', 'sndfile']
@@ -75,44 +75,46 @@ else:
     else:
         extra_compile_args += ["-DNDEBUG", "-O3"]
 
+
 def get_exported_symbols():
     return [l.strip() for l in open('symbols.lst')]
 
 
 cmedussa = Extension('.'.join([docs.package_name, 'libmedussa']),
-    include_dirs=[numpy.get_include(), 'lib', os.path.join('lib', 'include')],
-    libraries=libraries,
-    library_dirs=library_dirs,
-    language="c++",
-    export_symbols=get_exported_symbols(),
-    extra_compile_args=extra_compile_args,
-    sources=glob.glob(os.path.join('lib', 'src', '*.c')) +
-            glob.glob(os.path.join('lib', 'src', '*.cpp'))
-    )
+                     include_dirs=[numpy.get_include(), 'lib', os.path.join('lib', 'include')],
+                     libraries=libraries,
+                     library_dirs=library_dirs,
+                     language="c++",
+                     export_symbols=get_exported_symbols(),
+                     extra_compile_args=extra_compile_args,
+                     sources=(glob.glob(os.path.join('lib', 'src', '*.c')) +
+                              glob.glob(os.path.join('lib', 'src', '*.cpp')))
+                     )
 
 setup(name=docs.package_name,
-    version=docs.version,
-    description=docs.short_description,
-    author=docs.author,
-    author_email=docs.author_email,
-    maintainer = docs.maintainer,
-    maintainer_email = docs.maintainer_email,
-    url=docs.url,
-    packages = medussa_package,
-    include_package_data=True,
-    install_requires = medussa_install_requires,
-    setup_requires = medussa_setup_requires,
-    requires = medussa_requires,
-    eager_resources = ['setup.lst'],
-    package_dir={docs.package_name: medussa_package_dir},
-    package_data={docs.package_name: medussa_package_data},
-    data_files=[(medussa_data_files_path, medussa_data_files)],
-    keywords = docs.keywords,
-    license = docs.license,
-    platforms = docs.platforms,
-    long_description = docs.long_description,
-    ext_modules = [cmedussa],
-    classifiers=[
+      version=docs.version,
+      description=docs.short_description,
+      author=docs.author,
+      author_email=docs.author_email,
+      maintainer=docs.maintainer,
+      maintainer_email=docs.maintainer_email,
+      url=docs.url,
+      packages=medussa_package,
+      include_package_data=True,
+      install_requires=medussa_install_requires,
+      setup_requires=medussa_setup_requires,
+      requires=medussa_requires,
+      tests_require=['pytest>=2.8'],
+      eager_resources=['setup.lst'],
+      package_dir={docs.package_name: medussa_package_dir},
+      package_data={docs.package_name: medussa_package_data},
+      data_files=[(medussa_data_files_path, medussa_data_files)],
+      keywords=docs.keywords,
+      license=docs.license,
+      platforms=docs.platforms,
+      long_description=docs.long_description,
+      ext_modules=[cmedussa],
+      classifiers=[
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Programming Language :: Python",
         "Operating System :: Microsoft :: Windows",
@@ -134,4 +136,4 @@ setup(name=docs.package_name,
         "Topic :: Scientific/Engineering :: Physics",
         "Natural Language :: English",
         ],
-)
+      )

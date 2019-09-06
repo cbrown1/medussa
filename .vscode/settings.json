@@ -1,3 +1,8 @@
 {
-    "python.testing.autoTestDiscoverOnSaveEnabled": false
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "${workspaceFolder}/bin/pytest",
+    "python.linting.pep8Enabled": true,
+    "python.linting.pep8Path": "${workspaceFolder}/bin/pep8",
+    "python.linting.pep8Args": ["--max-line-length=120" ],
+    "python.pythonPath": "${workspaceFolder}/bin/python"
 }
