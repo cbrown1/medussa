@@ -63,3 +63,19 @@ matrix:
       name: cp37-win_amd64
       language: shell
       install: source travis/setup_cibuildwheel_env.windows.sh 3.7.4
+    - os: windows
+      name: cp27-win32
+      language: shell
+      install: source travis/setup_cibuildwheel_env.windows.sh 2.7.16 32
+    - os: windows
+      name: cp35-win32
+      language: shell
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.5.4 32
+    - os: windows
+      name: cp36-win32
+      language: shell
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.6.8 32
+    - os: windows
+      name: cp37-win32
+      language: shell
+      install: source travis/setup_cibuildwheel_env.windows.sh 3.7.4 32
