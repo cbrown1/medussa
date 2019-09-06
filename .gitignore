@@ -42,3 +42,6 @@ nosetests.xml
 /lib/python*
 /include/python*
 /.Python
+
+# vscode noise
+/.vscode/c_cpp_properties.json
