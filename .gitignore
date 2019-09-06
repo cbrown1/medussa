@@ -36,3 +36,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# virtualenv setup
+/bin
+/lib/python*
+/include/python*
+/.Python
