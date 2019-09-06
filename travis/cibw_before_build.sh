@@ -4,9 +4,7 @@
 set -eux
 set -o pipefail
 
-# Some platform-independent deps first
-# TODO cosider using requirements.txt for this?
-python -m pip install --upgrade --only-binary=numpy numpy
+python -m pip install -r requirements.txt
 
 OS_SCRIPT="travis/cibw_before_build.${TRAVIS_OS_NAME}.sh"
 [[ ! -x "${OS_SCRIPT}" ]] || "./${OS_SCRIPT}"
