@@ -21,7 +21,7 @@
 #
 
 package_name = "medussa"
-version = "2.0.0"
+version = "2.0.1"
 author = "Christopher A. Brown, Joseph K. Ranweiler, Ross Bencina, Ryan W. Moore, Kutay B. Sezginel, Andrzej Ciarkowski"
 author_email = "cbrown1@pitt.edu"
 maintainer = "Christopher Brown"
@@ -32,13 +32,15 @@ license = "GNU General Public License v3 or later"
 platforms = "Win32, Linux"
 short_description = "Medussa: A cross-platform high-level audio library for Python"
 long_description = """\
- Medussa is an easy to use high-level cross-platform audio library for Python 
- based on Port Audio and libsndfile. You can play NumPy arrays, stream sound
- files of various formats from disk, or create pure tones or 'on-line' white 
- or pink noise. There are high-level functions like play_array (similar to 
- matlab's wavplay). Or you can access specific host api's or devices, create 
- streams as needed, and control them all asynchronously. Or for the most 
- control, you can access the port audio library directly. Sweet!"""
+Medussa is an easy to use high-level cross-platform audio library for Python
+based on Port Audio and libsndfile. You can play NumPy arrays, stream sound
+files of various formats from disk, or create pure tones or 'on-line' white
+or pink noise. There are high-level functions like play_array (similar to
+matlab's old wavplay function but with more features). Or you can access 
+specific host api's or devices, create streams as needed, and control them 
+all asynchronously. Or for the most control, you can access the port audio 
+library directly. Sweet!
+"""
 
 long_help = """\
  Methods
