@@ -8,6 +8,7 @@ env:
   global:
     - CIBW_BEFORE_BUILD='bash travis/cibw_before_build.sh'
     - CIBW_TEST_COMMAND='python {project}/test/test_smoke.py'
+    - CIBW_ENVIRONMENT_LINUX=TRAVIS_OS_NAME=${TRAVIS_OS_NAME}
 script:
   - python -m pip install --upgrade pip wheel cibuildwheel
   - cibuildwheel --output-dir wheelhouse .
@@ -29,12 +30,10 @@ matrix:
     - os: osx
       name: cp27-macosx
       language: shell
-      install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
       env: CIBW_BUILD='cp27-*'
     - os: osx
       name: cp37-macosx
       language: shell
-      install: HOMEBREW_NO_AUTO_UPDATE=1 brew install libsndfile portaudio
       env: CIBW_BUILD='cp37-*'
     # - os: osx
     #   name: cp36-macosx
@@ -54,11 +53,7 @@ matrix:
     # - os: windows
     #   name: cp27-win_amd64
     #   language: shell
-    #   install:
-    #     - choco install vcredist2008
-    #     - choco install --ignore-dependencies vcpython27
-    #     - ource travis/setup_python.windows.sh 2.7.16
-    #   env: CIBW_PLATFORM=windows CIBW_BUILD='cp27-win_amd64'
+    #   install: source travis/setup_cibuildwheel_env.windows.sh 2.7.16
     - os: windows
       name: cp35-win_amd64
       language: shell

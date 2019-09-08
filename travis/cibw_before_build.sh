@@ -8,6 +8,5 @@ set -o pipefail
 # TODO cosider using requirements.txt for this?
 python -m pip install --upgrade --only-binary=numpy numpy
 
-# Linux is running in container, doesn't preserve env vars
-OS_SCRIPT="travis/cibw_before_build.${TRAVIS_OS_NAME:-linux}.sh"
+OS_SCRIPT="travis/cibw_before_build.${TRAVIS_OS_NAME}.sh"
 [[ ! -x "${OS_SCRIPT}" ]] || "./${OS_SCRIPT}"
