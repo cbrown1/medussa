@@ -2,6 +2,10 @@
 
 ## News
 
+- Version 2.0.2 (2019-09-08)
+
+  - Build tweaks
+
 - Version 2.0.1 (2019-09-06)
 
   - Travis integration
