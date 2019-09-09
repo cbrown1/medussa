@@ -36,3 +36,18 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# virtualenv setup
+/bin
+/lib/python*
+/include/python*
+/.Python
+
+# vscode noise
+/.vscode/c_cpp_properties.json
+
+# pytest cache
+/.pytest_cache
+
+# setuptools setup_requires eggs
+/.eggs

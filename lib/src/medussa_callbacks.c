@@ -92,11 +92,13 @@ static double half_hann(unsigned index, unsigned total) {
 
 void increment_mix_mat_fade( stream_user_data *sud )
 {
+    unsigned index;
+    int cosine;
     if( sud->mix_mat_fade_countdown_frames == 0 )
         return;
 
-    unsigned index = sud->mix_mat_fade_total_frames - sud->mix_mat_fade_countdown_frames;
-    int cosine = (sud->flags & STREAM_FLAG_COSINE_FADE);
+    index = sud->mix_mat_fade_total_frames - sud->mix_mat_fade_countdown_frames;
+    cosine = (sud->flags & STREAM_FLAG_COSINE_FADE);
     // debug("increment_mix_mat_fade index=%u total=%u cosine=%d",
     //         index, sud->mix_mat_fade_total_frames, cosine);
 
